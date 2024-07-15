@@ -1,0 +1,36 @@
+.form {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    margin-bottom: 15px !important;
+  }
+  
+  .submit {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    width: 200px !important;
+    height: 50px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+  .register{
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+  
+  .leftAlign{
+    margin-top: 1em !important;
+  }
+  
+  .Logo{
+    margin-left: 0em;
+    width: 200px;
+    margin-bottom: 20px;
+}
+body{
+  background-color: gray;
+}

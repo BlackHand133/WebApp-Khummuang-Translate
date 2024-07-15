@@ -1,0 +1,30 @@
+.Navbar{
+    background-color: white !important;
+    color: black !important;
+    box-shadow: black;
+}
+
+.loginButton{
+    margin-right: 3.5em !important;
+    background-color: white !important;
+    border-radius: 50px !important;
+    color: black !important;
+}
+
+.donate{
+    margin-right: 3em !important;
+    border-radius: 50px !important;
+    background-color: #43CCF8 !important;
+    color: white !important;
+    width: 120px !important;
+}
+
+.logoutButton{
+    background-color: yellow !important;
+}
+.IconWeb{
+    margin-left: 3.5em;
+    margin-right: 3.5em;
+    height: auto;
+    width: 200px;
+}
