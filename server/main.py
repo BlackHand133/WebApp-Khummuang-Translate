@@ -1,28 +1,69 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, redirect, url_for
 from flask_cors import CORS
 from flask_bcrypt import Bcrypt
-from models import db, User, Admin
+from models import db, User, Admin, AdminView
 from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, create_refresh_token, set_access_cookies, set_refresh_cookies, unset_jwt_cookies
-import secrets
-
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
+from flask_admin import Admin as FlaskAdmin
+from flask_principal import Principal, Permission, RoleNeed
+from config import Config
 from ModelASR import modelWavTH
 
 app = Flask(__name__)   
 CORS(app, resources={r"/api/*": {"origins": "*"}})
+app.config.from_object(Config)
 bcrypt = Bcrypt(app)
-
-app.config['SECRET_KEY'] = 'I_am_Number_Four_Five'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///appDB.sqlite3'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['JWT_SECRET_KEY'] = secrets.token_hex(16)
 
 migrate = Migrate(app, db)
 db.init_app(app)
 jwt = JWTManager(app)
 
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'  # ชื่อของ route ที่จะ redirect เมื่อยังไม่ได้ลงชื่อเข้าใช้
+
+principal = Principal(app)
+
 with app.app_context():
     db.create_all()
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+# สร้าง Admin ในฐานข้อมูล
+@app.route('/api/create_admin', methods=['POST'])
+def create_admin():
+    data = request.get_json()
+    username = data.get('username')
+    email = data.get('email')
+    password = data.get('password')
+    gender = data.get('gender')
+    age = data.get('ageGroup')
+
+    if not username or not email or not password or not gender or not age:
+        return jsonify({'error': 'กรุณากรอกข้อมูลที่จำเป็น'}), 400
+
+    if User.query.filter_by(username=username).first() or User.query.filter_by(email=email).first():
+        return jsonify({'error': 'Username or email already exists'}), 400
+
+    hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+    new_user = User(username=username, email=email, password=hashed_password, gender=gender, age=age)
+    db.session.add(new_user)
+
+    # สร้าง Admin
+    admin_user = Admin(user=new_user)
+    db.session.add(admin_user)
+
+    db.session.commit()
+    access_token = create_access_token(identity=username)
+
+    return jsonify({'message': 'Admin created successfully', 'access_token': access_token}), 201
+
+# ตั้งค่า Flask Admin
+admin = FlaskAdmin(app)
+admin.add_view(AdminView(User, db.session))  # เพิ่ม AdminView สำหรับ User
 
 @app.route('/api/register', methods=['POST'])
 def register():
@@ -31,29 +72,25 @@ def register():
     email = data.get('email')
     password = data.get('password')
     gender = data.get('gender')
-    age_group = data.get('ageGroup')
+    age = data.get('age')
 
-    if not username or not email or not password or not gender or not age_group:
+    if not username or not email or not password or not gender or not age:
         return jsonify({'error': 'กรุณาตรวจสอบข้อมูลที่กรอก'}), 400
 
     if User.query.filter_by(username=username).first() or User.query.filter_by(email=email).first():
         return jsonify({'error': 'Username or email already exists'}), 400
 
     hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-    new_user = User(username=username, email=email, password=hashed_password, gender=gender, age_group=age_group)
+    new_user = User(username=username, email=email, password=hashed_password, gender=gender, age_group=age)
     db.session.add(new_user)
     db.session.commit()
     access_token = create_access_token(identity=username)
+    refresh_token = create_refresh_token(identity=username)
 
-    return jsonify({'message': 'User registered successfully', 'access_token': access_token}), 201
+    return jsonify({'message': 'User registered successfully', 'access_token': access_token, 'refresh_token': refresh_token}), 201
 
 @app.route('/api/login', methods=['POST'])
-@jwt_required(optional=True)
 def login():
-    current_user = get_jwt_identity()
-    if current_user:
-        return jsonify({'error': 'You are already logged in'}), 400
-
     data = request.get_json()
     username = data.get('username')
     password = data.get('password')
@@ -64,11 +101,12 @@ def login():
     user = User.query.filter_by(username=username).first()
 
     if user and bcrypt.check_password_hash(user.password, password):
+        login_user(user)  # Login the user using flask-login
         access_token = create_access_token(identity=username)
         refresh_token = create_refresh_token(identity=username)
         response = jsonify({'message': 'ลงชื่อเข้าใช้งานเรียบร้อยแล้ว'})
-        set_access_cookies(response, access_token, max_age=86400)
-        set_refresh_cookies(response, refresh_token, max_age=86400)
+        set_access_cookies(response, access_token)
+        set_refresh_cookies(response, refresh_token)
 
         return response
     else:
@@ -76,9 +114,22 @@ def login():
 
 @app.route('/api/protected', methods=['POST', 'GET'])
 @jwt_required()
+@login_required
 def protected():
-    current_user = get_jwt_identity()
-    return jsonify(logged_in_as=current_user), 200
+    user_identity = current_user.username  # ใช้ current_user จาก flask-login
+    return jsonify(logged_in_as=user_identity), 200
+
+@app.route('/api/userdata', methods=['POST'])
+@jwt_required()
+@login_required
+def get_user_data():
+    user_identity = current_user.username  # ใช้ current_user จาก flask-login
+    user = User.query.filter_by(username=user_identity).first()
+    if user:
+        is_admin = Admin.query.filter_by(userid=user.userid).first() is not None
+        return jsonify({'username': user.username, 'is_admin': is_admin}), 200
+    else:
+        return jsonify({'error': 'User not found'}), 404
 
 @app.route('/api/check_token', methods=['POST', 'OPTIONS'])
 def check_token():
@@ -93,26 +144,18 @@ def refresh():
     new_access_token = create_access_token(identity=current_user)
     
     response = jsonify({'message': 'Token refreshed'})
-    set_access_cookies(response, new_access_token, max_age=86400, httponly=True, secure=True)
+    set_access_cookies(response, new_access_token)
     
     return response
 
-@app.route('/api/userdata', methods=['POST'])
-@jwt_required()
-def get_user_data():
-    current_user = get_jwt_identity()
-    user = User.query.filter_by(username=current_user).first()
-    if user:
-        is_admin = Admin.query.filter_by(userid=user.userid).first() is not None
-        return jsonify({'username': user.username, 'is_admin': is_admin}), 200
-    else:
-        return jsonify({'error': 'User not found'}), 404
-
 @app.route('/api/logout', methods=['POST'])
 @jwt_required()
+@login_required
 def logout():
+    logout_user()  # Logout the current user using flask-login
     response = jsonify({'message': 'Logout successful'})
-    unset_jwt_cookies(response)
+    response.delete_cookie('access_token_cookie')
+    response.delete_cookie('refresh_token_cookie')
     return response
 
 @app.route('/api/transcribe', methods=['POST'])
@@ -129,22 +172,14 @@ def transcribe():
 
     try:
         transcription = modelWavTH.transcribe_audio(audio_path)
-        #tagged_transcription = modelWavTH.tag_text(transcription)
-        #print(tagged_transcription)
         print(transcription)
 
         # เตรียมข้อมูลเพื่อแสดงผลใน React
         formatted_transcription = [{'word': word, 'tag': None} for word in transcription.split()]
-        #for word, tag in tagged_transcription:
-            # กำหนดสีของเส้นใต้ตามประเภทของคำ
-        #    formatted_transcription.append({'word': word, 'tag': tag,})
 
         return jsonify({'transcription': formatted_transcription})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
-
 if __name__ == "__main__":
     app.run(debug=True, port=8080)
-
