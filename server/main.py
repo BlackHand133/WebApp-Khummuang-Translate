@@ -9,11 +9,16 @@ from flask_admin import Admin as FlaskAdmin
 from flask_principal import Principal, Permission, RoleNeed
 from config import Config
 from ModelASR import modelWavTH
+from flask_socketio import SocketIO
+from flask_caching import Cache
+from admin_routes import admin_bp
 
-app = Flask(__name__)   
+app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 app.config.from_object(Config)
 bcrypt = Bcrypt(app)
+socketio = SocketIO(app, cors_allowed_origins="*")
+cache = Cache(app, config={'CACHE_TYPE': 'simple'})
 
 migrate = Migrate(app, db)
 db.init_app(app)
@@ -32,38 +37,7 @@ with app.app_context():
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# สร้าง Admin ในฐานข้อมูล
-@app.route('/api/create_admin', methods=['POST'])
-def create_admin():
-    data = request.get_json()
-    username = data.get('username')
-    email = data.get('email')
-    password = data.get('password')
-    gender = data.get('gender')
-    age = data.get('ageGroup')
-
-    if not username or not email or not password or not gender or not age:
-        return jsonify({'error': 'กรุณากรอกข้อมูลที่จำเป็น'}), 400
-
-    if User.query.filter_by(username=username).first() or User.query.filter_by(email=email).first():
-        return jsonify({'error': 'Username or email already exists'}), 400
-
-    hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-    new_user = User(username=username, email=email, password=hashed_password, gender=gender, age=age)
-    db.session.add(new_user)
-
-    # สร้าง Admin
-    admin_user = Admin(user=new_user)
-    db.session.add(admin_user)
-
-    db.session.commit()
-    access_token = create_access_token(identity=username)
-
-    return jsonify({'message': 'Admin created successfully', 'access_token': access_token}), 201
-
-# ตั้งค่า Flask Admin
-admin = FlaskAdmin(app)
-admin.add_view(AdminView(User, db.session))  # เพิ่ม AdminView สำหรับ User
+app.register_blueprint(admin_bp)
 
 @app.route('/api/register', methods=['POST'])
 def register():
@@ -181,5 +155,18 @@ def transcribe():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@socketio.on('connect')
+def handle_connect():
+    print('Client connected')
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    print('Client disconnected')
+
+@socketio.on('message')
+def handle_message(message):
+    print(f'Received message: {message}')
+    socketio.send('Message received')
+
 if __name__ == "__main__":
-    app.run(debug=True, port=8080)
+    socketio.run(app, debug=True, port=8080)
