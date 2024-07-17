@@ -61,7 +61,7 @@ function Register() {
   };
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '95vh' }}>
       <div style={{ position: 'relative', height: '565px' ,width: '400px', padding: '70px', border: '1px solid #ccc', borderRadius: '0px', boxShadow: '0 0 10px rgba(0, 0, 0, 0.1)',backgroundColor: 'white' }}>
       <IconButton aria-label="close" size="large" style={{ position: 'absolute', top: '10px', right: '10px' }} href='/login'>
         <CloseIcon fontSize="inherit"/>
