@@ -1,32 +1,30 @@
 from flask import Flask, jsonify, request, redirect, url_for
 from flask_cors import CORS
 from flask_bcrypt import Bcrypt
-from models import db, User, Admin, AdminView
+from models import db, User, Admin_Sys, AdminView
 from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, create_refresh_token, set_access_cookies, set_refresh_cookies, unset_jwt_cookies
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_admin import Admin as FlaskAdmin
-from flask_principal import Principal, Permission, RoleNeed
+from flask_principal import Principal
 from config import Config
 from ModelASR import modelWavTH
-from flask_socketio import SocketIO
-from flask_caching import Cache
 from admin_routes import admin_bp
+from flask_socketio import SocketIO, emit
 
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 app.config.from_object(Config)
 bcrypt = Bcrypt(app)
-socketio = SocketIO(app, cors_allowed_origins="*")
-cache = Cache(app, config={'CACHE_TYPE': 'simple'})
 
 migrate = Migrate(app, db)
 db.init_app(app)
 jwt = JWTManager(app)
+socketio = SocketIO(app, cors_allowed_origins="*")  # เพิ่มการตั้งค่า SocketIO
 
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = 'login'  # ชื่อของ route ที่จะ redirect เมื่อยังไม่ได้ลงชื่อเข้าใช้
+login_manager.login_view = 'login'
 
 principal = Principal(app)
 
@@ -37,15 +35,13 @@ with app.app_context():
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# สร้าง instance ของ Flask-Admin
-admin = FlaskAdmin(app, name='AdminInterface', template_mode='bootstrap3')
+# การตั้งค่า Flask Admin
+admin = FlaskAdmin(app, name='Admin Dashboard', template_mode='bootstrap3')
+admin.add_view(AdminView(User, db.session))  # เพิ่มวิวสำหรับ User table
+admin.add_view(AdminView(Admin_Sys, db.session))  # เพิ่มวิวสำหรับ Admin table
 
-# เพิ่ม View สำหรับโมเดล User และ Admin
-admin.add_view(AdminView(User, db.session, name='UserAdmin'))
-admin.add_view(AdminView(Admin, db.session, name='AdminAdmin'))
-
-app.register_blueprint(admin_bp, url_prefix='/api')  # Register blueprint ของ admin_bp
-
+# ลงทะเบียน Blueprint
+app.register_blueprint(admin_bp)
 
 @app.route('/api/register', methods=['POST'])
 def register():
@@ -63,7 +59,7 @@ def register():
         return jsonify({'error': 'Username or email already exists'}), 400
 
     hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-    new_user = User(username=username, email=email, password=hashed_password, gender=gender, age_group=age)
+    new_user = User(username=username, email=email, password=hashed_password, gender=gender, birt_date=age)
     db.session.add(new_user)
     db.session.commit()
     access_token = create_access_token(identity=username)
@@ -83,7 +79,7 @@ def login():
     user = User.query.filter_by(username=username).first()
 
     if user and bcrypt.check_password_hash(user.password, password):
-        login_user(user)  # Login the user using flask-login
+        login_user(user)
         access_token = create_access_token(identity=username)
         refresh_token = create_refresh_token(identity=username)
         response = jsonify({'message': 'ลงชื่อเข้าใช้งานเรียบร้อยแล้ว'})
@@ -98,17 +94,17 @@ def login():
 @jwt_required()
 @login_required
 def protected():
-    user_identity = current_user.username  # ใช้ current_user จาก flask-login
+    user_identity = current_user.username
     return jsonify(logged_in_as=user_identity), 200
 
 @app.route('/api/userdata', methods=['POST'])
 @jwt_required()
 @login_required
 def get_user_data():
-    user_identity = current_user.username  # ใช้ current_user จาก flask-login
+    user_identity = current_user.username
     user = User.query.filter_by(username=user_identity).first()
     if user:
-        is_admin = Admin.query.filter_by(userid=user.userid).first() is not None
+        is_admin = Admin_Sys.query.filter_by(userid=user.userid).first() is not None
         return jsonify({'username': user.username, 'is_admin': is_admin}), 200
     else:
         return jsonify({'error': 'User not found'}), 404
@@ -134,7 +130,7 @@ def refresh():
 @jwt_required()
 @login_required
 def logout():
-    logout_user()  # Logout the current user using flask-login
+    logout_user()
     response = jsonify({'message': 'Logout successful'})
     response.delete_cookie('access_token_cookie')
     response.delete_cookie('refresh_token_cookie')
@@ -149,32 +145,34 @@ def transcribe():
     if file.filename == '':
         return jsonify({'error': 'No file selected'}), 400
 
-    audio_path = "audio.wav"  # Save audio file temporarily
+    audio_path = "audio.wav"
     file.save(audio_path)
 
     try:
         transcription = modelWavTH.transcribe_audio(audio_path)
         print(transcription)
 
-        # เตรียมข้อมูลเพื่อแสดงผลใน React
         formatted_transcription = [{'word': word, 'tag': None} for word in transcription.split()]
 
         return jsonify({'transcription': formatted_transcription})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# SocketIO events
 @socketio.on('connect')
 def handle_connect():
     print('Client connected')
+    emit('response', {'data': 'Connected successfully'})
 
 @socketio.on('disconnect')
 def handle_disconnect():
     print('Client disconnected')
 
 @socketio.on('message')
-def handle_message(message):
-    print(f'Received message: {message}')
-    socketio.send('Message received')
+def handle_message(data):
+    print('Received message:', data)
+    emit('response', {'data': 'Message received'})
+
 
 if __name__ == "__main__":
     socketio.run(app, debug=True, port=8080)

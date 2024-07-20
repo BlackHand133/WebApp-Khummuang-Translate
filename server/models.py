@@ -17,9 +17,9 @@ class User(UserMixin, db.Model):
     gender = db.Column(db.String(10), nullable=False)
     birt_date = db.Column(db.String(10), nullable=False)
 
-    admin = db.relationship('Admin', backref='user', uselist=False)
+    admin = db.relationship('Admin_Sys', backref='user', uselist=False)
 
-class Admin(db.Model):
+class Admin_Sys(db.Model):
     admin_id = db.Column(db.Integer, primary_key=True)
     userid = db.Column(db.String(32), db.ForeignKey('user.userid'))
 

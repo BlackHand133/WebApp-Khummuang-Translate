@@ -1,14 +1,13 @@
-from flask import jsonify, request
+from flask import jsonify, request, redirect, url_for
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import create_access_token
-from models import db, User, Admin
-from flask import Blueprint, redirect, url_for
-
+from models import db, User, Admin_Sys
+from flask import Blueprint
 
 admin_bp = Blueprint('admin_bp', __name__)
 
+# ตั้งค่า Bcrypt
 bcrypt = Bcrypt()
-
 
 @admin_bp.route('/admin')
 def admin_index():
@@ -30,11 +29,11 @@ def create_admin():
         return jsonify({'error': 'Username or email already exists'}), 400
 
     hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-    new_user = User(username=username, email=email, password=hashed_password, gender=gender, age=age)
+    new_user = User(username=username, email=email, password=hashed_password, gender=gender, birt_date=age)
     db.session.add(new_user)
 
     # สร้าง Admin
-    admin_user = Admin(user=new_user)
+    admin_user = Admin_Sys(user=new_user)
     db.session.add(admin_user)
 
     db.session.commit()
