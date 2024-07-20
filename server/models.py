@@ -15,7 +15,7 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(60), nullable=False)
     gender = db.Column(db.String(10), nullable=False)
-    age = db.Column(db.String(10), nullable=False)
+    birt_date = db.Column(db.String(10), nullable=False)
 
     admin = db.relationship('Admin', backref='user', uselist=False)
 

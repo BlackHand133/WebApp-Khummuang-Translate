@@ -37,7 +37,15 @@ with app.app_context():
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-app.register_blueprint(admin_bp)
+# สร้าง instance ของ Flask-Admin
+admin = FlaskAdmin(app, name='AdminInterface', template_mode='bootstrap3')
+
+# เพิ่ม View สำหรับโมเดล User และ Admin
+admin.add_view(AdminView(User, db.session, name='UserAdmin'))
+admin.add_view(AdminView(Admin, db.session, name='AdminAdmin'))
+
+app.register_blueprint(admin_bp, url_prefix='/api')  # Register blueprint ของ admin_bp
+
 
 @app.route('/api/register', methods=['POST'])
 def register():

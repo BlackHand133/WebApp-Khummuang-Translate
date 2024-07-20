@@ -2,12 +2,17 @@ from flask import jsonify, request
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import create_access_token
 from models import db, User, Admin
-from flask import Blueprint
+from flask import Blueprint, redirect, url_for
 
 
-admin_bp = Blueprint('admin', __name__)
+admin_bp = Blueprint('admin_bp', __name__)
 
 bcrypt = Bcrypt()
+
+
+@admin_bp.route('/admin')
+def admin_index():
+    return redirect(url_for('admin.index'))  # Redirect ไปยังหน้า admin interface
 
 @admin_bp.route('/api/create_admin', methods=['POST'])
 def create_admin():
