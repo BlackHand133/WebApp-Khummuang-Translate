@@ -1,9 +1,9 @@
 from flask import Flask, jsonify, request, redirect, url_for
 from flask_cors import CORS
 from flask_bcrypt import Bcrypt
-from models import db, User, Admin_Sys, AdminView
+from models import db, User, sysAdmin, AdminView ,UserView
 from flask_migrate import Migrate
-from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, create_refresh_token, set_access_cookies, set_refresh_cookies, unset_jwt_cookies
+from flask_jwt_extended import JWTManager, create_access_token, create_refresh_token, jwt_required, get_jwt_identity, set_access_cookies, set_refresh_cookies, unset_jwt_cookies
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_admin import Admin as FlaskAdmin
 from flask_principal import Principal
@@ -11,6 +11,8 @@ from config import Config
 from ModelASR import modelWavTH
 from admin_routes import admin_bp
 from flask_socketio import SocketIO, emit
+from flask_admin.base import AdminIndexView
+from datetime import datetime
 
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*"}})
@@ -33,12 +35,19 @@ with app.app_context():
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    try:
+        return User.query.get(int(user_id))
+    except (ValueError, TypeError):
+        return None
+
+class MyAdminIndexView(AdminIndexView):
+    def is_accessible(self):
+        return current_user.is_authenticated and getattr(current_user, 'is_admin', False)
 
 # การตั้งค่า Flask Admin
-admin = FlaskAdmin(app, name='Admin Dashboard', template_mode='bootstrap3')
-admin.add_view(AdminView(User, db.session))  # เพิ่มวิวสำหรับ User table
-admin.add_view(AdminView(Admin_Sys, db.session))  # เพิ่มวิวสำหรับ Admin table
+admin = FlaskAdmin(app, name='Admin Dashboard', template_mode='bootstrap4')
+admin.add_view(UserView(User, db.session))  # เพิ่มวิวสำหรับ User table
+admin.add_view(AdminView(sysAdmin, db.session))  # เพิ่มวิวสำหรับ Admin table
 
 # ลงทะเบียน Blueprint
 app.register_blueprint(admin_bp)
@@ -50,18 +59,25 @@ def register():
     email = data.get('email')
     password = data.get('password')
     gender = data.get('gender')
-    age = data.get('age')
+    birth_date_str = data.get('birth_date')
 
-    if not username or not email or not password or not gender or not age:
+    if not username or not email or not password or not gender or not birth_date_str:
         return jsonify({'error': 'กรุณาตรวจสอบข้อมูลที่กรอก'}), 400
 
     if User.query.filter_by(username=username).first() or User.query.filter_by(email=email).first():
         return jsonify({'error': 'Username or email already exists'}), 400
 
+    try:
+        birth_date = datetime.strptime(birth_date_str, '%Y-%m-%d').date()
+    except ValueError:
+        return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD.'}), 400
+
     hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-    new_user = User(username=username, email=email, password=hashed_password, gender=gender, birt_date=age)
+
+    new_user = User(username=username, email=email, password=hashed_password, gender=gender, birth_date=birth_date)
     db.session.add(new_user)
     db.session.commit()
+
     access_token = create_access_token(identity=username)
     refresh_token = create_refresh_token(identity=username)
 
@@ -82,13 +98,13 @@ def login():
         login_user(user)
         access_token = create_access_token(identity=username)
         refresh_token = create_refresh_token(identity=username)
-        response = jsonify({'message': 'ลงชื่อเข้าใช้งานเรียบร้อยแล้ว'})
+        response = jsonify({'message': 'Login successful'})
         set_access_cookies(response, access_token)
         set_refresh_cookies(response, refresh_token)
 
         return response
     else:
-        return jsonify({'error': 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง'}), 401
+        return jsonify({'error': 'Invalid username or password'}), 401
 
 @app.route('/api/protected', methods=['POST', 'GET'])
 @jwt_required()
@@ -104,7 +120,7 @@ def get_user_data():
     user_identity = current_user.username
     user = User.query.filter_by(username=user_identity).first()
     if user:
-        is_admin = Admin_Sys.query.filter_by(userid=user.userid).first() is not None
+        is_admin = sysAdmin.query.filter_by(userid=user.userid).first() is not None
         return jsonify({'username': user.username, 'is_admin': is_admin}), 200
     else:
         return jsonify({'error': 'User not found'}), 404
@@ -118,8 +134,8 @@ def check_token():
 @app.route('/api/refresh', methods=['POST'])
 @jwt_required(refresh=True)
 def refresh():
-    current_user = get_jwt_identity()
-    new_access_token = create_access_token(identity=current_user)
+    current_user_identity = get_jwt_identity()
+    new_access_token = create_access_token(identity=current_user_identity)
     
     response = jsonify({'message': 'Token refreshed'})
     set_access_cookies(response, new_access_token)
@@ -132,8 +148,7 @@ def refresh():
 def logout():
     logout_user()
     response = jsonify({'message': 'Logout successful'})
-    response.delete_cookie('access_token_cookie')
-    response.delete_cookie('refresh_token_cookie')
+    unset_jwt_cookies(response)
     return response
 
 @app.route('/api/transcribe', methods=['POST'])
@@ -150,8 +165,6 @@ def transcribe():
 
     try:
         transcription = modelWavTH.transcribe_audio(audio_path)
-        print(transcription)
-
         formatted_transcription = [{'word': word, 'tag': None} for word in transcription.split()]
 
         return jsonify({'transcription': formatted_transcription})
@@ -172,7 +185,6 @@ def handle_disconnect():
 def handle_message(data):
     print('Received message:', data)
     emit('response', {'data': 'Message received'})
-
 
 if __name__ == "__main__":
     socketio.run(app, debug=True, port=8080)

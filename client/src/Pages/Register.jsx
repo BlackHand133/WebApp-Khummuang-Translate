@@ -1,13 +1,9 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import CloseIcon from '@mui/icons-material/Close';
-import { Button, Box, Modal, Typography, Checkbox, FormControlLabel, MenuItem, Select } from '@mui/material';
+import { Button, Box, Modal, Typography, Checkbox, FormControlLabel, MenuItem, Select, InputLabel, TextField, FormControl } from '@mui/material';
 import IconButton from '@mui/material/IconButton';
 import IconWeb from '../assets/IconWeb.svg';
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
-import Input from '@mui/material/Input';
-import TextField from '@mui/material/TextField';
 import styles from '../components/RegisterPage/Register.module.css';
 
 function Register() {
@@ -24,30 +20,34 @@ function Register() {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
+    // ตรวจสอบความครบถ้วนของข้อมูล
     if (!username || !email || !password || !confirmPassword || !gender || !birthDate) {
-      setErrorMessage('Please fill in all fields');
+      setErrorMessage('กรุณากรอกข้อมูลให้ครบถ้วน');
       return;
     }
 
+    // ตรวจสอบการจับคู่ของรหัสผ่าน
     if (password !== confirmPassword) {
-      setErrorMessage('Passwords do not match');
+      setErrorMessage('รหัสผ่านไม่ตรงกัน');
       return;
     }
 
     try {
+      // ส่งข้อมูลไปยัง API
       const response = await axios.post('http://localhost:8080/api/register', {
         username,
         email,
         password,
         gender,
-        birth_date: birthDate
+        birth_date: birthDate // ปรับชื่อ field ให้ตรงกับ API
       });
 
       console.log(response.data);
-      alert('User registered successfully');
+      alert('สมัครสมาชิกเรียบร้อยแล้ว');
       window.location.href = '/login';
     } catch (error) {
-      console.error('Error registering user:', error);
+      console.error('Error registering user:', error.response ? error.response.data : error.message);
+      setErrorMessage('เกิดข้อผิดพลาดในการสมัครสมาชิก โปรดลองอีกครั้ง');
     }
   };
 
@@ -73,54 +73,53 @@ function Register() {
         <Typography variant="h6">Register</Typography>
         <form onSubmit={handleSubmit}>
           <Box className={styles.form}>
-            <FormControl variant="standard">
-              <InputLabel htmlFor="username">Username</InputLabel>
-              <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} fullWidth size="small" sx={{ width: '300px' }} />
-            </FormControl>
+            <TextField
+              id="username"
+              label="Username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              fullWidth
+              size="small"
+              sx={{ width: '300px' }}
+            />
           </Box>
           <Box className={styles.form}>
-            <FormControl variant="standard">
-              <InputLabel htmlFor="email">Email</InputLabel>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                fullWidth
-                size="small"
-                sx={{ width: '300px' }}
-              />
-            </FormControl>
+            <TextField
+              id="email"
+              label="Email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              fullWidth
+              size="small"
+              sx={{ width: '300px' }}
+            />
           </Box>
           <Box className={styles.form}>
-            <FormControl variant="standard">
-              <InputLabel htmlFor="password">Password</InputLabel>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                fullWidth
-                size="small"
-                sx={{ width: '300px' }}
-              />
-            </FormControl>
+            <TextField
+              id="password"
+              label="Password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              fullWidth
+              size="small"
+              sx={{ width: '300px' }}
+            />
           </Box>
           <Box className={styles.form}>
-            <FormControl variant="standard">
-              <InputLabel htmlFor="confirmPassword">Confirm Password</InputLabel>
-              <Input
-                id="confirmPassword"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                fullWidth
-                size="small"
-                sx={{ width: '300px' }}
-              />
-            </FormControl>
+            <TextField
+              id="confirmPassword"
+              label="Confirm Password"
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              fullWidth
+              size="small"
+              sx={{ width: '300px' }}
+            />
           </Box>
-          <Box className={styles.form} sx={{ display: 'flex', justifyContent: 'space-between'}}>
+          <Box className={styles.form} sx={{ display: 'flex', justifyContent: 'space-between' }}>
             <FormControl variant="standard" sx={{ m: 1, minWidth: 120 }}>
               <InputLabel id="genderGroup">Gender</InputLabel>
               <Select
@@ -136,7 +135,7 @@ function Register() {
                 <MenuItem value="LGBTQ">LGBTQ</MenuItem>
               </Select>
             </FormControl>
-            <FormControl variant="standard" sx={{marginRight:'3em'}}>
+            <FormControl variant="standard" sx={{ marginRight: '3em' }}>
               <TextField
                 id="birthDate"
                 label="Birth Date"
@@ -185,7 +184,7 @@ function Register() {
           </Button>
           {errorMessage && (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 2 }}>
-              <Typography sx={{ color: 'red', justifyContent:'center', textAlign:'center' }}>{errorMessage}</Typography>
+              <Typography sx={{ color: 'red', justifyContent: 'center', textAlign: 'center' }}>{errorMessage}</Typography>
             </Box>
           )}
         </form>
