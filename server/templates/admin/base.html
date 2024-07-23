@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <!-- AdminLTE CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='AdminLTE/css/adminlte.min.css') }}">
+</head>
+<body class="hold-transition sidebar-mini">
+    <div class="wrapper">
+        <!-- Navbar -->
+        {% include 'admin/navbar.html' %}
+        <!-- Main Sidebar Container -->
+        {% include 'admin/sidebar.html' %}
+        <!-- Content Wrapper. Contains page content -->
+        <div class="content-wrapper">
+            {% block content %}
+            {% endblock %}
+        </div>
+        <!-- /.content-wrapper -->
+        {% include 'admin/footer.html' %}
+    </div>
+    <!-- AdminLTE JS -->
+    <script src="{{ url_for('static', filename='AdminLTE/js/adminlte.min.js') }}"></script>
+</body>
+</html>

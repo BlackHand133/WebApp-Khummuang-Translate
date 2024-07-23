@@ -11,7 +11,7 @@ from config import Config
 from ModelASR import modelWavTH
 from admin_routes import admin_bp
 from flask_socketio import SocketIO, emit
-from flask_admin.base import AdminIndexView
+from flask_admin.base import AdminIndexView,expose
 from datetime import datetime
 
 app = Flask(__name__)
@@ -43,6 +43,10 @@ def load_user(user_id):
 class MyAdminIndexView(AdminIndexView):
     def is_accessible(self):
         return current_user.is_authenticated and getattr(current_user, 'is_admin', False)
+    
+    @expose('/')
+    def index(self):
+        return self.render('admin/index.html')
 
 # การตั้งค่า Flask Admin
 admin = FlaskAdmin(app, name='Admin Dashboard', template_mode='bootstrap4')
@@ -50,7 +54,7 @@ admin.add_view(UserView(User, db.session))  # เพิ่มวิวสำห�
 admin.add_view(AdminView(sysAdmin, db.session))  # เพิ่มวิวสำหรับ Admin table
 
 # ลงทะเบียน Blueprint
-app.register_blueprint(admin_bp)
+app.register_blueprint(admin_bp)    
 
 @app.route('/api/register', methods=['POST'])
 def register():
