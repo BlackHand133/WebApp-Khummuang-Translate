@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import axios from 'axios';
 import Navbar from './components/Narbar/Navbar'
-import Sidebar from './components/Sidebar/Sidebar';
 import Footer from './components/Footer/Footer';
 import { CssBaseline, Container, Box, Typography } from '@mui/material';
 import Body from './components/Body/Body';
@@ -35,7 +34,6 @@ function App() {
     <>
     <Navbar isLoggedIn={isLoggedIn} username={username} onLogout={handleLogout} />
     <Body/>
-    <Sidebar />
     <Footer />
       
       
