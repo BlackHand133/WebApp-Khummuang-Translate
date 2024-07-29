@@ -46,7 +46,7 @@ const Transcription = ({ file }) => {
       )}
       
       {transcription.length > 0 && (
-        <Paper elevation={3} sx={{ p: 2, borderRadius: '8px' }}>
+        <Paper elevation={3} sx={{ p: 2, borderRadius: '8px',width:"100%" }}>
           <Typography variant="h6" gutterBottom>ผลลัพธ์การถอดความ:</Typography>
           <List>
             {transcription.map((item, index) => (

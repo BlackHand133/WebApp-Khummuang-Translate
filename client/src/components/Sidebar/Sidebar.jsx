@@ -74,7 +74,7 @@ const Sidebar = ({ onOptionChange, onFileUpload, onInputToggle }) => {
   );
 
   return (
-    <Grid container direction="column" sx={{ mt: '3em', ml: '0.5em', borderRadius: '50px', height: 'auto', maxHeight: '100%', padding: '20px', backgroundColor: '#202020', boxShadow: '2px 0 5px rgba(0,0,0,0.3)' }}>
+    <Grid container direction="column" sx={{ mt: '4em', borderRadius: '50px', height: 'auto', maxHeight: '100%', padding: '20px', backgroundColor: '#202020', boxShadow: '2px 0 5px rgba(0,0,0,0.3)' }}>
       <Typography variant="h6" gutterBottom align="center" sx={{ fontFamily: '"Mitr", sans-serif', fontWeight: 500, color: 'white', mb: 2 }}>
         ตัวเลือก
       </Typography>
