@@ -3,17 +3,26 @@ import { Box, Typography, Button, Paper } from '@mui/material';
 import Sidebar from '../Sidebar/Sidebar';
 import Transcription from '../FileSpeech/Transcription';
 import TextTranslation from '../TextTranslation/TextTranslation';
+import SpeechMic from '../FileSpeech/SpeechMic';
 
 const Body = () => {
   const [selectedOption, setSelectedOption] = useState('text');
   const [file, setFile] = useState(null);
+  const [activeInput, setActiveInput] = useState('microphone');
 
   const handleOptionChange = (option) => {
     setSelectedOption(option);
+    if (option === 'text') {
+      setActiveInput('microphone'); // กลับไปที่ microphone เมื่อลงเลือก 'text'
+    }
   };
 
   const handleFileUpload = (uploadedFile) => {
     setFile(uploadedFile);
+  };
+
+  const handleInputToggle = (input) => {
+    setActiveInput(input);
   };
 
   return (
@@ -25,7 +34,6 @@ const Body = () => {
         p: 2,
       }}
     >
-      {/* Sidebar */}
       <Box
         sx={{
           width: { xs: '100%', md: '300px' },
@@ -37,10 +45,13 @@ const Body = () => {
           borderRadius: '8px',
         }}
       >
-        <Sidebar onOptionChange={handleOptionChange} onFileUpload={handleFileUpload} />
+        <Sidebar
+          onOptionChange={handleOptionChange}
+          onFileUpload={handleFileUpload}
+          onInputToggle={handleInputToggle}
+        />
       </Box>
 
-      {/* Main Content */}
       <Box
         sx={{
           flexGrow: 1,
@@ -52,8 +63,7 @@ const Body = () => {
           borderRadius: '8px',
         }}
       >
-        {/* แสดงไฟล์ที่อัปโหลด */}
-        {file && (
+        {file && selectedOption === 'voice' && activeInput === 'upload' && (
           <Paper
             sx={{
               mt: 5,
@@ -75,8 +85,11 @@ const Body = () => {
           </Paper>
         )}
 
-        {/* แสดงผลลัพธ์ตามตัวเลือก */}
-        {selectedOption === 'text' ? <TextTranslation /> : <Transcription file={file} />}
+        {selectedOption === 'text' ? (
+          <TextTranslation />
+        ) : (
+          activeInput === 'microphone' ? <SpeechMic /> : <Transcription file={file} />
+        )}
       </Box>
     </Box>
   );
