@@ -2,25 +2,22 @@
   background-color: black;
   padding: 20px 0;
   color: white;
-  margin-left: -8px;
-  margin-right: -8px;
 }
 
 .footerContainer {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   flex-wrap: wrap;
 }
 
 .logo {
-  margin-top: 3em;
-  margin-left: 4em;
+  margin-right: 20px;
 }
-.descript{
+
+.descript {
   margin-left: 8px !important;
   font-family: "Pridi", serif !important;
   font-weight: 200 !important;
   font-style: normal !important;
 }
-

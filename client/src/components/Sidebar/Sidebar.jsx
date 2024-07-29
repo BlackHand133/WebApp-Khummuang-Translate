@@ -4,12 +4,13 @@ import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import MicIcon from '@mui/icons-material/Mic';
 import MicOffIcon from '@mui/icons-material/MicOff';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
-import styles from './Sidebar.module.css'
+import styles from './Sidebar.module.css';
 
-const Sidebar = ({ onOptionChange }) => {
+const Sidebar = ({ onOptionChange, onFileUpload }) => {
   const [selectedOption, setSelectedOption] = useState('text');
   const [activeInput, setActiveInput] = useState('microphone');
   const [microphoneOn, setMicrophoneOn] = useState(false);
+  const [file, setFile] = useState(null);
 
   const handleOptionChange = (option) => {
     setSelectedOption(option);
@@ -25,23 +26,33 @@ const Sidebar = ({ onOptionChange }) => {
     setMicrophoneOn(!microphoneOn);
   };
 
+  const handleFileChange = (event) => {
+    const uploadedFile = event.target.files[0];
+    setFile(uploadedFile);
+    onFileUpload(uploadedFile); // ส่งไฟล์ไปยัง Body
+  };
+
   const LanguageSwitch = () => (
     <Box sx={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap', mb:'1em' }}>
       <Divider sx={{ width: '100%', my: '15px', backgroundColor: '#e0e0e0' }} />
-      <Button sx={{ borderRadius: '20px', padding: '8px 15px', border: '2px solid #e0e0e0', minWidth: '80px', bgcolor:'ButtonShadow' }}>
+      <Button sx={{ borderRadius: '20px', padding: '8px 15px', border: '2px solid #e0e0e0', minWidth: '80px', bgcolor:'ButtonShadow',
+        '&:hover': {bgcolor:'#CBC3E3'}
+       }}>
         <Typography sx={{ fontFamily: '"Mitr", sans-serif', fontWeight: 400, fontSize: '0.8rem' }}>คำเมือง</Typography>
       </Button>
       <Button sx={{ color: '#4a90e2' }}>
         <SwapHorizIcon />
       </Button>
-      <Button sx={{ borderRadius: '20px', padding: '8px 15px', border: '1px solid #e0e0e0', minWidth: '80px', bgcolor:'ButtonShadow' }}>
+      <Button sx={{ borderRadius: '20px', padding: '8px 15px', border: '1px solid #e0e0e0', minWidth: '80px', bgcolor:'ButtonShadow',
+        '&:hover': {bgcolor:'#CBC3E3'}
+       }}>
         <Typography sx={{ fontFamily: '"Mitr", sans-serif', fontWeight: 400, fontSize: '0.8rem' }}>ไทย</Typography>
       </Button>
     </Box>
   );
 
   return (
-    <Grid container direction="column" sx={{ mt:'5em', ml:'0.5em', borderRadius: '50px', height: '100%', padding: '20px', backgroundColor: '#202020', boxShadow: '2px 0 5px rgba(0,0,0,0.3)' }}>
+    <Grid container direction="column" sx={{ mt:'5em', ml:'0.5em', borderRadius: '50px', height: 'auto', maxHeight:'100%', padding: '20px', backgroundColor: '#202020', boxShadow: '2px 0 5px rgba(0,0,0,0.3)' }}>
       <Typography variant="h6" gutterBottom align="center" sx={{ fontFamily: '"Mitr", sans-serif', fontWeight: 500, color: 'white', mb: 2 }}>
         ตัวเลือก
       </Typography>
@@ -63,8 +74,8 @@ const Sidebar = ({ onOptionChange }) => {
                 color:'white' // ทำให้ข้อความหนาขึ้นเมื่อ hover
               },
               '&.Mui-disabled': {
-                backgroundColor: '#606060', // สีพื้นหลังเมื่อปุ่มถูกปิดการใช้งาน
-                color: 'lightblack', // สีข้อความเมื่อปุ่มถูกปิดการใช้งาน
+                backgroundColor: '#4a90e2', // สีพื้นหลังเมื่อปุ่มถูกปิดการใช้งาน
+                color: 'white', // สีข้อความเมื่อปุ่มถูกปิดการใช้งาน
                 transform: 'scale(1.12)'
               },
             }}
@@ -77,15 +88,23 @@ const Sidebar = ({ onOptionChange }) => {
               {option === 'voice' && (
                 <>
                   <Divider sx={{ width: '100%', my: '15px', backgroundColor: '#e0e0e0' }} />
-                  <Box sx={{ display: 'flex', flexDirection: 'row', gap: '10px',justifyContent:'space-between' }}>
+                  <Box sx={{ display: 'flex', flexDirection: 'row', gap: '15px', justifyContent:'space-between' }}>
                     <Button
                       fullWidth
                       onClick={() => handleInputToggle('microphone')}
                       sx={{ 
-                        backgroundColor: activeInput === 'microphone' ? '#e3f2fd' : 'transparent',
-                        '&:hover': { backgroundColor: '#bbdefb' }
+                        backgroundColor: activeInput === 'microphone' ? '#e3f2fd' : '#404040',
+                        color: activeInput === 'upload' ? 'white' : '#757de8',
+                        transition: 'transform 0.3s, border 0.3s',
+                        transform: activeInput === 'microphone' ? 'scale(1.15)' : 'scale(1)',
+                        fontFamily: '"Mitr", sans-serif',
+                        border: activeInput === 'microphone' ? '2px solid white' : '1px solid white',
+                        '&:hover': { backgroundColor: '#bbdefb'  },
                       }}
-                      startIcon={<MicIcon />}
+                      startIcon={<MicIcon 
+                        sx={{
+                          color: activeInput === 'upload' ? 'white' : 'black'
+                        }} />}
                     >
                       ไมโครโฟน
                     </Button>
@@ -93,10 +112,17 @@ const Sidebar = ({ onOptionChange }) => {
                       fullWidth
                       onClick={() => handleInputToggle('upload')}
                       sx={{ 
-                        backgroundColor: activeInput === 'upload' ? '#e3f2fd' : 'transparent',
+                        backgroundColor: activeInput === 'upload' ? '#e3f2fd' : '#404040',
+                        color: activeInput === 'upload' ? '#757de8' : 'white',
+                        transition: 'transform 0.3s, border 0.3s',
+                        transform: activeInput === 'microphone' ? 'scale(1)' : 'scale(1.15)',
+                        fontFamily: '"Mitr", sans-serif',
+                        border: activeInput === 'upload' ? '2px solid white' : '1px solid white',
                         '&:hover': { backgroundColor: '#bbdefb' }
                       }}
-                      startIcon={<UploadFileIcon />}
+                      startIcon={<UploadFileIcon sx={{
+                        color: activeInput === 'upload' ? 'black' : 'white'
+                      }}/>}
                     >
                       ไฟล์เสียง
                     </Button>
@@ -117,8 +143,10 @@ const Sidebar = ({ onOptionChange }) => {
                       </Button>
                     ) : (
                       <Button component="label">
-                        <input type="file" hidden accept="audio/*" />
-                        <UploadFileIcon sx={{ fontSize: '3rem', color: '#4a90e2' }} />
+                        <input type="file" hidden accept="audio/*" onChange={handleFileChange} />
+                        <UploadFileIcon sx={{ fontSize: '5rem', color: '#4a90e2',border:'1px solid white',borderRadius:'10px',padding:'10px',
+                          '&:hover':{bgcolor:'white' ,border:'1px solid gray'}
+                         }}/>
                       </Button>
                     )}
                   </Box>
