@@ -193,6 +193,7 @@ const Sidebar = ({ onOptionChange, onFileUpload, onInputToggle }) => {
                       <input type="file" hidden accept="audio/*" onChange={handleFileChange} />
                       <UploadFileIcon
                         sx={{
+                          backgroundColor:'#303030',
                           fontSize: '5rem',
                           color: '#4a90e2',
                           border: '1px solid white',

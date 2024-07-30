@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios'; // นำเข้า Axios
+import axios from 'axios';
 import { Box, Typography, Paper, List, ListItem, ListItemText, CircularProgress } from '@mui/material';
 
-const Transcription = ({ file }) => {
+const Transcription = ({ file, onTranslation }) => {
   const [transcription, setTranscription] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -25,6 +25,7 @@ const Transcription = ({ file }) => {
         }
 
         setTranscription(response.data.transcription);
+        await handleTranslate(response.data.transcription);
       } catch (error) {
         setError(error.message);
       } finally {
@@ -35,22 +36,37 @@ const Transcription = ({ file }) => {
     handleTranscribe();
   }, [file]);
 
+  const handleTranslate = async (transcription) => {
+    const sentence = transcription.map(item => item.word).join(' ');
+
+    try {
+      const response = await axios.post('http://localhost:8080/api/translate', { sentence });
+      onTranslation(response.data.translated_sentence); // ส่งผลการแปลกลับไปที่ Body
+    } catch (error) {
+      setError(error.message);
+    }
+  };
+
   return (
-    <Box sx={{ p: 3 }}>
-      {loading && <CircularProgress sx={{ display: 'block', margin: '0 auto' }} />}
-      
+    <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      {loading && <CircularProgress sx={{ display: 'block', margin: '20px' }} />}
+
       {error && (
-        <Typography color="error" variant="body1">
+        <Typography color="error" variant="body1" sx={{ mb: 2 }}>
           Error: {error}
         </Typography>
       )}
-      
+
       {transcription.length > 0 && (
-        <Paper elevation={3} sx={{ p: 2, borderRadius: '8px',width:"100%" }}>
-          <Typography variant="h6" gutterBottom>ผลลัพธ์การถอดความ:</Typography>
-          <List>
+        <Paper elevation={3} sx={{ p: 2, borderRadius: '8px', width: '100%', maxWidth: '800px' }}>
+          <Box sx={{ bgcolor: 'black', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <Typography variant="h6" sx={{ fontFamily: '"Chakra Petch", sans-serif', color: 'white' }} gutterBottom>
+              ผลลัพธ์การถอดความ
+            </Typography>
+          </Box>
+          <List sx={{ mt: 2 }}>
             {transcription.map((item, index) => (
-              <ListItem key={index}>
+              <ListItem key={index} sx={{ borderBottom: '1px solid #ddd' }}>
                 <ListItemText
                   primary={item.word}
                   secondary={item.tag}

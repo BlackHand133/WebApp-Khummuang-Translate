@@ -9,10 +9,12 @@ from flask_admin import Admin as FlaskAdmin
 from flask_principal import Principal
 from config import Config
 from ModelASR import modelWavTH
+from ModelASR.Translator import Translator
 from admin_routes import admin_bp
 from flask_socketio import SocketIO, emit
 from flask_admin.base import AdminIndexView,expose
 from datetime import datetime
+import os
 
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*"}})
@@ -29,6 +31,15 @@ login_manager.init_app(app)
 login_manager.login_view = 'login'
 
 principal = Principal(app)
+
+
+# Paths to the data files
+base_dir = os.path.dirname(os.path.abspath(__file__))
+vocab_path = os.path.join(base_dir, 'ModelASR', 'data', 'KMcutting.txt')
+dictionary_path = os.path.join(base_dir, 'ModelASR', 'data', 'KMtoTH.txt')
+
+# Create an instance of Translator
+translator = Translator(vocab_path, dictionary_path)
 
 with app.app_context():
     db.create_all()
@@ -174,6 +185,17 @@ def transcribe():
         return jsonify({'transcription': formatted_transcription})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/api/translate', methods=['POST'])
+def translate():
+    data = request.get_json()
+    sentence = data.get('sentence')
+
+    if not sentence:
+        return jsonify({'error': 'No sentence provided'}), 400
+
+    translated_sentence = translator.translate_sentence(sentence)
+    return jsonify({'translated_sentence': translated_sentence}), 200
 
 # SocketIO events
 @socketio.on('connect')
