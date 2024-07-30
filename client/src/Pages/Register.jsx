@@ -19,30 +19,33 @@ function Register() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-
-    // ตรวจสอบความครบถ้วนของข้อมูล
+  
     if (!username || !email || !password || !confirmPassword || !gender || !birthDate) {
       setErrorMessage('กรุณากรอกข้อมูลให้ครบถ้วน');
       return;
     }
-
-    // ตรวจสอบการจับคู่ของรหัสผ่าน
+  
     if (password !== confirmPassword) {
       setErrorMessage('รหัสผ่านไม่ตรงกัน');
       return;
     }
-
+  
+    // ตรวจสอบรูปแบบของอีเมล
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailPattern.test(email)) {
+      setErrorMessage('รูปแบบอีเมลไม่ถูกต้อง');
+      return;
+    }
+  
     try {
-      // ส่งข้อมูลไปยัง API
       const response = await axios.post('http://localhost:8080/api/register', {
         username,
         email,
         password,
         gender,
-        birth_date: birthDate // ปรับชื่อ field ให้ตรงกับ API
+        birth_date: birthDate
       });
-
-      console.log(response.data);
+  
       alert('สมัครสมาชิกเรียบร้อยแล้ว');
       window.location.href = '/login';
     } catch (error) {
@@ -50,6 +53,7 @@ function Register() {
       setErrorMessage('เกิดข้อผิดพลาดในการสมัครสมาชิก โปรดลองอีกครั้ง');
     }
   };
+  
 
   const handleChange = (event) => {
     setChecked(event.target.checked);

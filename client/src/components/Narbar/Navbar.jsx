@@ -103,7 +103,7 @@ function Navbar() {
                   aria-haspopup="true"
                   onClick={handleOpenMenu}
                   color="inherit"
-                  sx={{backgroundColor:'black',borderRadius:'30px',mr:'3.5em',width:'200px',
+                  sx={{backgroundColor:'black',borderRadius:'30px',mr:'3.5em',width:'200px',gap:'20px',
                   '&:hover': {
                     outline: '2px solid gray',
                     backgroundColor: 'white',

@@ -24,6 +24,9 @@ class User(UserMixin, db.Model):
     gender = db.Column(db.String(10), nullable=False)
     birth_date = db.Column(Date, nullable=False)
 
+    def get_id(self):
+        return self.userid
+
 
     @property
     def age(self):

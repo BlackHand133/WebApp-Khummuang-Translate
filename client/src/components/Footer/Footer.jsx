@@ -8,8 +8,8 @@ import styles from './Footer.module.css';
 
 const Footer = () => {
   return (
-    <footer className={styles.footer} style={{ height: '200px', marginBottom: '-10px', backgroundColor: 'black' }}>
-      <Container maxWidth="xl" sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 2 }}>
+    <footer className={styles.footer} sx={{ height: '200px', backgroundColor: 'black' }}>
+      <Container maxWidth="xl" sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 2,ml:'-50' }}>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <img src={IconFoot} alt="Logo" className={styles.logo} />
         </Box>

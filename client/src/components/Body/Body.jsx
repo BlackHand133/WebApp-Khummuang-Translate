@@ -26,14 +26,14 @@ const Body = () => {
   };
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: '#ffffff', p: 1 }}>
-      <Box sx={{ width: { xs: '100%', md: '300px' }, flexShrink: 0, backgroundColor: '#ffffff', p: 1, display: 'flex', flexDirection: 'column', borderRadius: '8px' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: '#ffffff', p: 1 ,ml:'-7px',mr:'-7px'}}>
+      <Box sx={{ width: { xs: '100%', md: '300px' }, flexShrink: 0, backgroundColor: '#ffffff', p: 1  , display: 'flex', flexDirection: 'column', borderRadius: '8px' }}>
         <Sidebar onOptionChange={handleOptionChange} onFileUpload={handleFileUpload} onInputToggle={handleInputToggle} />
       </Box>
 
-      <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', p: 3, minHeight: '100vh',mt:5 }}>
+      <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', p: 5, minHeight: '100vh',mt:5 }}>
         <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2 }}>
-          <Paper sx={{ flex: 1, p: 2, borderRadius: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center' }} elevation={3}>
+          <Paper sx={{ flex: 1, p: 2, borderRadius: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center',height:'100%' }} elevation={3}>
             {file && selectedOption === 'voice' && activeInput === 'upload' && (
               <Box sx={{ mt: 2, mb: 2, p: 2, borderRadius: '8px', backgroundColor: '#fafafa', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 <Typography variant="h6">ไฟล์เสียงที่อัปโหลด:</Typography>
@@ -47,7 +47,7 @@ const Body = () => {
               activeInput === 'microphone' ? <SpeechMic /> : <Transcription file={file} />
             )}
           </Paper>
-          <Paper sx={{ flex: 1, p: 2, borderRadius: '8px', backgroundColor: '#f5f5f5' }} elevation={3}>
+          <Paper sx={{ flex: 1, p: 2, borderRadius: '8px', backgroundColor: '#f5f5f5',height:'100%' }} elevation={3}>
             {/* ช่องว่างสำหรับ future content */}
           </Paper>
         </Box>

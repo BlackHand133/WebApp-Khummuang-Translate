@@ -33,7 +33,7 @@ function App() {
   return (
     <>
     <Navbar isLoggedIn={isLoggedIn} username={username} onLogout={handleLogout} />
-    <Body/>
+    <Body />
     <Footer />
       
       

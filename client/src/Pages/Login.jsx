@@ -32,11 +32,11 @@ function Login() {
       }
     } catch (error) {
       console.error('Error checking token validity:', error);
-      setErrorMessage('Error checking token validity');
+      setErrorMessage('Token หมดอายุหรือไม่ถูกต้อง');
       localStorage.removeItem('token');
     }
   };
-
+  
   const handleLogin = async (event) => {
     event.preventDefault();
     try {
@@ -44,8 +44,8 @@ function Login() {
         username,
         password,
       });
-
-      if (response.data.message === 'ลงชื่อเข้าใช้งานเรียบร้อยแล้ว') {
+  
+      if (response.data.message === 'Login successful') {
         localStorage.setItem('token', response.data.access_token);
         localStorage.setItem('username', username);
         navigate('/');
@@ -56,7 +56,7 @@ function Login() {
       console.error('Error logging in:', error);
       setErrorMessage('Username หรือ password ไม่ถูกต้อง');
     }
-  };
+  };  
 
   return (
     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '95vh' }}>

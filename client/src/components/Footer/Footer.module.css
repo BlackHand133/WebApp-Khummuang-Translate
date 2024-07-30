@@ -1,7 +1,10 @@
 .footer {
   background-color: black;
-  padding: 20px 0;
+  padding: 10px;
   color: white;
+  margin-left: -8px;
+  margin-right: -8px;
+  margin-bottom: -10px;
 }
 
 .footerContainer {
