@@ -55,7 +55,7 @@ function Navbar() {
   };
 
   return (
-    <AppBar position="fixed" style={{ height: '70px' }} className={styles.Navbar}>
+    <AppBar position="fixed" style={{ height: '100%',maxHeight:'70px' }} className={styles.Navbar}>
       <Container maxWidth="xl">
         <Toolbar disableGutters>
           <div style={{ display: 'flex', alignItems: 'center' }}>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Typography, Paper } from '@mui/material';
+import { Box, Paper, Typography, TextField } from '@mui/material';
 import Sidebar from '../Sidebar/Sidebar';
 import Transcription from '../FileSpeech/Transcription';
 import TextTranslation from '../TextTranslation/TextTranslation';
@@ -9,7 +9,9 @@ const Body = () => {
   const [selectedOption, setSelectedOption] = useState('text');
   const [file, setFile] = useState(null);
   const [activeInput, setActiveInput] = useState('microphone');
-  const [translatedSentence, setTranslatedSentence] = useState(''); // State สำหรับผลการแปล
+  const [inputText, setInputText] = useState('');
+  const [translationUpload, setTranslationUpload] = useState(''); // State สำหรับผลการแปลจากไฟล์อัปโหลด
+  const [translationMic, setTranslationMic] = useState(''); // State สำหรับผลการแปลจากไมโครโฟน
 
   const handleOptionChange = (option) => {
     setSelectedOption(option);
@@ -26,8 +28,16 @@ const Body = () => {
     setActiveInput(input);
   };
 
-  const handleTranslation = (translation) => {
-    setTranslatedSentence(translation);
+  const handleTextChange = (event) => {
+    setInputText(event.target.value);
+  };
+
+  const handleTranslationUpload = (translation) => {
+    setTranslationUpload(translation);
+  };
+
+  const handleTranslationMic = (translation) => {
+    setTranslationMic(translation);
   };
 
   return (
@@ -38,38 +48,74 @@ const Body = () => {
 
       <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', p: 5, minHeight: '100vh', mt: 5 }}>
         <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2 }}>
-          <Paper sx={{ flex: 1, p: 2, borderRadius: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%' }} elevation={3}>
-            {activeInput === 'upload' && (
-              <Box sx={{ width: '100%', mt: 2, mb: 2, p: 2, borderRadius: '8px', backgroundColor: '#fafafa', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <Typography variant="h6" sx={{ fontFamily: '"Chakra Petch", sans-serif' }}>ไฟล์เสียงที่อัปโหลด</Typography>
-                <Paper sx={{ padding: '5px', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  {file && (
-                    <>
-                      <audio controls src={URL.createObjectURL(file)} style={{ width: '100%', marginTop: '10px' }} />
-                      <Typography variant="body2" sx={{ mt: 1, color: '#757575' }}>{file.name}</Typography>
-                    </>
-                  )}
-                </Paper>
-              </Box>
-            )}
-            
-            {selectedOption === 'text' ? (
-              <TextTranslation />
-            ) : (
-              activeInput === 'microphone' ? <SpeechMic /> : <Transcription file={file} onTranslation={handleTranslation} />
-            )}
+          <Paper sx={{ flex: 1, p: 2, borderRadius: '8px', display: 'flex', flexDirection: 'column', height: '100%', bgcolor: '#EFEFEF' }} elevation={3}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+              {/* Content for file upload */}
+              {activeInput === 'upload' && (
+                <Box sx={{ width: '100%', mb: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <Paper sx={{ p: 1, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <Typography variant="h6" sx={{ fontFamily: '"Chakra Petch", sans-serif' }}>ไฟล์เสียงที่อัปโหลด</Typography>
+                    {file && (
+                      <>
+                        <audio controls src={URL.createObjectURL(file)} style={{ width: '100%', marginTop: '10px' }} />
+                        <Typography variant="body2" sx={{ mt: 1, color: '#757575' }}>{file.name}</Typography>
+                      </>
+                    )}
+                  </Paper>
+                </Box>
+              )}
+
+              {/* Content for text input */}
+              {selectedOption === 'text' && (
+                <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                  <TextField
+                    label="ป้อนข้อความ"
+                    multiline
+                    variant="outlined"
+                    value={inputText}
+                    onChange={handleTextChange}
+                    fullWidth
+                    sx={{ flex: 1, mb: 2, minHeight: '200px', resize: 'vertical', mt: 3 }} // เพิ่ม minHeight และ resize
+                    maxRows={10} // กำหนดจำนวนแถวสูงสุด
+                  />
+                </Box>
+              )}
+
+              {/* Content for microphone input */}
+              {selectedOption !== 'text' && (
+                activeInput === 'microphone' ? <SpeechMic onTranslation={handleTranslationMic} /> : <Transcription file={file} onTranslation={handleTranslationUpload} />
+              )}
+            </Box>
           </Paper>
+
+          {/* Content on the right side */}
           <Paper sx={{ flex: 1, p: 2, borderRadius: '8px', backgroundColor: '#f5f5f5', height: '100%' }} elevation={3}>
-            {translatedSentence && (
-              <Box sx={{ p: 2 }}>
-                <Typography variant="h6" sx={{ fontFamily: '"Chakra Petch", sans-serif' }}>
+            <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <Box sx={{ bgcolor: 'black', p: 1, borderRadius: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+                <Typography variant="h6" sx={{ fontFamily: '"Chakra Petch", sans-serif', color: 'white' }}>
                   ผลการแปล
                 </Typography>
-                <Typography variant="body1" sx={{ mt: 1 }}>
-                  {translatedSentence}
-                </Typography>
               </Box>
-            )}
+              {selectedOption === 'text' && (
+                <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <TextTranslation textToTranslate={inputText} />
+                </Box>
+              )}
+              {activeInput === 'upload' && translationUpload && (
+                <Paper elevation={3} sx={{ mt: 2, p: 2, borderRadius: '8px', width: '100%', maxWidth: '500px' }}>
+                  <Typography variant="body1" sx={{ mt: 1, fontFamily: '"Chakra Petch", sans-serif', fontWeight: '500' }}>
+                    {translationUpload}
+                  </Typography>
+                </Paper>
+              )}
+              {activeInput === 'microphone' && translationMic && (
+                <Paper elevation={3} sx={{ mt: 2, p: 2, borderRadius: '8px', width: '100%', maxWidth: '500px' }}>
+                  <Typography variant="body1" sx={{ mt: 1 }}>
+                    {translationMic}
+                  </Typography>
+                </Paper>
+              )}
+            </Box>
           </Paper>
         </Box>
       </Box>

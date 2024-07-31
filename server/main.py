@@ -185,6 +185,17 @@ def transcribe():
         return jsonify({'transcription': formatted_transcription})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    
+@app.route('/api/transcribe_Mic', methods=['GET'])
+def transcribe_mic():
+    """
+    API endpoint to transcribe audio from the microphone.
+    """
+    try:
+        transcription = modelWavTH.transcribe_audio_from_microphone()
+        return jsonify({'transcription': transcription}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/translate', methods=['POST'])
 def translate():

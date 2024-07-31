@@ -66,11 +66,12 @@ const Transcription = ({ file, onTranslation }) => {
           </Box>
           <List sx={{ mt: 2 }}>
             {transcription.map((item, index) => (
-              <ListItem key={index} sx={{ borderBottom: '1px solid #ddd' }}>
+              <ListItem key={index} sx={{ borderBottom: '1px solid #ddd', fontFamily: '"Chakra Petch", sans-serif' }}>
                 <ListItemText
                   primary={item.word}
                   secondary={item.tag}
-                  sx={{ fontFamily: '"Roboto", sans-serif' }}
+                  primaryTypographyProps={{ sx: { fontFamily: '"Chakra Petch", sans-serif',fontWeight:'500' } }}
+                  secondaryTypographyProps={{ sx: { fontFamily: '"Chakra Petch", sans-serif' } }}
                 />
               </ListItem>
             ))}

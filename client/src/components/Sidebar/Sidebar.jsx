@@ -4,7 +4,7 @@ import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import MicIcon from '@mui/icons-material/Mic';
 import MicOffIcon from '@mui/icons-material/MicOff';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
-import styles from './Sidebar.module.css';
+import styles from '../Sidebar/Sidebar.module.css';
 
 const Sidebar = ({ onOptionChange, onFileUpload, onInputToggle }) => {
   const [selectedOption, setSelectedOption] = useState('text');

@@ -1,9 +1,55 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react';
+import { Box, Typography, Paper } from '@mui/material';
+import axios from 'axios';
 
-function TextTranslation() {
+const TextTranslation = ({ textToTranslate }) => {
+  const [translatedText, setTranslatedText] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchTranslation = async () => {
+      if (!textToTranslate) {
+        setTranslatedText(''); // ตั้งค่า translatedText เป็นค่าว่างเมื่อ textToTranslate ว่าง
+        return;
+      }
+
+      setLoading(true);
+
+      try {
+        const response = await axios.post('http://localhost:8080/api/translate', {
+          sentence: textToTranslate,
+        });
+
+        if (response.status === 200) {
+          setTranslatedText(response.data.translated_sentence);
+        } else {
+          console.error(response.data.error);
+        }
+      } catch (error) {
+        console.error('Error:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTranslation();
+  }, [textToTranslate]);
+
   return (
-    <div>TextTranslation</div>
-  )
-}
+    <Box sx={{ width: '100%', p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <Paper elevation={3} sx={{ mt: 1, p: 2, borderRadius: '8px', width: '100%', maxWidth: '500px' }}>
+        {loading ? (
+          <Typography variant="body1" sx={{ mt: 1 }}>
+            กำลังแปล...
+          </Typography>
+        ) : (
+          <Typography variant="body1" sx={{ mt: 1, fontFamily: '"Chakra Petch", sans-serif', fontWeight: '500' }}>
+            {translatedText || 'รอการแปล...'}
+          </Typography>
+        )}
+      </Paper>
+    </Box>
+  );
+};
 
-export default TextTranslation
+export default TextTranslation;
