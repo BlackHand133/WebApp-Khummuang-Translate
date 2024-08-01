@@ -56,14 +56,30 @@ const Body = () => {
               {activeInput === 'upload' && (
                 <Box sx={{ width: '100%', mb: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                   <Paper sx={{ p: 1, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <Typography variant="h6" sx={{ fontFamily: '"Chakra Petch", sans-serif' }}>ไฟล์เสียงที่อัปโหลด</Typography>
-                    {file && (
-                      <>
-                        <audio controls src={URL.createObjectURL(file)} style={{ width: '100%', marginTop: '10px' }} />
-                        <Typography variant="body2" sx={{ mt: 1, color: '#757575' }}>{file.name}</Typography>
-                      </>
-                    )}
-                  </Paper>
+                        <Typography variant="h6" sx={{ fontFamily: '"Chakra Petch", sans-serif' }}>
+                          ไฟล์เสียงที่อัปโหลด
+                        </Typography>
+                        <Box sx={{ position: 'relative', width: '100%', mt: 1 }}>
+                          {!file ? (
+                            <Box sx={{
+                              position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              backgroundColor: '#f5f5f5', borderRadius: 1,
+                              opacity: 0.6, textAlign: 'center',mt:7
+                            }}>
+                              <Typography variant="body1" sx={{ color: '#404040' }}>
+                                กรุณาอัปโหลดไฟล์เสียง
+                              </Typography>
+                            </Box>
+                          ) : null}
+                          {file && (
+                            <>
+                              <audio controls src={URL.createObjectURL(file)} style={{ width: '100%' }} />
+                              <Typography variant="body2" sx={{ mt: 1, color: '#757575', textAlign: 'center' }}>{file.name}</Typography>
+                            </>
+                          )}
+                        </Box>
+                      </Paper>
                 </Box>
               )}
 

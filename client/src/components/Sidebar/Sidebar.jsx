@@ -96,7 +96,7 @@ const Sidebar = ({ onOptionChange, onFileUpload, onInputToggle }) => {
               color: selectedOption === option ? 'white' : 'black',
               transition: 'background-color 0.3s, transform 0.3s, font-weight 0.1s',
               '&:hover': {
-                transform: 'scale(1.05) translateX(5px)', // ขยายขนาดปุ่มและเคลื่อนที่ไปทางขวา
+                transform: 'scale(1.05)', // ขยายขนาดปุ่มและเคลื่อนที่ไปทางขวา
                 fontWeight: 700,
                 backgroundColor: '#4a90e2',
                 color: 'white',

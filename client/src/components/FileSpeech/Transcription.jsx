@@ -65,6 +65,15 @@ const Transcription = ({ file, onTranslation }) => {
             </Typography>
           </Box>
           <List sx={{ mt: 2 }}>
+          {loading ? (
+          <Typography variant="body1" sx={{ mt: 1 }}>
+            กำลังแปล...
+          </Typography>
+        ) : (
+          <Typography variant="body1" sx={{ mt: 1, fontFamily: '"Chakra Petch", sans-serif', fontWeight: '500' }}>
+            {translatedText || 'รอการแปล...'}
+          </Typography>
+        )}
             {transcription.map((item, index) => (
               <ListItem key={index} sx={{ borderBottom: '1px solid #ddd', fontFamily: '"Chakra Petch", sans-serif' }}>
                 <ListItemText
