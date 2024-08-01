@@ -2,14 +2,15 @@ import React, { useEffect, useState } from 'react';
 import { Box, Typography, Paper } from '@mui/material';
 import axios from 'axios';
 
-const TextTranslation = ({ textToTranslate }) => {
+const TextTranslation = ({ textToTranslate, onClearTranslation }) => {
   const [translatedText, setTranslatedText] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const fetchTranslation = async () => {
       if (!textToTranslate) {
-        setTranslatedText(''); // ตั้งค่า translatedText เป็นค่าว่างเมื่อ textToTranslate ว่าง
+        setTranslatedText('');
+        onClearTranslation(); // เรียกใช้ฟังก์ชันเพื่อล้างผลการแปล
         return;
       }
 
@@ -33,7 +34,20 @@ const TextTranslation = ({ textToTranslate }) => {
     };
 
     fetchTranslation();
-  }, [textToTranslate]);
+  }, [textToTranslate, onClearTranslation]);
+
+  useEffect(() => {
+    if (translatedText) {
+      const timer = setTimeout(() => {
+        if (!textToTranslate) {
+          setTranslatedText('');
+          onClearTranslation(); // ล้างผลการแปลเมื่อ input เป็นค่าว่าง
+        }
+      }, 1000);
+
+      return () => clearTimeout(timer); // ล้าง timer เมื่อ component ถูก unmount
+    }
+  }, [translatedText, textToTranslate, onClearTranslation]);
 
   return (
     <Box sx={{ width: '100%', p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>

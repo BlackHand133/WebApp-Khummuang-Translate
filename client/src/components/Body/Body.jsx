@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Paper, Typography, TextField } from '@mui/material';
 import Sidebar from '../Sidebar/Sidebar';
 import Transcription from '../FileSpeech/Transcription';
@@ -40,6 +40,11 @@ const Body = () => {
     setTranslationMic(translation);
   };
 
+  const clearTranslation = () => {
+    setTranslationUpload('');
+    setTranslationMic('');
+  };
+
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: '#ffffff', p: 1, ml: '-7px', mr: '-7px' }}>
       <Box sx={{ width: { xs: '100%', md: '300px' }, flexShrink: 0, backgroundColor: '#ffffff', p: 1, display: 'flex', flexDirection: 'column', borderRadius: '8px' }}>
@@ -68,6 +73,7 @@ const Body = () => {
               {/* Content for text input */}
               {selectedOption === 'text' && (
                 <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                  <Paper sx={{ p:1 }} >
                   <TextField
                     label="ป้อนข้อความ"
                     multiline
@@ -75,9 +81,10 @@ const Body = () => {
                     value={inputText}
                     onChange={handleTextChange}
                     fullWidth
-                    sx={{ flex: 1, mb: 2, minHeight: '200px', resize: 'vertical', mt: 3 }} // เพิ่ม minHeight และ resize
-                    maxRows={10} // กำหนดจำนวนแถวสูงสุด
+                    sx={{ flex: 1, mb: 2, minHeight: '200px', resize: 'vertical', mt: 1 ,fontFamily: '"Chakra Petch", sans-serif'}} // เพิ่ม minHeight และ resize
+                    maxRows={20} // กำหนดจำนวนแถวสูงสุด
                   />
+                  </Paper>
                 </Box>
               )}
 
@@ -98,7 +105,7 @@ const Body = () => {
               </Box>
               {selectedOption === 'text' && (
                 <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <TextTranslation textToTranslate={inputText} />
+                  <TextTranslation textToTranslate={inputText} onClearTranslation={clearTranslation} />
                 </Box>
               )}
               {activeInput === 'upload' && translationUpload && (
