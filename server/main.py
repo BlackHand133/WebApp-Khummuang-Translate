@@ -9,12 +9,14 @@ from flask_admin import Admin as FlaskAdmin
 from flask_principal import Principal
 from config import Config
 from ModelASR import modelWavTH
+from ModelASR.modelWavTH import transcribe_audio_from_microphone
 from ModelASR.Translator import Translator
 from admin_routes import admin_bp
 from flask_socketio import SocketIO, emit
 from flask_admin.base import AdminIndexView,expose
 from datetime import datetime
 import os
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*"}})
@@ -186,16 +188,25 @@ def transcribe():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     
-@app.route('/api/transcribe_Mic', methods=['GET'])
+@app.route('/api/transcribe_Mic', methods=['POST'])
 def transcribe_mic():
-    """
-    API endpoint to transcribe audio from the microphone.
-    """
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+
     try:
-        transcription = modelWavTH.transcribe_audio_from_microphone()
+        transcription = transcribe_audio_from_microphone(file)
+        os.remove('temp_recording.wav')  # Clean up the temporary file
         return jsonify({'transcription': transcription}), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"Error during transcription: {e}")  # Log the error
+        return jsonify({'error': 'Internal server error. Please try again later.'}), 500
+
+
+
 
 @app.route('/api/translate', methods=['POST'])
 def translate():

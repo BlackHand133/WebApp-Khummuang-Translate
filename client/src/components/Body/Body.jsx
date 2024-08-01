@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Box, Paper, Typography, TextField } from '@mui/material';
 import Sidebar from '../Sidebar/Sidebar';
 import Transcription from '../FileSpeech/Transcription';
@@ -10,14 +10,12 @@ const Body = () => {
   const [file, setFile] = useState(null);
   const [activeInput, setActiveInput] = useState('microphone');
   const [inputText, setInputText] = useState('');
-  const [translationUpload, setTranslationUpload] = useState(''); // State สำหรับผลการแปลจากไฟล์อัปโหลด
-  const [translationMic, setTranslationMic] = useState(''); // State สำหรับผลการแปลจากไมโครโฟน
+  const [translationUpload, setTranslationUpload] = useState('');
+  const [translationMic, setTranslationMic] = useState('');
 
   const handleOptionChange = (option) => {
     setSelectedOption(option);
-    if (option === 'text') {
-      setActiveInput('microphone'); // กลับไปที่ microphone เมื่อลงเลือก 'text'
-    }
+    setActiveInput(option === 'upload' ? 'upload' : 'microphone');
   };
 
   const handleFileUpload = (uploadedFile) => {
@@ -55,7 +53,6 @@ const Body = () => {
         <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2 }}>
           <Paper sx={{ flex: 1, p: 2, borderRadius: '8px', display: 'flex', flexDirection: 'column', height: '100%', bgcolor: '#EFEFEF' }} elevation={3}>
             <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-              {/* Content for file upload */}
               {activeInput === 'upload' && (
                 <Box sx={{ width: '100%', mb: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                   <Paper sx={{ p: 1, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -70,32 +67,33 @@ const Body = () => {
                 </Box>
               )}
 
-              {/* Content for text input */}
               {selectedOption === 'text' && (
                 <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
                   <Paper sx={{ p:1 }} >
-                  <TextField
-                    label="ป้อนข้อความ"
-                    multiline
-                    variant="outlined"
-                    value={inputText}
-                    onChange={handleTextChange}
-                    fullWidth
-                    sx={{ flex: 1, mb: 2, minHeight: '200px', resize: 'vertical', mt: 1 ,fontFamily: '"Chakra Petch", sans-serif'}} // เพิ่ม minHeight และ resize
-                    maxRows={20} // กำหนดจำนวนแถวสูงสุด
-                  />
+                    <TextField
+                      label="ป้อนข้อความ"
+                      multiline
+                      variant="outlined"
+                      value={inputText}
+                      onChange={handleTextChange}
+                      fullWidth
+                      sx={{ flex: 1, mb: 2, minHeight: '200px', resize: 'vertical', mt: 1 ,fontFamily: '"Chakra Petch", sans-serif'}}
+                      maxRows={20}
+                    />
                   </Paper>
                 </Box>
               )}
 
-              {/* Content for microphone input */}
               {selectedOption !== 'text' && (
-                activeInput === 'microphone' ? <SpeechMic onTranslation={handleTranslationMic} /> : <Transcription file={file} onTranslation={handleTranslationUpload} />
+                activeInput === 'microphone' ? (
+                  <SpeechMic onTranslation={handleTranslationMic} />
+                ) : (
+                  <Transcription file={file} onTranslation={handleTranslationUpload} />
+                )
               )}
             </Box>
           </Paper>
 
-          {/* Content on the right side */}
           <Paper sx={{ flex: 1, p: 2, borderRadius: '8px', backgroundColor: '#f5f5f5', height: '100%' }} elevation={3}>
             <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               <Box sx={{ bgcolor: 'black', p: 1, borderRadius: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
