@@ -7,3 +7,5 @@ class Config:
     JWT_SECRET_KEY = secrets.token_hex(16)
     JWT_COOKIE_SECURE = True  # ควรเป็น True ใน production
     JWT_SESSION_COOKIE = False
+    UPLOAD_FOLDER = 'uploads'
+    

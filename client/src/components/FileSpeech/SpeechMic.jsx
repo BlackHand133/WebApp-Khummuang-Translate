@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button, Typography, Box } from '@mui/material';
 import MicIcon from '@mui/icons-material/Mic';
 import MicOffIcon from '@mui/icons-material/MicOff';
@@ -6,66 +6,65 @@ import axios from 'axios';
 
 const SpeechMic = ({ onTranslation }) => {
   const [recording, setRecording] = useState(false);
-  const [mediaRecorder, setMediaRecorder] = useState(null);
   const [transcription, setTranscription] = useState('');
   const [transcriptionStatus, setTranscriptionStatus] = useState('');
   const [audioUrl, setAudioUrl] = useState('');
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
 
   const startRecording = async () => {
     try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        const recorder = new MediaRecorder(stream);
-        let audioChunks = [];
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/wav' });
+      mediaRecorderRef.current = mediaRecorder;
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+        audioChunksRef.current = [];
+        
+        const formData = new FormData();
+        formData.append('file', audioBlob, 'recording.wav');
 
-        recorder.ondataavailable = (event) => {
-            audioChunks.push(event.data);
-        };
+        try {
+          const response = await axios.post('http://localhost:8080/api/transcribe_Mic', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          });
+          const transcriptionText = response.data.transcription;
+          setTranscription(transcriptionText);
+          setTranscriptionStatus('ถอดเสียงเสร็จสิ้น');
+          onTranslation(transcriptionText);
 
-        recorder.onstop = async () => {
-            const blob = new Blob(audioChunks, { type: 'audio/wav' });
-            const formData = new FormData();
-            formData.append('file', blob, 'recording.wav');
+          const url = URL.createObjectURL(audioBlob);
+          setAudioUrl(url);
+        } catch (error) {
+          console.error('Error transcribing audio:', error);
+          setTranscriptionStatus('เกิดข้อผิดพลาดในการถอดเสียง');
+        }
 
-            try {
-                const response = await axios.post('http://localhost:8080/api/transcribe_Mic', formData, {
-                    headers: { 'Content-Type': 'multipart/form-data' },
-                });
-                const transcriptionText = response.data.transcription;
-                setTranscription(transcriptionText);
-                setTranscriptionStatus('ถอดเสียงเสร็จสิ้น');
-                onTranslation(transcriptionText);
-                
-                // Create a URL for the recorded audio
-                const url = URL.createObjectURL(blob);
-                setAudioUrl(url);
-            } catch (error) {
-                console.error('Error transcribing audio:', error);
-                setTranscriptionStatus('เกิดข้อผิดพลาดในการถอดเสียง');
-            }
-        };
+        setRecording(false);
+      };
 
-        recorder.start();
-        setMediaRecorder(recorder);
-        setRecording(true);
-        setTranscriptionStatus('กำลังบันทึกเสียง...');
+      mediaRecorder.start();
+      setRecording(true);
+      setTranscriptionStatus('กำลังบันทึกเสียง...');
     } catch (error) {
-        console.error('Error starting recording:', error);
-        setTranscriptionStatus('เกิดข้อผิดพลาดในการเริ่มบันทึก');
+      console.error('Error starting recording:', error);
+      setTranscriptionStatus('เกิดข้อผิดพลาดในการเริ่มบันทึก');
     }
-};
-
+  };
 
   const stopRecording = () => {
-    if (mediaRecorder) {
-      mediaRecorder.stop();
-      mediaRecorder.stream.getTracks().forEach(track => track.stop()); // Stop all media tracks
-      setRecording(false);
-      setMediaRecorder(null); // Clear media recorder after stopping
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop();
     }
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mt: 4 }}>
       <Button
         onClick={recording ? stopRecording : startRecording}
         sx={{ bgcolor: recording ? 'red' : 'green', color: 'white', mb: 2 }}
@@ -79,7 +78,7 @@ const SpeechMic = ({ onTranslation }) => {
         </Typography>
       )}
       {transcription && (
-        <Typography variant="body1" sx={{ mt: 2, textAlign: 'center', fontFamily: '"Chakra Petch", sans-serif' }}>
+        <Typography variant="body1" sx={{ mt: 2, textAlign: 'center', fontFamily: '"Chakra Petch", sans-serif', bgcolor: '#f0f0f0', p: 2, borderRadius: 1 }}>
           {transcription}
         </Typography>
       )}
@@ -87,6 +86,11 @@ const SpeechMic = ({ onTranslation }) => {
         <Box sx={{ mt: 2 }}>
           <audio controls src={audioUrl} />
         </Box>
+      )}
+      {!transcription && !recording && (
+        <Typography variant="body1" sx={{ mt: 2, textAlign: 'center', fontFamily: '"Chakra Petch", sans-serif', color: 'grey' }}>
+          กรุณาเริ่มบันทึกเสียงเพื่อถอดเสียง
+        </Typography>
       )}
     </Box>
   );

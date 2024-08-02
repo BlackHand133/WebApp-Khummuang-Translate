@@ -1,3 +1,4 @@
+// Transcription.js
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Box, Typography, Paper, List, ListItem, ListItemText, CircularProgress } from '@mui/material';
@@ -65,21 +66,12 @@ const Transcription = ({ file, onTranslation }) => {
             </Typography>
           </Box>
           <List sx={{ mt: 2 }}>
-          {loading ? (
-          <Typography variant="body1" sx={{ mt: 1 }}>
-            กำลังแปล...
-          </Typography>
-        ) : (
-          <Typography variant="body1" sx={{ mt: 1, fontFamily: '"Chakra Petch", sans-serif', fontWeight: '500' }}>
-            {translatedText || 'รอการแปล...'}
-          </Typography>
-        )}
             {transcription.map((item, index) => (
               <ListItem key={index} sx={{ borderBottom: '1px solid #ddd', fontFamily: '"Chakra Petch", sans-serif' }}>
                 <ListItemText
                   primary={item.word}
                   secondary={item.tag}
-                  primaryTypographyProps={{ sx: { fontFamily: '"Chakra Petch", sans-serif',fontWeight:'500' } }}
+                  primaryTypographyProps={{ sx: { fontFamily: '"Chakra Petch", sans-serif', fontWeight:'500' } }}
                   secondaryTypographyProps={{ sx: { fontFamily: '"Chakra Petch", sans-serif' } }}
                 />
               </ListItem>

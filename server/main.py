@@ -34,6 +34,9 @@ login_manager.login_view = 'login'
 
 principal = Principal(app)
 
+ALLOWED_EXTENSIONS = {'wav'}
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # Paths to the data files
 base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -187,23 +190,34 @@ def transcribe():
         return jsonify({'transcription': formatted_transcription})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-    
+
 @app.route('/api/transcribe_Mic', methods=['POST'])
 def transcribe_mic():
     if 'file' not in request.files:
         return jsonify({'error': 'No file part'}), 400
 
     file = request.files['file']
+    
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
 
+    if not allowed_file(file.filename):
+        return jsonify({'error': 'Invalid file type'}), 400
+
+    # Ensure the uploads folder exists
+    upload_folder = app.config.get('UPLOAD_FOLDER', 'uploads')
+    if not os.path.exists(upload_folder):
+        os.makedirs(upload_folder)
+
+    file_path = os.path.join(upload_folder, 'recording.wav')
+    file.save(file_path)
+
     try:
-        transcription = transcribe_audio_from_microphone(file)
-        os.remove('temp_recording.wav')  # Clean up the temporary file
-        return jsonify({'transcription': transcription}), 200
+        # เรียกใช้ฟังก์ชันการถอดเสียงจริง
+        result = transcribe_audio_from_microphone(file_path)
+        return jsonify({'transcription': result}), 200
     except Exception as e:
-        print(f"Error during transcription: {e}")  # Log the error
-        return jsonify({'error': 'Internal server error. Please try again later.'}), 500
+        return jsonify({'error': str(e)}), 500
 
 
 
