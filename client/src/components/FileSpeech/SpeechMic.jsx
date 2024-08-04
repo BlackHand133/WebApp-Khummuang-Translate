@@ -8,26 +8,27 @@ const SpeechMic = ({ onTranslation }) => {
   const [recording, setRecording] = useState(false);
   const [transcription, setTranscription] = useState('');
   const [transcriptionStatus, setTranscriptionStatus] = useState('');
-  const [audioUrl, setAudioUrl] = useState('');
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
 
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/wav' });
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
       mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
           audioChunksRef.current.push(event.data);
         }
       };
+
       mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
-        audioChunksRef.current = [];
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         
         const formData = new FormData();
-        formData.append('file', audioBlob, 'recording.wav');
+        formData.append('file', audioBlob, 'recording.webm');
 
         try {
           const response = await axios.post('http://localhost:8080/api/transcribe_Mic', formData, {
@@ -37,9 +38,6 @@ const SpeechMic = ({ onTranslation }) => {
           setTranscription(transcriptionText);
           setTranscriptionStatus('ถอดเสียงเสร็จสิ้น');
           onTranslation(transcriptionText);
-
-          const url = URL.createObjectURL(audioBlob);
-          setAudioUrl(url);
         } catch (error) {
           console.error('Error transcribing audio:', error);
           setTranscriptionStatus('เกิดข้อผิดพลาดในการถอดเสียง');
@@ -81,11 +79,6 @@ const SpeechMic = ({ onTranslation }) => {
         <Typography variant="body1" sx={{ mt: 2, textAlign: 'center', fontFamily: '"Chakra Petch", sans-serif', bgcolor: '#f0f0f0', p: 2, borderRadius: 1 }}>
           {transcription}
         </Typography>
-      )}
-      {audioUrl && (
-        <Box sx={{ mt: 2 }}>
-          <audio controls src={audioUrl} />
-        </Box>
       )}
       {!transcription && !recording && (
         <Typography variant="body1" sx={{ mt: 2, textAlign: 'center', fontFamily: '"Chakra Petch", sans-serif', color: 'grey' }}>

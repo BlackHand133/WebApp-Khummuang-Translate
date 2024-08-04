@@ -34,7 +34,7 @@ login_manager.login_view = 'login'
 
 principal = Principal(app)
 
-ALLOWED_EXTENSIONS = {'wav'}
+ALLOWED_EXTENSIONS = {'webm', 'wav', 'mp3'}
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
@@ -205,21 +205,22 @@ def transcribe_mic():
         return jsonify({'error': 'Invalid file type'}), 400
 
     # Ensure the uploads folder exists
-    upload_folder = app.config.get('UPLOAD_FOLDER', 'uploads')
-    if not os.path.exists(upload_folder):
-        os.makedirs(upload_folder)
+    if not os.path.exists(app.config['UPLOAD_FOLDER']):
+        os.makedirs(app.config['UPLOAD_FOLDER'])
 
-    file_path = os.path.join(upload_folder, 'recording.wav')
+    filename = secure_filename(file.filename)
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     file.save(file_path)
 
     try:
-        # เรียกใช้ฟังก์ชันการถอดเสียงจริง
-        result = transcribe_audio_from_microphone(file_path)
+        # แปลงไฟล์เสียงเป็น WAV
+        wav_file_path = modelWavTH.convert_to_wav(file_path)
+        
+        # ถอดข้อความจากไฟล์ WAV
+        result = transcribe_audio_from_microphone(wav_file_path)
         return jsonify({'transcription': result}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-
 
 
 @app.route('/api/translate', methods=['POST'])

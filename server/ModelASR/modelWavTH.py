@@ -7,7 +7,11 @@ from pythainlp.tag import pos_tag
 import numpy as np
 import soundfile as sf
 import os
-import wave
+import subprocess
+
+# Path to ffmpeg
+ffmpeg_path = "C:/ffmpeg/bin/ffmpeg.exe"
+
 
 # Load pretrained processor and model
 processor = Wav2Vec2Processor.from_pretrained("airesearch/wav2vec2-large-xlsr-53-th")
@@ -89,3 +93,41 @@ def transcribe_audio_from_microphone(file_path):
     except Exception as e:
         print(f"Unexpected error: {e}")
         return f"Unexpected error: {e}"
+    
+def convert_to_wav(file_path):
+    try:
+        # Extract file extension
+        file_extension = os.path.splitext(file_path)[1].lower()
+        
+        # Construct the output file path
+        output_file_path = os.path.splitext(file_path)[0] + '.wav'
+
+        # If the output file already exists, remove it
+        if os.path.exists(output_file_path):
+            os.remove(output_file_path)
+            print(f"Removed existing file: {output_file_path}")
+
+        # If it's already a WAV file, no need to convert
+        if file_extension == '.wav':
+            return file_path
+
+        # Construct the ffmpeg command
+        command = [
+            ffmpeg_path,
+            "-i", file_path,
+            "-ar", "16000",  # Sample rate
+            "-ac", "1",      # Number of channels (mono)
+            output_file_path
+        ]
+
+        # Run the command using subprocess
+        subprocess.run(command, check=True)
+
+        print(f"Converted audio file to WAV: {output_file_path}")
+        return output_file_path
+    except subprocess.CalledProcessError as e:
+        print(f"Error converting audio to WAV: {e}")
+        raise
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+        raise
