@@ -43,6 +43,18 @@ const Body = () => {
     setTranslationMic('');
   };
 
+  const handleStartRecording = () => {
+    if (speechMicRef.current) {
+      speechMicRef.current.startRecording();
+    }
+  };
+
+  const handleStopRecording = () => {
+    if (speechMicRef.current) {
+      speechMicRef.current.stopRecording();
+    }
+  };
+
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: '#ffffff', p: 1, ml: '-7px', mr: '-7px' }}>
       <Box sx={{ width: { xs: '100%', md: '300px' }, flexShrink: 0, backgroundColor: '#ffffff', p: 1, display: 'flex', flexDirection: 'column', borderRadius: '8px' }}>

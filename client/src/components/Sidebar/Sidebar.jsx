@@ -24,8 +24,13 @@ const Sidebar = ({ onOptionChange, onFileUpload, onInputToggle }) => {
     onInputToggle(input); // ส่งค่าไปยัง Body
   };
 
-  const handleMicrophoneToggle = () => {
+const handleMicrophoneToggle = () => {
     setMicrophoneOn(!microphoneOn);
+    if (!microphoneOn) {
+      onStartRecording();
+    } else {
+      onStopRecording();
+    }
   };
 
   const handleFileChange = (event) => {
