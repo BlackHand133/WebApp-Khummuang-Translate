@@ -1,4 +1,3 @@
-// Transcription.js
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Box, Typography, Paper, List, ListItem, ListItemText, CircularProgress } from '@mui/material';

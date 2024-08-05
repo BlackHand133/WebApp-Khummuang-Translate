@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { Box, Paper, Typography, TextField } from '@mui/material';
 import Sidebar from '../Sidebar/Sidebar';
 import Transcription from '../FileSpeech/Transcription';
@@ -12,10 +12,12 @@ const Body = () => {
   const [inputText, setInputText] = useState('');
   const [translationUpload, setTranslationUpload] = useState('');
   const [translationMic, setTranslationMic] = useState('');
+  const speechMicRef = useRef();
 
   const handleOptionChange = (option) => {
     setSelectedOption(option);
     setActiveInput(option === 'upload' ? 'upload' : 'microphone');
+    clearTranslation();
   };
 
   const handleFileUpload = (uploadedFile) => {
@@ -24,6 +26,7 @@ const Body = () => {
 
   const handleInputToggle = (input) => {
     setActiveInput(input);
+    clearTranslation();
   };
 
   const handleTextChange = (event) => {
@@ -43,22 +46,28 @@ const Body = () => {
     setTranslationMic('');
   };
 
-  const handleStartRecording = () => {
+  const handleStartRecording = useCallback(() => {
     if (speechMicRef.current) {
       speechMicRef.current.startRecording();
     }
-  };
+  }, []);
 
-  const handleStopRecording = () => {
+  const handleStopRecording = useCallback(() => {
     if (speechMicRef.current) {
       speechMicRef.current.stopRecording();
     }
-  };
+  }, []);
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: '#ffffff', p: 1, ml: '-7px', mr: '-7px' }}>
       <Box sx={{ width: { xs: '100%', md: '300px' }, flexShrink: 0, backgroundColor: '#ffffff', p: 1, display: 'flex', flexDirection: 'column', borderRadius: '8px' }}>
-        <Sidebar onOptionChange={handleOptionChange} onFileUpload={handleFileUpload} onInputToggle={handleInputToggle} />
+        <Sidebar 
+          onOptionChange={handleOptionChange} 
+          onFileUpload={handleFileUpload} 
+          onInputToggle={handleInputToggle}
+          onStartRecording={handleStartRecording}
+          onStopRecording={handleStopRecording} 
+        />
       </Box>
 
       <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', p: 5, minHeight: '100vh', mt: 5 }}>
@@ -68,36 +77,35 @@ const Body = () => {
               {activeInput === 'upload' && (
                 <Box sx={{ width: '100%', mb: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                   <Paper sx={{ p: 1, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <Typography variant="h6" sx={{ fontFamily: '"Chakra Petch", sans-serif' }}>
-                          ไฟล์เสียงที่อัปโหลด
-                        </Typography>
-                        <Box sx={{ position: 'relative', width: '100%', mt: 1 }}>
-                          {!file ? (
-                            <Box sx={{
-                              position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              backgroundColor: '#f5f5f5', borderRadius: 1,
-                              opacity: 0.6, textAlign: 'center',mt:7
-                            }}>
-                              <Typography variant="body1" sx={{ color: '#404040' }}>
-                                กรุณาอัปโหลดไฟล์เสียง
-                              </Typography>
-                            </Box>
-                          ) : null}
-                          {file && (
-                            <>
-                              <audio controls src={URL.createObjectURL(file)} style={{ width: '100%' }} />
-                              <Typography variant="body2" sx={{ mt: 1, color: '#757575', textAlign: 'center' }}>{file.name}</Typography>
-                            </>
-                          )}
+                    <Typography variant="h6" sx={{ fontFamily: '"Chakra Petch", sans-serif' }}>
+                      ไฟล์เสียงที่อัปโหลด
+                    </Typography>
+                    <Box sx={{ position: 'relative', width: '100%', mt: 1 }}>
+                      {!file ? (
+                        <Box sx={{
+                          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          backgroundColor: '#f5f5f5', borderRadius: 1,
+                          opacity: 0.6, textAlign: 'center', mt: 7
+                        }}>
+                          <Typography variant="body1" sx={{ color: '#404040' }}>
+                            กรุณาอัปโหลดไฟล์เสียง
+                          </Typography>
                         </Box>
-                      </Paper>
+                      ) : (
+                        <>
+                          <audio controls src={URL.createObjectURL(file)} style={{ width: '100%' }} />
+                          <Typography variant="body2" sx={{ mt: 1, color: '#757575', textAlign: 'center' }}>{file.name}</Typography>
+                        </>
+                      )}
+                    </Box>
+                  </Paper>
                 </Box>
               )}
 
               {selectedOption === 'text' && (
                 <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                  <Paper sx={{ p:1 }} >
+                  <Paper sx={{ p: 1 }}>
                     <TextField
                       label="ป้อนข้อความ"
                       multiline
@@ -105,7 +113,7 @@ const Body = () => {
                       value={inputText}
                       onChange={handleTextChange}
                       fullWidth
-                      sx={{ flex: 1, mb: 2, minHeight: '200px', resize: 'vertical', mt: 1 ,fontFamily: '"Chakra Petch", sans-serif'}}
+                      sx={{ flex: 1, mb: 2, minHeight: '200px', resize: 'vertical', mt: 1, fontFamily: '"Chakra Petch", sans-serif' }}
                       maxRows={20}
                     />
                   </Paper>
@@ -114,7 +122,7 @@ const Body = () => {
 
               {selectedOption !== 'text' && (
                 activeInput === 'microphone' ? (
-                  <SpeechMic onTranslation={handleTranslationMic} />
+                  <SpeechMic ref={speechMicRef} onTranslation={handleTranslationMic} />
                 ) : (
                   <Transcription file={file} onTranslation={handleTranslationUpload} />
                 )

@@ -1,4 +1,3 @@
-// TextTranslation.js
 import React, { useEffect, useState } from 'react';
 import { Box, Typography, Paper } from '@mui/material';
 import axios from 'axios';

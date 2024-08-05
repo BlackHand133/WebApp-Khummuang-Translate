@@ -6,7 +6,7 @@ import MicOffIcon from '@mui/icons-material/MicOff';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import styles from '../Sidebar/Sidebar.module.css';
 
-const Sidebar = ({ onOptionChange, onFileUpload, onInputToggle }) => {
+const Sidebar = ({ onOptionChange, onFileUpload, onInputToggle, onStartRecording, onStopRecording }) => {
   const [selectedOption, setSelectedOption] = useState('text');
   const [activeInput, setActiveInput] = useState('microphone');
   const [microphoneOn, setMicrophoneOn] = useState(false);
@@ -14,17 +14,17 @@ const Sidebar = ({ onOptionChange, onFileUpload, onInputToggle }) => {
 
   const handleOptionChange = (option) => {
     setSelectedOption(option);
-    setActiveInput('microphone'); // เริ่มต้นเป็นไมโครโฟน
+    setActiveInput(option === 'upload' ? 'upload' : 'microphone');
     onOptionChange(option);
-    onInputToggle('microphone'); // ส่งค่าไปยัง Body
+    onInputToggle(option === 'upload' ? 'upload' : 'microphone');
   };
 
   const handleInputToggle = (input) => {
     setActiveInput(input);
-    onInputToggle(input); // ส่งค่าไปยัง Body
+    onInputToggle(input);
   };
 
-const handleMicrophoneToggle = () => {
+  const handleMicrophoneToggle = () => {
     setMicrophoneOn(!microphoneOn);
     if (!microphoneOn) {
       onStartRecording();
@@ -36,7 +36,7 @@ const handleMicrophoneToggle = () => {
   const handleFileChange = (event) => {
     const uploadedFile = event.target.files[0];
     setFile(uploadedFile);
-    onFileUpload(uploadedFile); // ส่งไฟล์ไปยัง Body
+    onFileUpload(uploadedFile);
   };
 
   const LanguageSwitch = () => (
@@ -101,7 +101,7 @@ const handleMicrophoneToggle = () => {
               color: selectedOption === option ? 'white' : 'black',
               transition: 'background-color 0.3s, transform 0.3s, font-weight 0.1s',
               '&:hover': {
-                transform: 'scale(1.05)', // ขยายขนาดปุ่มและเคลื่อนที่ไปทางขวา
+                transform: 'scale(1.05)',
                 fontWeight: 700,
                 backgroundColor: '#4a90e2',
                 color: 'white',
@@ -132,8 +132,8 @@ const handleMicrophoneToggle = () => {
                         transform: activeInput === 'microphone' ? 'scale(0.8) translateX(20px)' : 'scale(0.8) translateX(10px)',
                         fontFamily: '"Mitr", sans-serif',
                         border: activeInput === 'microphone' ? '2px solid white' : '1px solid white',
-                        width: activeInput === 'upload' ? '80px' : '100%', // กำหนดความกว้าง
-                        height: activeInput === 'upload' ? '80px' : '100%', // กำหนดความสูง
+                        width: activeInput === 'upload' ? '80px' : '100%',
+                        height: activeInput === 'upload' ? '80px' : '100%',
                         '&:hover': { 
                           backgroundColor: '#bbdefb',
                         },
@@ -157,8 +157,8 @@ const handleMicrophoneToggle = () => {
                         transition: 'transform 1s, background-color 1s, border 1s',
                         transform: activeInput === 'upload' ? 'scale(0.8) translateX(-20px)' : 'scale(0.8) translateX(-10px)',
                         border: activeInput === 'upload' ? '2px solid white' : '1px solid white',
-                        width: activeInput === 'upload' ? '100%' : '80px', // กำหนดความกว้าง
-                        height: activeInput === 'upload' ? '100%' : '80px', // กำหนดความสูง
+                        width: activeInput === 'upload' ? '100%' : '80px',
+                        height: activeInput === 'upload' ? '100%' : '80px',
                         '&:hover': { 
                           backgroundColor: '#bbdefb',
                         }
@@ -195,44 +195,43 @@ const handleMicrophoneToggle = () => {
                       </Button>
                     ) : (
                       <Button component="label" sx={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <input type="file" hidden accept="audio/*" onChange={handleFileChange} />
-                      <UploadFileIcon
-                        sx={{
-                          backgroundColor:'#303030',
-                          fontSize: '5rem',
-                          color: '#4a90e2',
-                          border: '1px solid white',
-                          borderRadius: '10px',
-                          padding: '10px',
-                          transition: 'background-color 0.3s, transform 0.3s',
-                          '&:hover': {
-                            bgcolor: 'white',
-                            border: '1px solid gray',
-                            transform: 'scale(1.05)',
-                          }
-                        }}
-                      />
-                      <Box
-                        sx={{
-                          position: 'absolute',
-                          bottom: '10px', // ปรับตำแหน่งตามต้องการ
-                          left: '50%',
-                          transform: 'translateX(-50%)',
-                          color: '#4a90e2',
-                          fontFamily: '"Mitr", sans-serif',
-                          fontWeight: 400,
-                          fontSize: '0.8rem',
-                          textAlign: 'center',
-                          whiteSpace: 'nowrap',
-                          px: 1,
-                          bgcolor: 'rgba(255, 255, 255, 0.8)', // สีพื้นหลังข้อความเพื่อให้โดดเด่นขึ้น
-                          borderRadius: '5px'
-                        }}
-                      >
-                        อัปโหลด
-                      </Box>
-                    </Button>
-
+                        <input type="file" hidden accept="audio/*" onChange={handleFileChange} />
+                        <UploadFileIcon
+                          sx={{
+                            backgroundColor:'#303030',
+                            fontSize: '5rem',
+                            color: '#4a90e2',
+                            border: '1px solid white',
+                            borderRadius: '10px',
+                            padding: '10px',
+                            transition: 'background-color 0.3s, transform 0.3s',
+                            '&:hover': {
+                              bgcolor: 'white',
+                              border: '1px solid gray',
+                              transform: 'scale(1.05)',
+                            }
+                          }}
+                        />
+                        <Box
+                          sx={{
+                            position: 'absolute',
+                            bottom: '10px',
+                            left: '50%',
+                            transform: 'translateX(-50%)',
+                            color: '#4a90e2',
+                            fontFamily: '"Mitr", sans-serif',
+                            fontWeight: 400,
+                            fontSize: '0.8rem',
+                            textAlign: 'center',
+                            whiteSpace: 'nowrap',
+                            px: 1,
+                            bgcolor: 'rgba(255, 255, 255, 0.8)',
+                            borderRadius: '5px'
+                          }}
+                        >
+                          อัปโหลด
+                        </Box>
+                      </Button>
                     )}
                   </Box>
                 </>
