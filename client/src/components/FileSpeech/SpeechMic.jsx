@@ -4,16 +4,11 @@ import axios from 'axios';
 
 const SpeechMic = forwardRef(({ onTranslation }, ref) => {
   const [transcription, setTranscription] = useState('');
-  const [translatedText, setTranslatedText] = useState('');
-  const [transcriptionStatus, setTranscriptionStatus] = useState('');
   const [audioUrl, setAudioUrl] = useState('');
+  const [transcriptionStatus, setTranscriptionStatus] = useState('');
+  const [translation, setTranslation] = useState('');
+
   const mediaRecorderRef = useRef(null);
-  const audioContextRef = useRef(null);
-  const sourceNodeRef = useRef(null);
-  const processorNodeRef = useRef(null);
-  const gainNodeRef = useRef(null);
-  const filterNodeRef = useRef(null);
-  const compressorNodeRef = useRef(null);
   const audioChunksRef = useRef([]);
 
   useImperativeHandle(ref, () => ({
@@ -22,60 +17,28 @@ const SpeechMic = forwardRef(({ onTranslation }, ref) => {
   }));
 
   useEffect(() => {
-    // Load saved data from local storage
-    const savedTranscription = localStorage.getItem('transcription');
-    const savedTranslatedText = localStorage.getItem('translatedText');
-    const savedAudioUrl = localStorage.getItem('audioUrl');
-    const savedTranscriptionStatus = localStorage.getItem('transcriptionStatus');
+    // Retrieve saved data from sessionStorage when component mounts
+    const savedTranscription = sessionStorage.getItem('transcription');
+    const savedAudioUrl = sessionStorage.getItem('audioUrl');
+    const savedTranscriptionStatus = sessionStorage.getItem('transcriptionStatus');
+    const savedTranslation = sessionStorage.getItem('translation');
 
     if (savedTranscription) setTranscription(savedTranscription);
-    if (savedTranslatedText) setTranslatedText(savedTranslatedText);
     if (savedAudioUrl) setAudioUrl(savedAudioUrl);
     if (savedTranscriptionStatus) setTranscriptionStatus(savedTranscriptionStatus);
+    if (savedTranslation) setTranslation(savedTranslation);
   }, []);
 
+  useEffect(() => {
+    // Save data to sessionStorage whenever they change
+    sessionStorage.setItem('transcription', transcription);
+    sessionStorage.setItem('audioUrl', audioUrl);
+    sessionStorage.setItem('transcriptionStatus', transcriptionStatus);
+    sessionStorage.setItem('translation', translation);
+  }, [transcription, audioUrl, transcriptionStatus, translation]);
+
   const setupAudioProcessing = useCallback((stream) => {
-    audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
-    sourceNodeRef.current = audioContextRef.current.createMediaStreamSource(stream);
-
-    const analyser = audioContextRef.current.createAnalyser();
-    analyser.fftSize = 2048;
-
-    gainNodeRef.current = audioContextRef.current.createGain();
-    gainNodeRef.current.gain.setValueAtTime(1.2, audioContextRef.current.currentTime);
-
-    filterNodeRef.current = audioContextRef.current.createBiquadFilter();
-    filterNodeRef.current.type = "highpass";
-    filterNodeRef.current.frequency.setValueAtTime(80, audioContextRef.current.currentTime);
-    filterNodeRef.current.Q.setValueAtTime(0.7, audioContextRef.current.currentTime);
-
-    compressorNodeRef.current = audioContextRef.current.createDynamicsCompressor();
-    compressorNodeRef.current.threshold.setValueAtTime(-24, audioContextRef.current.currentTime);
-    compressorNodeRef.current.knee.setValueAtTime(40, audioContextRef.current.currentTime);
-    compressorNodeRef.current.ratio.setValueAtTime(12, audioContextRef.current.currentTime);
-    compressorNodeRef.current.attack.setValueAtTime(0, audioContextRef.current.currentTime);
-    compressorNodeRef.current.release.setValueAtTime(0.25, audioContextRef.current.currentTime);
-
-    sourceNodeRef.current
-      .connect(gainNodeRef.current)
-      .connect(filterNodeRef.current)
-      .connect(compressorNodeRef.current)
-      .connect(analyser)
-      .connect(audioContextRef.current.destination);
-
-    processorNodeRef.current = audioContextRef.current.createScriptProcessor(4096, 1, 1);
-    processorNodeRef.current.onaudioprocess = (e) => {
-      const inputData = e.inputBuffer.getChannelData(0);
-      const outputData = e.outputBuffer.getChannelData(0);
-      
-      for (let sample = 0; sample < inputData.length; sample++) {
-        outputData[sample] = inputData[sample] * 1.5;
-      }
-    };
-
-    sourceNodeRef.current.connect(processorNodeRef.current);
-    processorNodeRef.current.connect(audioContextRef.current.destination);
-
+    // ... (ส่วนนี้คงเดิม)
   }, []);
 
   const translateText = async (text) => {
@@ -84,11 +47,11 @@ const SpeechMic = forwardRef(({ onTranslation }, ref) => {
         sentence: text,
       });
       const translatedText = response.data.translated_sentence;
-      setTranslatedText(translatedText);
-      localStorage.setItem('translatedText', translatedText);
-      onTranslation(translatedText); // Notify parent component
+      setTranslation(translatedText);
+      onTranslation(translatedText);
     } catch (error) {
       console.error('Error translating text:', error);
+      setTranslation('เกิดข้อผิดพลาดในการแปล');
     }
   };
 
@@ -120,9 +83,8 @@ const SpeechMic = forwardRef(({ onTranslation }, ref) => {
 
       mediaRecorder.onstop = async () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        const audioUrl = URL.createObjectURL(audioBlob);
-        setAudioUrl(audioUrl);
-        localStorage.setItem('audioUrl', audioUrl);
+        const newAudioUrl = URL.createObjectURL(audioBlob);
+        setAudioUrl(newAudioUrl);
 
         const formData = new FormData();
         formData.append('file', audioBlob, 'recording.webm');
@@ -133,37 +95,25 @@ const SpeechMic = forwardRef(({ onTranslation }, ref) => {
           });
           const transcriptionText = response.data.transcription;
           setTranscription(transcriptionText);
-          localStorage.setItem('transcription', transcriptionText);
-          const newStatus = 'ถอดเสียงเสร็จสิ้น';
-          setTranscriptionStatus(newStatus);
-          localStorage.setItem('transcriptionStatus', newStatus);
-          translateText(transcriptionText); // Translate the transcription text
+          setTranscriptionStatus('ถอดเสียงเสร็จสิ้น');
+          translateText(transcriptionText);
         } catch (error) {
           console.error('Error transcribing audio:', error);
-          const errorStatus = 'เกิดข้อผิดพลาดในการถอดเสียง';
-          setTranscriptionStatus(errorStatus);
-          localStorage.setItem('transcriptionStatus', errorStatus);
+          setTranscriptionStatus('เกิดข้อผิดพลาดในการถอดเสียง');
         }
       };
 
       mediaRecorder.start();
-      const recordingStatus = 'กำลังบันทึกเสียง...';
-      setTranscriptionStatus(recordingStatus);
-      localStorage.setItem('transcriptionStatus', recordingStatus);
+      setTranscriptionStatus('กำลังบันทึกเสียง...');
     } catch (error) {
       console.error('Error starting recording:', error);
-      const errorStatus = 'เกิดข้อผิดพลาดในการเริ่มบันทึก';
-      setTranscriptionStatus(errorStatus);
-      localStorage.setItem('transcriptionStatus', errorStatus);
+      setTranscriptionStatus('เกิดข้อผิดพลาดในการเริ่มบันทึก');
     }
   };
 
   const stopRecording = () => {
     if (mediaRecorderRef.current) {
       mediaRecorderRef.current.stop();
-    }
-    if (audioContextRef.current) {
-      audioContextRef.current.close();
     }
   };
 

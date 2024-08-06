@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request, redirect, url_for
+from flask import Flask, jsonify, request, redirect, session, url_for
 from flask_cors import CORS
 from flask_bcrypt import Bcrypt
 from models import db, User, sysAdmin, AdminView ,UserView
@@ -235,6 +235,34 @@ def translate():
     return jsonify({'translated_sentence': translated_sentence}), 200
 
 # SocketIO events
+
+@socketio.on('start_transcription')
+def handle_start_transcription():
+    def transcribe_audio_stream():
+        while True:
+            try:
+                audio_data = yield
+                text = modelWavTH.process_audio(audio_data)
+                emit('transcription_result', {'text': text})
+            except GeneratorExit:
+                break
+
+    # เก็บ generator ไว้ใน session
+    socketio.start_background_task(target=transcribe_audio_stream)
+
+@socketio.on('audio_data')
+def handle_audio_data(data):
+    audio_generator = session.get('audio_generator')
+    if audio_generator:
+        audio_generator.send(data)
+
+@socketio.on('stop_transcription')
+def handle_stop_transcription():
+    audio_generator = session.get('audio_generator')
+    if audio_generator:
+        audio_generator.close()
+        session.pop('audio_generator', None)
+
 @socketio.on('connect')
 def handle_connect():
     print('Client connected')

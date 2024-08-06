@@ -14,6 +14,11 @@ const Body = () => {
   const [translationMic, setTranslationMic] = useState('');
   const speechMicRef = useRef();
 
+  // New state for SpeechMic
+  const [transcription, setTranscription] = useState('');
+  const [audioUrl, setAudioUrl] = useState('');
+  const [transcriptionStatus, setTranscriptionStatus] = useState('');
+
   const handleOptionChange = (option) => {
     setSelectedOption(option);
     setActiveInput(option === 'upload' ? 'upload' : 'microphone');
@@ -44,6 +49,9 @@ const Body = () => {
   const clearTranslation = () => {
     setTranslationUpload('');
     setTranslationMic('');
+    setTranscription('');
+    setAudioUrl('');
+    setTranscriptionStatus('');
   };
 
   const handleStartRecording = useCallback(() => {
@@ -122,7 +130,16 @@ const Body = () => {
 
               {selectedOption !== 'text' && (
                 activeInput === 'microphone' ? (
-                  <SpeechMic ref={speechMicRef} onTranslation={handleTranslationMic} />
+                  <SpeechMic
+                    ref={speechMicRef}
+                    onTranslation={handleTranslationMic}
+                    transcription={transcription}
+                    setTranscription={setTranscription}
+                    audioUrl={audioUrl}
+                    setAudioUrl={setAudioUrl}
+                    transcriptionStatus={transcriptionStatus}
+                    setTranscriptionStatus={setTranscriptionStatus}
+                  />
                 ) : (
                   <Transcription file={file} onTranslation={handleTranslationUpload} />
                 )

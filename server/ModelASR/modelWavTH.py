@@ -131,3 +131,39 @@ def convert_to_wav(file_path):
     except Exception as e:
         print(f"Unexpected error: {e}")
         raise
+
+ #ส่วนเรียลไทม์
+def convert_to_mono_and_16000hz(audio_data):
+    input_audio_path = 'input.wav'
+    output_audio_path = 'output.wav'
+    
+    # บันทึกข้อมูลเสียงที่รับเข้ามาเป็นไฟล์ชั่วคราว
+    with open(input_audio_path, 'wb') as f:
+        f.write(audio_data)
+    
+    # ใช้ ffmpeg แปลงไฟล์เสียงเป็น mono และ 16,000 Hz
+    subprocess.run([
+        'ffmpeg', '-i', input_audio_path,
+        '-ar', '16000', '-ac', '1', 
+        output_audio_path
+    ], check=True)
+    
+    # อ่านข้อมูลเสียงที่แปลงแล้ว
+    with open(output_audio_path, 'rb') as f:
+        converted_audio = f.read()
+    
+    return converted_audio
+
+def process_audio(audio_data):
+    audio_data = convert_to_mono_and_16000hz(audio_data)
+    
+    # แปลงข้อมูลเสียงเป็น numpy array และสร้าง tensor
+    audio_array = np.frombuffer(audio_data, dtype=np.int16)
+    audio_tensor = torch.tensor(audio_array).float().unsqueeze(0)
+    
+    with torch.no_grad():
+        logits = model(audio_tensor).logits
+    predicted_ids = torch.argmax(logits, dim=-1)
+    transcription = processor.batch_decode(predicted_ids)
+    
+    return transcription[0]
