@@ -11,6 +11,7 @@ const Sidebar = ({ onOptionChange, onFileUpload, onInputToggle, onStartRecording
   const [activeInput, setActiveInput] = useState('microphone');
   const [microphoneOn, setMicrophoneOn] = useState(false);
   const [file, setFile] = useState(null);
+  const [language, setLanguage] = useState('คำเมือง');
 
   const handleOptionChange = (option) => {
     setSelectedOption(option);
@@ -39,6 +40,10 @@ const Sidebar = ({ onOptionChange, onFileUpload, onInputToggle, onStartRecording
     onFileUpload(uploadedFile);
   };
 
+  const toggleLanguage = () => {
+    setLanguage((prevLanguage) => (prevLanguage === 'คำเมือง' ? 'ไทย' : 'คำเมือง'));
+  };
+
   const LanguageSwitch = () => (
     <Box sx={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap', mb: '1em' }}>
       <Divider sx={{ width: '100%', my: '15px', backgroundColor: '#e0e0e0' }} />
@@ -54,10 +59,11 @@ const Sidebar = ({ onOptionChange, onFileUpload, onInputToggle, onStartRecording
             bgcolor: '#CBC3E3'
           }
         }}
+        onClick={toggleLanguage}
       >
-        <Typography sx={{ fontFamily: '"Mitr", sans-serif', fontWeight: 400, fontSize: '0.8rem' }}>คำเมือง</Typography>
+        <Typography sx={{ fontFamily: '"Mitr", sans-serif', fontWeight: 400, fontSize: '0.8rem' }}>{language}</Typography>
       </Button>
-      <Button sx={{ color: '#4a90e2' }}>
+      <Button sx={{ color: '#4a90e2' }} onClick={toggleLanguage}>
         <SwapHorizIcon />
       </Button>
       <Button 
@@ -72,8 +78,9 @@ const Sidebar = ({ onOptionChange, onFileUpload, onInputToggle, onStartRecording
             bgcolor: '#CBC3E3'
           }
         }}
+        onClick={toggleLanguage}
       >
-        <Typography sx={{ fontFamily: '"Mitr", sans-serif', fontWeight: 400, fontSize: '0.8rem' }}>ไทย</Typography>
+        <Typography sx={{ fontFamily: '"Mitr", sans-serif', fontWeight: 400, fontSize: '0.8rem' }}>{language === 'คำเมือง' ? 'ไทย' : 'คำเมือง'}</Typography>
       </Button>
     </Box>
   );
@@ -117,7 +124,8 @@ const Sidebar = ({ onOptionChange, onFileUpload, onInputToggle, onStartRecording
           </Button>
           <Collapse in={selectedOption === option}>
             <Box sx={{ mt: 0 }}>
-              <LanguageSwitch />
+              {option === 'text' && <LanguageSwitch />}
+              {option === 'voice' && <LanguageSwitch />}
               {option === 'voice' && (
                 <>
                   <Divider sx={{ width: '100%', my: '15px', backgroundColor: '#e0e0e0' }} />
