@@ -1,12 +1,18 @@
 import React, { useState, useRef, forwardRef, useImperativeHandle, useCallback, useEffect } from 'react';
-import { Typography, Box, Paper } from '@mui/material';
+import { Typography, Box, Paper, CircularProgress, IconButton } from '@mui/material';
 import axios from 'axios';
+import ThumbUpAltIcon from '@mui/icons-material/ThumbUpAlt';
+import ThumbUpOffAltIcon from '@mui/icons-material/ThumbUpOffAlt';
+import { useUser } from '../../ContextUser';
 
-const SpeechMic = forwardRef(({ onTranslation }, ref) => {
+const SpeechMic = forwardRef(({ onTranslation, language }, ref) => {
   const [transcription, setTranscription] = useState('');
   const [audioUrl, setAudioUrl] = useState('');
   const [transcriptionStatus, setTranscriptionStatus] = useState('');
   const [translation, setTranslation] = useState('');
+  const [liked, setLiked] = useState(false);
+
+  const { userId, username } = useUser();
 
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
@@ -38,13 +44,14 @@ const SpeechMic = forwardRef(({ onTranslation }, ref) => {
   }, [transcription, audioUrl, transcriptionStatus, translation]);
 
   const setupAudioProcessing = useCallback((stream) => {
-    // ... (ส่วนนี้คงเดิม)
+    // Setup audio processing (implement as needed)
   }, []);
 
   const translateText = async (text) => {
     try {
       const response = await axios.post('http://localhost:8080/api/translate', {
         sentence: text,
+        language: language,
       });
       const translatedText = response.data.translated_sentence;
       setTranslation(translatedText);
@@ -52,6 +59,23 @@ const SpeechMic = forwardRef(({ onTranslation }, ref) => {
     } catch (error) {
       console.error('Error translating text:', error);
       setTranslation('เกิดข้อผิดพลาดในการแปล');
+    }
+  };
+
+  const saveFile = async () => {
+    if (!audioUrl || !transcription) return;
+
+    const formData = new FormData();
+    formData.append('file', audioUrl, 'recording.webm');
+    formData.append('user_id', userId || 'guest');
+    formData.append('transcription_text', transcription);
+
+    try {
+      await axios.post('http://localhost:8080/api/savefile', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+    } catch (error) {
+      console.error('Error saving file:', error.message);
     }
   };
 
@@ -88,6 +112,8 @@ const SpeechMic = forwardRef(({ onTranslation }, ref) => {
 
         const formData = new FormData();
         formData.append('file', audioBlob, 'recording.webm');
+        formData.append('language', language);
+        formData.append('username', username);
 
         try {
           const response = await axios.post('http://localhost:8080/api/transcribe_Mic', formData, {
@@ -114,6 +140,15 @@ const SpeechMic = forwardRef(({ onTranslation }, ref) => {
   const stopRecording = () => {
     if (mediaRecorderRef.current) {
       mediaRecorderRef.current.stop();
+      saveFile(); // Save the file when stopping recording
+    }
+  };
+
+  const toggleLike = async () => {
+    setLiked(prevLiked => !prevLiked); // Toggle like status
+
+    if (!liked) {
+      await saveFile(); // Save file when liking
     }
   };
 
@@ -144,6 +179,12 @@ const SpeechMic = forwardRef(({ onTranslation }, ref) => {
           <Typography variant="body1" sx={{ textAlign: 'center', fontFamily: '"Chakra Petch", sans-serif', p: 2, borderRadius: 1, mb: 1 }}>
             {transcription}
           </Typography>
+          <IconButton
+            sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2, ml: 'auto' }}
+            onClick={toggleLike}
+          >
+            {liked ? <ThumbUpAltIcon /> : <ThumbUpOffAltIcon />}
+          </IconButton>
         </Paper>
       )}
     </Box>

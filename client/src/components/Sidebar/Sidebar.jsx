@@ -6,12 +6,13 @@ import MicOffIcon from '@mui/icons-material/MicOff';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import styles from '../Sidebar/Sidebar.module.css';
 
-const Sidebar = ({ onOptionChange, onFileUpload, onInputToggle, onStartRecording, onStopRecording }) => {
+const Sidebar = ({ onOptionChange, onFileUpload, onInputToggle, onStartRecording, onStopRecording, onTextLanguageChange ,onVoiceLanguageChange}) => {
   const [selectedOption, setSelectedOption] = useState('text');
   const [activeInput, setActiveInput] = useState('microphone');
   const [microphoneOn, setMicrophoneOn] = useState(false);
   const [file, setFile] = useState(null);
-  const [language, setLanguage] = useState('คำเมือง');
+  const [textLanguage, setTextLanguage] = useState('คำเมือง');
+  const [voiceLanguage, setVoiceLanguage] = useState('คำเมือง');
 
   const handleOptionChange = (option) => {
     setSelectedOption(option);
@@ -40,11 +41,19 @@ const Sidebar = ({ onOptionChange, onFileUpload, onInputToggle, onStartRecording
     onFileUpload(uploadedFile);
   };
 
-  const toggleLanguage = () => {
-    setLanguage((prevLanguage) => (prevLanguage === 'คำเมือง' ? 'ไทย' : 'คำเมือง'));
+  const toggleTextLanguage = () => {
+    const newLanguage = textLanguage === 'คำเมือง' ? 'ไทย' : 'คำเมือง';
+    setTextLanguage(newLanguage);
+    onTextLanguageChange(newLanguage);
   };
 
-  const LanguageSwitch = () => (
+  const toggleVoiceLanguage = () => {
+    const newLanguage = voiceLanguage === 'คำเมือง' ? 'ไทย' : 'คำเมือง';
+    setVoiceLanguage(newLanguage);
+    onVoiceLanguageChange(newLanguage);
+  };
+
+  const TextLanguageSwitch = () => (
     <Box sx={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap', mb: '1em' }}>
       <Divider sx={{ width: '100%', my: '15px', backgroundColor: '#e0e0e0' }} />
       <Button 
@@ -59,11 +68,11 @@ const Sidebar = ({ onOptionChange, onFileUpload, onInputToggle, onStartRecording
             bgcolor: '#CBC3E3'
           }
         }}
-        onClick={toggleLanguage}
+        onClick={toggleTextLanguage}
       >
-        <Typography sx={{ fontFamily: '"Mitr", sans-serif', fontWeight: 400, fontSize: '0.8rem' }}>{language}</Typography>
+        <Typography sx={{ fontFamily: '"Mitr", sans-serif', fontWeight: 400, fontSize: '0.8rem' }}>{textLanguage}</Typography>
       </Button>
-      <Button sx={{ color: '#4a90e2' }} onClick={toggleLanguage}>
+      <Button sx={{ color: '#4a90e2' }} onClick={toggleTextLanguage}>
         <SwapHorizIcon />
       </Button>
       <Button 
@@ -78,12 +87,54 @@ const Sidebar = ({ onOptionChange, onFileUpload, onInputToggle, onStartRecording
             bgcolor: '#CBC3E3'
           }
         }}
-        onClick={toggleLanguage}
+        onClick={toggleTextLanguage}
       >
-        <Typography sx={{ fontFamily: '"Mitr", sans-serif', fontWeight: 400, fontSize: '0.8rem' }}>{language === 'คำเมือง' ? 'ไทย' : 'คำเมือง'}</Typography>
+        <Typography sx={{ fontFamily: '"Mitr", sans-serif', fontWeight: 400, fontSize: '0.8rem' }}>{textLanguage === 'คำเมือง' ? 'ไทย' : 'คำเมือง'}</Typography>
       </Button>
     </Box>
   );
+
+  const VoiceLanguageSwitch = () => (
+    <Box sx={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap', mb: '1em' }}>
+      <Divider sx={{ width: '100%', my: '15px', backgroundColor: '#e0e0e0' }} />
+      <Button 
+        sx={{ 
+          borderRadius: '20px', 
+          padding: '8px 15px', 
+          border: '2px solid #e0e0e0', 
+          minWidth: '80px', 
+          bgcolor: 'ButtonShadow',
+          transition: 'background-color 0.3s', 
+          '&:hover': {
+            bgcolor: '#CBC3E3'
+          }
+        }}
+        onClick={toggleVoiceLanguage}
+      >
+        <Typography sx={{ fontFamily: '"Mitr", sans-serif', fontWeight: 400, fontSize: '0.8rem' }}>{voiceLanguage}</Typography>
+      </Button>
+      <Button sx={{ color: '#4a90e2' }} onClick={toggleVoiceLanguage}>
+        <SwapHorizIcon />
+      </Button>
+      <Button 
+        sx={{ 
+          borderRadius: '20px', 
+          padding: '8px 15px', 
+          border: '1px solid #e0e0e0', 
+          minWidth: '80px', 
+          bgcolor: 'ButtonShadow',
+          transition: 'background-color 0.3s', 
+          '&:hover': {
+            bgcolor: '#CBC3E3'
+          }
+        }}
+        onClick={toggleVoiceLanguage}
+      >
+        <Typography sx={{ fontFamily: '"Mitr", sans-serif', fontWeight: 400, fontSize: '0.8rem' }}>{voiceLanguage === 'คำเมือง' ? 'ไทย' : 'คำเมือง'}</Typography>
+      </Button>
+    </Box>
+  );
+
 
   return (
     <Grid container direction="column" sx={{ mt: '4em', borderRadius: '50px', height: 'auto', maxHeight: '100%', padding: '20px', backgroundColor: '#202020', boxShadow: '2px 0 5px rgba(0,0,0,0.3)' }}>
@@ -124,8 +175,8 @@ const Sidebar = ({ onOptionChange, onFileUpload, onInputToggle, onStartRecording
           </Button>
           <Collapse in={selectedOption === option}>
             <Box sx={{ mt: 0 }}>
-              {option === 'text' && <LanguageSwitch />}
-              {option === 'voice' && <LanguageSwitch />}
+              {option === 'text' && <TextLanguageSwitch />}
+              {option === 'voice' && <VoiceLanguageSwitch />}
               {option === 'voice' && (
                 <>
                   <Divider sx={{ width: '100%', my: '15px', backgroundColor: '#e0e0e0' }} />

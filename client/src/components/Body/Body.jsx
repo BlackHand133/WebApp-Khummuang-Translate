@@ -5,7 +5,7 @@ import Transcription from '../FileSpeech/Transcription';
 import TextTranslation from '../TextTranslation/TextTranslation';
 import SpeechMic from '../FileSpeech/SpeechMic';
 
-const Body = () => {
+const Body = ({username}) => {
   const [selectedOption, setSelectedOption] = useState('text');
   const [file, setFile] = useState(null);
   const [activeInput, setActiveInput] = useState('microphone');
@@ -13,11 +13,21 @@ const Body = () => {
   const [translationUpload, setTranslationUpload] = useState('');
   const [translationMic, setTranslationMic] = useState('');
   const speechMicRef = useRef();
+  const [Textlanguage, setTextLanguage] = useState('คำเมือง');
+  const [Voicelanguage, setVoiceLanguage] = useState('คำเมือง');
+
 
   // New state for SpeechMic
   const [transcription, setTranscription] = useState('');
   const [audioUrl, setAudioUrl] = useState('');
   const [transcriptionStatus, setTranscriptionStatus] = useState('');
+  
+  const handleTextLanguageChange = (newLanguage) => {
+    setTextLanguage(newLanguage);
+  };
+  const handleVoiceLanguageChange = (newLanguage) => {
+    setVoiceLanguage(newLanguage);
+  };
 
   const handleOptionChange = (option) => {
     setSelectedOption(option);
@@ -75,6 +85,8 @@ const Body = () => {
           onInputToggle={handleInputToggle}
           onStartRecording={handleStartRecording}
           onStopRecording={handleStopRecording} 
+          onTextLanguageChange={handleTextLanguageChange}
+          onVoiceLanguageChange={handleVoiceLanguageChange}
         />
       </Box>
 
@@ -139,9 +151,11 @@ const Body = () => {
                     setAudioUrl={setAudioUrl}
                     transcriptionStatus={transcriptionStatus}
                     setTranscriptionStatus={setTranscriptionStatus}
+                    language={Voicelanguage}
+                    username={username}
                   />
                 ) : (
-                  <Transcription file={file} onTranslation={handleTranslationUpload} />
+                  <Transcription file={file} onTranslation={handleTranslationUpload} language={Voicelanguage}  username={username} />
                 )
               )}
             </Box>
@@ -156,7 +170,7 @@ const Body = () => {
               </Box>
               {selectedOption === 'text' && (
                 <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <TextTranslation textToTranslate={inputText} onClearTranslation={clearTranslation} />
+                  <TextTranslation textToTranslate={inputText} onClearTranslation={clearTranslation} language={Textlanguage} />
                 </Box>
               )}
               {activeInput === 'upload' && translationUpload && (

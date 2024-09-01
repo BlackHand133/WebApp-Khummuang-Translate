@@ -1,55 +1,117 @@
-  import React, { Suspense, lazy } from 'react';
-  import ReactDOM from 'react-dom/client';
-  import {
-    createBrowserRouter,
-    RouterProvider,
-  } from 'react-router-dom';
-  import ErrorPage from './Pages/Error-page.jsx';
-  import Loading from './components/Loading/Loading.jsx';
-  import RegisterForm from './Pages/admin.jsx';
+import React, { Suspense, lazy } from 'react';
+import ReactDOM from 'react-dom/client';
+import {
+  createBrowserRouter,
+  RouterProvider,
+  Navigate
+} from 'react-router-dom';
+import ErrorPage from './Pages/Error-page.jsx';
+import Loading from './components/Loading/Loading.jsx';
+import { UserProvider, useUser } from './ContextUser.jsx';
+import { AdminProvider } from './ContextAdmin.jsx';
 
-  const App = lazy(() => import('./App.jsx'));
-  const Register = lazy(() => import('./Pages/Register.jsx'));
-  const Login = lazy(() => import('./Pages/Login.jsx'));
+// Dynamic imports
+const App = lazy(() => import('./App.jsx'));
+const Register = lazy(() => import('./Pages/Register.jsx'));
+const Login = lazy(() => import('./Pages/Login.jsx'));
+const AdminLogin = lazy(() => import('./Pages/AdminLogin.jsx'));
+const AdminDashboard = lazy(() => import('./Pages/AdminDashboard.jsx'));
+const ForgotPassword = lazy(() => import('./Pages/ForgotPassword.jsx'));
+const ResetPassword = lazy(() => import('./Pages/ResetPassword.jsx'));
+const Profile = lazy(() => import('./Pages/Profile.jsx'));
 
-  const router = createBrowserRouter([
-    {
-      path: '/',
-      element: (
-        <Suspense fallback={<Loading />}>
-          <App />
-        </Suspense>
-      ),
-      errorElement: <ErrorPage />,
-    },
-    {
-      path: 'register/',
-      element: (
-        <Suspense fallback={<Loading />}>
-          <Register />
-        </Suspense>
-      ),
-    },
-    {
-      path: 'login/',
-      element: (
-        <Suspense fallback={<Loading />}>
-          <Login />
-        </Suspense>
-      ),
-    },
-    {
-      path: 'admin/',
-      element: (
-        <Suspense fallback={<Loading />}>
-          <RegisterForm />
-        </Suspense>
-      ),
-    },
-  ]);
+const ProtectedRoute = ({ children }) => {
+  const { isLoggedIn, loading } = useUser();
 
-  ReactDOM.createRoot(document.getElementById('root')).render(
-    <React.StrictMode>
-      <RouterProvider router={router} />
-    </React.StrictMode>
-  );
+  if (loading) {
+    return <Loading />;
+  }
+
+  if (!isLoggedIn) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return children;
+};
+
+const router = createBrowserRouter([
+  {
+    path: '/',
+    element: (
+      <Suspense fallback={<Loading />}>
+        <App />
+      </Suspense>
+    ),
+    errorElement: <ErrorPage />,
+  },
+  {
+    path: '/register',
+    element: (
+      <Suspense fallback={<Loading />}>
+        <Register />
+      </Suspense>
+    ),
+  },
+  {
+    path: '/login',
+    element: (
+      <Suspense fallback={<Loading />}>
+        <Login />
+      </Suspense>
+    ),
+  },
+  {
+    path: '/forgot-password',
+    element: (
+      <Suspense fallback={<Loading />}>
+        <ForgotPassword />
+      </Suspense>
+    ),
+  },
+  {
+    path: '/reset-password',
+    element: (
+      <Suspense fallback={<Loading />}>
+        <ResetPassword />
+      </Suspense>
+    ),
+  },
+  {
+    path: '/profile',
+    element: (
+      <Suspense fallback={<Loading />}>
+        <ProtectedRoute>
+          <Profile />
+        </ProtectedRoute>
+      </Suspense>
+    ),
+  },
+  {
+    path: '/admin/login',
+    element: (
+      <Suspense fallback={<Loading />}>
+        <AdminLogin />
+      </Suspense>
+    ),
+  },
+  {
+    path: '/admin/dashboard',
+    element: (
+      <Suspense fallback={<Loading />}>
+        <ProtectedRoute>
+          <AdminDashboard />
+        </ProtectedRoute>
+      </Suspense>
+    ),
+  },
+]);
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <UserProvider>
+      <AdminProvider>
+        <RouterProvider router={router} />
+      </AdminProvider>
+    </UserProvider>
+  </React.StrictMode>
+);

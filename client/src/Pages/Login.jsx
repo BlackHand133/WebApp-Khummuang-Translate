@@ -1,62 +1,45 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { Box, Button, TextField, Typography } from '@mui/material';
+import React, { useState, useEffect, useContext } from 'react';
+import { Box, Button, TextField, Typography, CircularProgress } from '@mui/material';
 import styles from '../components/LoginPage/Login.module.css';
 import CloseIcon from '@mui/icons-material/Close';
 import IconButton from '@mui/material/IconButton';
 import IconWeb from '../assets/IconWeb.svg';
 import { useNavigate } from 'react-router-dom';
+import { UserContext } from '../ContextUser';
 
 function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const { login, checkAuth } = useContext(UserContext);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      checkTokenValidity(token);
-    }
-  }, []);
-
-  const checkTokenValidity = async (token) => {
-    try {
-      const response = await axios.post('http://localhost:8080/api/protected', null, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      if (response.status === 200) {
+    const initializeAuth = async () => {
+      try {
+        await checkAuth();
         navigate('/');
+      } catch (error) {
+        console.error('Initialization failed:', error.message);
       }
-    } catch (error) {
-      console.error('Error checking token validity:', error);
-      setErrorMessage('Token หมดอายุหรือไม่ถูกต้อง');
-      localStorage.removeItem('token');
-    }
-  };
-  
+    };
+    initializeAuth();
+  }, [checkAuth, navigate]);
+
   const handleLogin = async (event) => {
     event.preventDefault();
+    setLoading(true);
     try {
-      const response = await axios.post('http://localhost:8080/api/login', {
-        username,
-        password,
-      });
-  
-      if (response.data.message === 'Login successful') {
-        localStorage.setItem('token', response.data.access_token);
-        localStorage.setItem('username', username);
-        navigate('/');
-      } else {
-        setErrorMessage('Username หรือ password ไม่ถูกต้อง');
-      }
+      await login(username, password);
+      navigate('/');
     } catch (error) {
       console.error('Error logging in:', error);
       setErrorMessage('Username หรือ password ไม่ถูกต้อง');
+    } finally {
+      setLoading(false);
     }
-  };  
+  };
 
   return (
     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '95vh' }}>
@@ -101,7 +84,7 @@ function Login() {
               />
             </Box>
             <Button type="submit" variant="contained" className={styles.submit} sx={{ borderRadius: '50px', mt: 5 }}>
-              enter
+              {loading ? <CircularProgress size={24} sx={{ color: 'white' }} /> : 'Enter'}
             </Button>
             {errorMessage && (
               <Typography color="error" sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>

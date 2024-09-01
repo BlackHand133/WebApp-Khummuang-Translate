@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Box, Typography, Paper } from '@mui/material';
 import axios from 'axios';
 
-const TextTranslation = ({ textToTranslate, onClearTranslation }) => {
+const TextTranslation = ({ textToTranslate, onClearTranslation, language }) => {
   const [translatedText, setTranslatedText] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -19,6 +19,7 @@ const TextTranslation = ({ textToTranslate, onClearTranslation }) => {
       try {
         const response = await axios.post('http://localhost:8080/api/translate', {
           sentence: textToTranslate,
+          language: language // ส่งข้อมูลภาษาไปยัง API
         });
 
         if (response.status === 200) {
@@ -34,7 +35,7 @@ const TextTranslation = ({ textToTranslate, onClearTranslation }) => {
     };
 
     fetchTranslation();
-  }, [textToTranslate, onClearTranslation]);
+  }, [textToTranslate, onClearTranslation, language]);
 
   useEffect(() => {
     if (translatedText) {

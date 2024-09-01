@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import axios from 'axios';
-import CloseIcon from '@mui/icons-material/Close';
 import { Button, Box, Modal, Typography, Checkbox, FormControlLabel, MenuItem, Select, InputLabel, TextField, FormControl } from '@mui/material';
 import IconButton from '@mui/material/IconButton';
+import CloseIcon from '@mui/icons-material/Close';
 import IconWeb from '../assets/IconWeb.svg';
 import styles from '../components/RegisterPage/Register.module.css';
+import { useNavigate } from 'react-router-dom';
+import { useUser } from '../ContextUser';
 
 function Register() {
+  const { register, login } = useUser(); // ใช้ฟังก์ชัน register และ login จาก UserContext
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -16,6 +18,8 @@ function Register() {
   const [errorMessage, setErrorMessage] = useState('');
   const [checked, setChecked] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+
+  const navigate = useNavigate();
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -38,22 +42,15 @@ function Register() {
     }
   
     try {
-      const response = await axios.post('http://localhost:8080/api/register', {
-        username,
-        email,
-        password,
-        gender,
-        birth_date: birthDate
-      });
-  
-      alert('สมัครสมาชิกเรียบร้อยแล้ว');
-      window.location.href = '/login';
+      await register(username, email, password, gender, birthDate); // ใช้ฟังก์ชัน register จาก UserContext
+      await login(username, password); // ใช้ฟังก์ชัน login จาก UserContext
+      alert('สมัครสมาชิกและเข้าสู่ระบบเรียบร้อยแล้ว');
+      navigate('/'); // นำทางไปยังหน้าหลัก
     } catch (error) {
-      console.error('Error registering user:', error.response ? error.response.data : error.message);
-      setErrorMessage('เกิดข้อผิดพลาดในการสมัครสมาชิก โปรดลองอีกครั้ง');
+      console.error('Error:', error.response ? error.response.data : error.message);
+      setErrorMessage('เกิดข้อผิดพลาดในการสมัครสมาชิกหรือเข้าสู่ระบบ โปรดลองอีกครั้ง');
     }
   };
-  
 
   const handleChange = (event) => {
     setChecked(event.target.checked);

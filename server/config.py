@@ -8,4 +8,5 @@ class Config:
     JWT_COOKIE_SECURE = True  # ควรเป็น True ใน production
     JWT_SESSION_COOKIE = False
     UPLOAD_FOLDER = 'uploads'
+    UPLOAD_FOLDERURL = 'uploads/audio'
     

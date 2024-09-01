@@ -1,0 +1,7 @@
+
+/* Responsive styles */
+@media (max-width: 600px) {
+    .IconWeb {
+        width: 100px; /* Smaller width for mobile screens */
+    }
+}
