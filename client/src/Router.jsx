@@ -77,7 +77,7 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: '/profile',
+    path: ':username',
     element: (
       <Suspense fallback={<Loading />}>
         <ProtectedRoute>

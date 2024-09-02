@@ -1,13 +1,14 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, set_access_cookies, set_refresh_cookies, unset_jwt_cookies, get_jwt_identity
 from flask_login import login_user, logout_user, login_required, current_user
-from models import db, User
+from models import db, User, Profile
 from flask_bcrypt import Bcrypt
 from datetime import datetime, timedelta
 from sqlalchemy.exc import SQLAlchemyError
 import re
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from datetime import datetime
 
 user_bp = Blueprint('user', __name__)
 bcrypt = Bcrypt()
@@ -91,7 +92,6 @@ def login():
 
 @user_bp.route('/protected', methods=['POST', 'GET'])
 @jwt_required()
-@login_required
 def protected():
     user_identity = current_user.username
     return jsonify(logged_in_as=user_identity), 200
@@ -197,3 +197,48 @@ def reset_password():
     except SQLAlchemyError as e:
         db.session.rollback()
         return jsonify({'error': 'เกิดข้อผิดพลาดในการรีเซ็ตรหัสผ่าน'}), 500
+
+@user_bp.route('/profile/<string:user_id>', methods=['GET'])
+@jwt_required()
+def get_user_profile(user_id):
+    current_user = get_jwt_identity()
+    if current_user != user_id:
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    profile = Profile.query.filter_by(user_id=user_id).first()
+
+    if not profile:
+        return jsonify({'error': 'ไม่พบโปรไฟล์'}), 404
+
+    return jsonify({
+        'firstname': profile.firstname,
+        'lastname': profile.lastname,
+        'country': profile.country,
+        'state': profile.state,
+        'phone_number': profile.phone_number
+    }), 200
+
+
+@user_bp.route('/profile/<string:user_id>', methods=['PUT'])
+@jwt_required()
+def update_user_profile(user_id):
+    current_user = get_jwt_identity()
+    if current_user != user_id:
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    data = request.json
+    profile = Profile.query.filter_by(user_id=user_id).first()
+
+    if not profile:
+        return jsonify({'error': 'ไม่พบโปรไฟล์'}), 404
+
+    # อัปเดตข้อมูล
+    profile.firstname = data.get('firstname', profile.firstname)
+    profile.lastname = data.get('lastname', profile.lastname)
+    profile.country = data.get('country', profile.country)
+    profile.state = data.get('state', profile.state)
+    profile.phone_number = data.get('phone_number', profile.phone_number)
+    
+    db.session.commit()
+
+    return jsonify({'message': 'ข้อมูลโปรไฟล์ถูกอัปเดตเรียบร้อยแล้ว'}), 200

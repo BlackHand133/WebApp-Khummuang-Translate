@@ -7,10 +7,10 @@ export const AdminProvider = ({ children }) => {
   const [admin, setAdmin] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // ฟังก์ชันเพื่อดึง token จาก cookies
-  const getToken = () => {
+  // ฟังก์ชันเพื่อดึง token ของ admin จาก cookies
+  const getAdminToken = () => {
     const cookies = document.cookie.split(';');
-    const tokenCookie = cookies.find(cookie => cookie.trim().startsWith('access_token='));
+    const tokenCookie = cookies.find(cookie => cookie.trim().startsWith('admin_token='));
     if (tokenCookie) {
       return tokenCookie.split('=')[1];
     }
@@ -20,7 +20,7 @@ export const AdminProvider = ({ children }) => {
   useEffect(() => {
     const checkAdminToken = async () => {
       try {
-        const token = getToken();
+        const token = getAdminToken();
         if (token) {
           const response = await axios.get('http://localhost:8080/api/admin/protected', {
             headers: {
@@ -44,7 +44,7 @@ export const AdminProvider = ({ children }) => {
   const login = async (username, password) => {
     try {
       const response = await axios.post('http://localhost:8080/api/admin/login', { username, password });
-      document.cookie = `access_token=${response.data.access_token}`; // เก็บ token ใน cookies
+      document.cookie = `admin_token=${response.data.access_token}`; // เก็บ token ของ admin ใน cookies
       setAdmin(response.data.username);
       return response.data;
     } catch (error) {
@@ -54,7 +54,7 @@ export const AdminProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      const token = getToken(); // Get the token
+      const token = getAdminToken(); // Get the token ของ admin
       if (token) {
         await axios.post('http://localhost:8080/api/admin/logout', {}, {
           headers: {
@@ -62,7 +62,7 @@ export const AdminProvider = ({ children }) => {
           }
         });
       }
-      document.cookie = 'access_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT'; // ลบ token
+      document.cookie = 'admin_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT'; // ลบ token ของ admin
       setAdmin(null);
     } catch (error) {
       console.error('Logout failed', error);
@@ -73,10 +73,10 @@ export const AdminProvider = ({ children }) => {
     try {
       const response = await axios.post('http://localhost:8080/api/admin/refresh', {}, {
         headers: {
-          Authorization: `Bearer ${getToken()}`
+          Authorization: `Bearer ${getAdminToken()}`
         }
       });
-      document.cookie = `access_token=${response.data.access_token}`; // อัพเดต token ใน cookies
+      document.cookie = `admin_token=${response.data.access_token}`; // อัพเดต token ของ admin ใน cookies
       return response.data;
     } catch (error) {
       console.error('Token refresh failed', error);

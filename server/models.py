@@ -6,6 +6,7 @@ from flask_wtf import FlaskForm
 from wtforms import DateField, SelectField, StringField, PasswordField
 from wtforms.validators import DataRequired, Length
 from flask_bcrypt import Bcrypt
+from sqlalchemy import DateTime
 from datetime import datetime
 
 db = SQLAlchemy()
@@ -21,7 +22,7 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(60), nullable=False)
     gender = db.Column(db.String(10), nullable=False)
-    birth_date = db.Column(Date, nullable=False)
+    birth_date = db.Column(DateTime, nullable=False)
 
     def get_id(self):
         return self.userid
@@ -44,13 +45,28 @@ class AudioRecord(db.Model):
 
     user = db.relationship('User', backref=db.backref('audio_records', lazy=True))
 
-class sysAdmin(db.Model):
+class SysAdmin(db.Model):
     __tablename__ = 'admin'
     admin_id = db.Column(db.Integer, primary_key=True)
-    AdminName = db.Column(db.String(32), nullable=False)
+    admin_name = db.Column(db.String(32), nullable=False)
     email = db.Column(db.String(100), unique=True, nullable=False)
     password_hash = db.Column(db.String(128), nullable=False)
 
     def __repr__(self):
-        return f'<sysAdmin {self.AdminName}>'
+        return f'<SysAdmin {self.admin_name}>'
 
+
+class Profile(db.Model):
+    __tablename__ = 'profile'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.String(32), db.ForeignKey('user.userid'), nullable=False)
+    firstname = db.Column(db.String(50), nullable=False)
+    lastname = db.Column(db.String(50), nullable=False)
+    country = db.Column(db.String(50))
+    state = db.Column(db.String(50))
+    phone_number = db.Column(db.String(15))
+
+    user = db.relationship('User', backref=db.backref('profile', uselist=False))
+
+    def __repr__(self):
+        return f'<Profile {self.firstname} {self.lastname}>'

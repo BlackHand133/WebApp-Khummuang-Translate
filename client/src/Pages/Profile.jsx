@@ -1,9 +1,8 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react';
+import { useUser } from '../ContextUser';
+import { Container, Typography, TextField, Button, CircularProgress, Alert } from '@mui/material';
 
 function Profile() {
-  return (
-    <div>Profile</div>
-  )
 }
 
-export default Profile
+export default Profile;

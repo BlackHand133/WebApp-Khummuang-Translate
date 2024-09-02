@@ -69,7 +69,7 @@ export const UserProvider = ({ children }) => {
           {},
           { 
             headers: { Authorization: `Bearer ${accessToken}` },
-            withCredentials: true // เพื่อให้ axios ส่งและรับ cookies
+            withCredentials: true // ส่ง cookies ไปกับคำขอ
           }
         );
       }

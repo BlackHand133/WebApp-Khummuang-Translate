@@ -1,11 +1,15 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, set_access_cookies, set_refresh_cookies, unset_jwt_cookies, get_jwt_identity
 from flask_bcrypt import Bcrypt
-from models import db, sysAdmin
+from models import db, SysAdmin
 from config import Config
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+
 
 admin_bp = Blueprint('admin', __name__)
 bcrypt = Bcrypt()
+limiter = Limiter(key_func=get_remote_address)
 
 @admin_bp.route('/create', methods=['POST'])
 def create_admin():
@@ -19,7 +23,7 @@ def create_admin():
 
     password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
 
-    new_admin = sysAdmin(
+    new_admin = SysAdmin(
         AdminName=username,
         email=email,
         password_hash=password_hash
@@ -29,6 +33,7 @@ def create_admin():
     return jsonify(success=True, message=f'Admin {username} created successfully!'), 201
 
 @admin_bp.route('/login', methods=['POST'])
+@limiter.limit("10 per minute")
 def admin_login():
     data = request.get_json()
     username = data.get('username')
@@ -37,7 +42,7 @@ def admin_login():
     if not username or not password:
         return jsonify({'error': 'Please provide username and password'}), 400
 
-    admin = sysAdmin.query.filter_by(AdminName=username).first()
+    admin = SysAdmin.query.filter_by(AdminName=username).first()
 
     if admin and bcrypt.check_password_hash(admin.password_hash, password):
         access_token = create_access_token(identity=username)

@@ -8,13 +8,13 @@ from flask_login import LoginManager
 from flask_principal import Principal
 from flask_socketio import SocketIO
 from config import Config
-from models import db
+from models import db, User
 from routes_admin import admin_bp
 from routes_user import user_bp
 from routes_service import service_bp
 
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": "*"}})
+CORS(app, resources={r"/api/*": {"origins": "*"}},supports_credentials=True)
 app.config.from_object(Config)
 bcrypt = Bcrypt(app)
 
@@ -29,9 +29,18 @@ login_manager.login_view = 'login'
 
 principal = Principal(app)
 
+
 app.register_blueprint(admin_bp, url_prefix='/api/admin')
 app.register_blueprint(user_bp, url_prefix='/api')
 app.register_blueprint(service_bp, url_prefix='/api')
+
+with app.app_context():
+    db.create_all()
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
 
 if __name__ == "__main__":
     socketio.run(app, debug=True, port=8080)

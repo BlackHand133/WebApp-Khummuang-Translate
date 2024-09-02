@@ -184,7 +184,7 @@ function Navbar() {
                   transformOrigin={{ horizontal: 'right', vertical: 'top' }}
                   anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
                 >
-                  <MenuItem onClick={handleCloseMenu}>
+                  <MenuItem  component={Link} to={`/${username}`} onClick={handleCloseMenu}>
                     <Avatar /> Profile
                   </MenuItem>
                   <MenuItem onClick={handleLogout}>
