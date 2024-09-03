@@ -1,19 +1,25 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from uuid import uuid4
-from sqlalchemy import Date
+from sqlalchemy import Date, Enum, DateTime
 from flask_wtf import FlaskForm
 from wtforms import DateField, SelectField, StringField, PasswordField
 from wtforms.validators import DataRequired, Length
 from flask_bcrypt import Bcrypt
-from sqlalchemy import DateTime
 from datetime import datetime
+import enum
 
 db = SQLAlchemy()
 bcrypt = Bcrypt()
 
 def get_uuid():
     return uuid4().hex
+
+class Gender(enum.Enum):
+    MALE = "male"
+    FEMALE = "female"
+    LGBTQ = "LGBTQ"
+    OTHER = "other" 
 
 class User(UserMixin, db.Model):
     __tablename__ = 'user'
@@ -22,7 +28,9 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(60), nullable=False)
     gender = db.Column(db.String(10), nullable=False)
-    birth_date = db.Column(DateTime, nullable=False)
+    birth_date = db.Column(Date, nullable=False)
+    created_at = db.Column(DateTime, default=datetime.utcnow)
+    updated_at = db.Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def get_id(self):
         return self.userid
@@ -42,6 +50,9 @@ class AudioRecord(db.Model):
     audio_url = db.Column(db.String(200))
     transcription = db.Column(db.Text)
     time = db.Column(db.String(20), nullable=False)
+    duration = db.Column(db.Integer)  # Duration in seconds
+    created_at = db.Column(DateTime, default=datetime.utcnow)
+    updated_at = db.Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     user = db.relationship('User', backref=db.backref('audio_records', lazy=True))
 
@@ -51,10 +62,11 @@ class SysAdmin(db.Model):
     admin_name = db.Column(db.String(32), nullable=False)
     email = db.Column(db.String(100), unique=True, nullable=False)
     password_hash = db.Column(db.String(128), nullable=False)
+    created_at = db.Column(DateTime, default=datetime.utcnow)
+    updated_at = db.Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def __repr__(self):
         return f'<SysAdmin {self.admin_name}>'
-
 
 class Profile(db.Model):
     __tablename__ = 'profile'
@@ -65,6 +77,8 @@ class Profile(db.Model):
     country = db.Column(db.String(50))
     state = db.Column(db.String(50))
     phone_number = db.Column(db.String(15))
+    created_at = db.Column(DateTime, default=datetime.utcnow)
+    updated_at = db.Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     user = db.relationship('User', backref=db.backref('profile', uselist=False))
 

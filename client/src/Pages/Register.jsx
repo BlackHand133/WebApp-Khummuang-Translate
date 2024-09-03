@@ -40,15 +40,20 @@ function Register() {
       setErrorMessage('รูปแบบอีเมลไม่ถูกต้อง');
       return;
     }
+
+    if (!checked) {
+      setErrorMessage('กรุณายอมรับข้อตกลงและเงื่อนไข');
+      return;
+    }
   
     try {
-      await register(username, email, password, gender, birthDate); // ใช้ฟังก์ชัน register จาก UserContext
-      await login(username, password); // ใช้ฟังก์ชัน login จาก UserContext
+      await register(username, email, password, gender, birthDate);
+      await login(username, password);
       alert('สมัครสมาชิกและเข้าสู่ระบบเรียบร้อยแล้ว');
       navigate('/'); // นำทางไปยังหน้าหลัก
     } catch (error) {
-      console.error('Error:', error.response ? error.response.data : error.message);
-      setErrorMessage('เกิดข้อผิดพลาดในการสมัครสมาชิกหรือเข้าสู่ระบบ โปรดลองอีกครั้ง');
+      console.error('Error:', error.response?.data?.error || error.message);
+      setErrorMessage(error.response?.data?.error || 'เกิดข้อผิดพลาดในการสมัครสมาชิกหรือเข้าสู่ระบบ โปรดลองอีกครั้ง');
     }
   };
 

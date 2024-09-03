@@ -1,5 +1,5 @@
-from flask import Blueprint, jsonify, request
-from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, set_access_cookies, set_refresh_cookies, unset_jwt_cookies, get_jwt_identity
+from flask import Blueprint, current_app, jsonify, request
+from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt, jwt_required, set_access_cookies, set_refresh_cookies, unset_jwt_cookies, get_jwt_identity
 from flask_login import login_user, logout_user, login_required, current_user
 from models import db, User, Profile
 from flask_bcrypt import Bcrypt
@@ -9,10 +9,15 @@ import re
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from datetime import datetime
+from redis import Redis
+
 
 user_bp = Blueprint('user', __name__)
 bcrypt = Bcrypt()
 limiter = Limiter(key_func=get_remote_address)
+
+def get_redis_client():
+    return Redis.from_url(current_app.config['REDIS_URL'])
 
 @user_bp.route('/register', methods=['POST'])
 @limiter.limit("5 per minute")
@@ -26,6 +31,7 @@ def register():
 
     if not all([username, email, password, gender, birth_date_str]):
         return jsonify({'error': 'กรุณากรอกข้อมูลให้ครบถ้วน'}), 400
+    
 
     if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
         return jsonify({'error': 'รูปแบบอีเมลไม่ถูกต้อง'}), 400
@@ -93,8 +99,8 @@ def login():
 @user_bp.route('/protected', methods=['POST', 'GET'])
 @jwt_required()
 def protected():
-    user_identity = current_user.username
-    return jsonify(logged_in_as=user_identity), 200
+    current_user = get_jwt_identity()
+    return jsonify(logged_in_as=current_user), 200
 
 @user_bp.route('/check_token', methods=['POST', 'OPTIONS'])
 @jwt_required()
@@ -118,37 +124,17 @@ def refresh():
 @jwt_required()
 def logout():
     try:
-        current_user = get_jwt_identity()
-        logout_user()
+        jti = get_jwt()['jti']
+        redis_client = get_redis_client()
+        redis_client.set(jti, '', ex=current_app.config['JWT_ACCESS_TOKEN_EXPIRES'])
         response = jsonify({'message': 'ออกจากระบบสำเร็จ'})
         unset_jwt_cookies(response)
         return response, 200
     except Exception as e:
-        print(f"Error during logout: {str(e)}")
+        current_app.logger.error(f"Error during logout: {str(e)}")
         return jsonify({"error": "เกิดข้อผิดพลาดระหว่างการออกจากระบบ"}), 500
+   
 
-@user_bp.route('/update_profile', methods=['PUT'])
-@jwt_required()
-def update_profile():
-    data = request.get_json()
-    user = User.query.filter_by(username=get_jwt_identity()).first()
-
-    if not user:
-        return jsonify({'error': 'ไม่พบผู้ใช้'}), 404
-
-    try:
-        if 'email' in data:
-            user.email = data['email']
-        if 'gender' in data:
-            user.gender = data['gender']
-        if 'birth_date' in data:
-            user.birth_date = datetime.strptime(data['birth_date'], '%Y-%m-%d').date()
-
-        db.session.commit()
-        return jsonify({'message': 'อัปเดตข้อมูลสำเร็จ'}), 200
-    except SQLAlchemyError as e:
-        db.session.rollback()
-        return jsonify({'error': 'เกิดข้อผิดพลาดในการอัปเดตข้อมูล'}), 500
 
 @user_bp.route('/forgot_password', methods=['POST'])
 @limiter.limit("3 per hour")
@@ -197,26 +183,6 @@ def reset_password():
     except SQLAlchemyError as e:
         db.session.rollback()
         return jsonify({'error': 'เกิดข้อผิดพลาดในการรีเซ็ตรหัสผ่าน'}), 500
-
-@user_bp.route('/profile/<string:user_id>', methods=['GET'])
-@jwt_required()
-def get_user_profile(user_id):
-    current_user = get_jwt_identity()
-    if current_user != user_id:
-        return jsonify({'error': 'Unauthorized'}), 403
-
-    profile = Profile.query.filter_by(user_id=user_id).first()
-
-    if not profile:
-        return jsonify({'error': 'ไม่พบโปรไฟล์'}), 404
-
-    return jsonify({
-        'firstname': profile.firstname,
-        'lastname': profile.lastname,
-        'country': profile.country,
-        'state': profile.state,
-        'phone_number': profile.phone_number
-    }), 200
 
 
 @user_bp.route('/profile/<string:user_id>', methods=['PUT'])

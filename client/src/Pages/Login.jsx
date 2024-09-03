@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Button, TextField, Typography, CircularProgress } from '@mui/material';
 import styles from '../components/LoginPage/Login.module.css';
 import CloseIcon from '@mui/icons-material/Close';
 import IconButton from '@mui/material/IconButton';
 import IconWeb from '../assets/IconWeb.svg';
 import { useNavigate } from 'react-router-dom';
-import { UserContext } from '../ContextUser';
+import { useUser } from '../ContextUser';
 
 function Login() {
   const [username, setUsername] = useState('');
@@ -13,19 +13,21 @@ function Login() {
   const [errorMessage, setErrorMessage] = useState('');
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const { login, checkAuth } = useContext(UserContext);
+  const { login, checkAuth, isLoggedIn } = useUser();
 
   useEffect(() => {
     const initializeAuth = async () => {
       try {
         await checkAuth();
-        navigate('/');
+        if (isLoggedIn) {
+          navigate('/');
+        }
       } catch (error) {
         console.error('Initialization failed:', error.message);
       }
     };
     initializeAuth();
-  }, [checkAuth, navigate]);
+  }, [checkAuth, navigate, isLoggedIn]);
 
   const handleLogin = async (event) => {
     event.preventDefault();
@@ -34,8 +36,8 @@ function Login() {
       await login(username, password);
       navigate('/');
     } catch (error) {
-      console.error('Error logging in:', error);
-      setErrorMessage('Username หรือ password ไม่ถูกต้อง');
+      console.error('Error logging in:', error.response?.data?.error || error.message);
+      setErrorMessage(error.response?.data?.error || 'Username หรือ password ไม่ถูกต้อง');
     } finally {
       setLoading(false);
     }

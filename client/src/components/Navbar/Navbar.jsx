@@ -1,11 +1,11 @@
-import React, { useContext, useState } from 'react';
+import React, { useState } from 'react';
 import styles from "./Navbar.module.css";
-import { Menu, Box, AppBar, Toolbar, Typography, Container, Button, Tooltip, MenuItem, Divider, Avatar, ListItemIcon } from '@mui/material';
+import { Menu, Box, AppBar, Toolbar, Typography, Container, Button, Tooltip, MenuItem, Avatar, ListItemIcon } from '@mui/material';
 import IconWeb from '../../assets/IconWeb.svg';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import { useNavigate, Link } from 'react-router-dom';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
-import { UserContext } from "../../ContextUser";
+import { useUser } from "../../ContextUser";
 import Logout from '@mui/icons-material/Logout';
 
 const pages = [
@@ -14,14 +14,19 @@ const pages = [
 ];
 
 function Navbar() {
-  const { isLoggedIn, username, logout } = useContext(UserContext);
+  const { isLoggedIn, username, logout } = useUser();
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
-    navigate('/');
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/');
+    } catch (error) {
+      console.error('Logout failed:', error);
+      // You might want to show an error message to the user here
+    }
   };
 
   const handleOpenMenu = (event) => {
