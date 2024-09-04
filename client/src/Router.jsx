@@ -1,14 +1,12 @@
 import React, { Suspense, lazy } from 'react';
 import ReactDOM from 'react-dom/client';
-import {
-  createBrowserRouter,
-  RouterProvider,
-  Navigate
-} from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Navigate, Outlet } from 'react-router-dom';
 import ErrorPage from './Pages/Error-page.jsx';
 import Loading from './components/Loading/Loading.jsx';
 import { UserProvider, useUser } from './ContextUser.jsx';
 import { AdminProvider } from './ContextAdmin.jsx';
+import Navbar from './components/Navbar/Navbar';
+import Footer from './components/Footer/Footer';
 
 // Dynamic imports
 const App = lazy(() => import('./App.jsx'));
@@ -34,15 +32,43 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
+const Layout = () => (
+  <>
+    <Navbar />
+    <Suspense fallback={<Loading />}>
+      <Outlet />
+    </Suspense>
+    <Footer />
+  </>
+);
+
 const router = createBrowserRouter([
   {
     path: '/',
-    element: (
-      <Suspense fallback={<Loading />}>
-        <App />
-      </Suspense>
-    ),
+    element: <Layout />,  // ใช้ Layout ที่มีทั้ง Navbar และ Footer
     errorElement: <ErrorPage />,
+    children: [
+      {
+        path: '/',
+        element: <App />,
+      },
+      {
+        path: 'forgot-password',
+        element: <ForgotPassword />,
+      },
+      {
+        path: 'reset-password',
+        element: <ResetPassword />,
+      },
+      {
+        path: ':username',
+        element: (
+          <ProtectedRoute>
+            <Profile />
+          </ProtectedRoute>
+        ),
+      },
+    ],
   },
   {
     path: '/register',
@@ -57,32 +83,6 @@ const router = createBrowserRouter([
     element: (
       <Suspense fallback={<Loading />}>
         <Login />
-      </Suspense>
-    ),
-  },
-  {
-    path: '/forgot-password',
-    element: (
-      <Suspense fallback={<Loading />}>
-        <ForgotPassword />
-      </Suspense>
-    ),
-  },
-  {
-    path: '/reset-password',
-    element: (
-      <Suspense fallback={<Loading />}>
-        <ResetPassword />
-      </Suspense>
-    ),
-  },
-  {
-    path: ':username',
-    element: (
-      <Suspense fallback={<Loading />}>
-        <ProtectedRoute>
-          <Profile />
-        </ProtectedRoute>
       </Suspense>
     ),
   },

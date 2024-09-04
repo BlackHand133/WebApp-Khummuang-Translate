@@ -16,9 +16,6 @@ user_bp = Blueprint('user', __name__)
 bcrypt = Bcrypt()
 limiter = Limiter(key_func=get_remote_address)
 
-def get_redis_client():
-    return Redis.from_url(current_app.config['REDIS_URL'])
-
 @user_bp.route('/register', methods=['POST'])
 @limiter.limit("5 per minute")
 def register():
@@ -31,7 +28,6 @@ def register():
 
     if not all([username, email, password, gender, birth_date_str]):
         return jsonify({'error': 'กรุณากรอกข้อมูลให้ครบถ้วน'}), 400
-    
 
     if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
         return jsonify({'error': 'รูปแบบอีเมลไม่ถูกต้อง'}), 400
@@ -49,10 +45,15 @@ def register():
 
     hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
 
-    new_user = User(username=username, email=email, password=hashed_password, gender=gender, birth_date=birth_date)
-    
     try:
+        new_user = User(username=username, email=email, password=hashed_password, gender=gender, birth_date=birth_date)
         db.session.add(new_user)
+        db.session.flush()  # เพื่อให้ได้ userid ของ new_user
+
+        # สร้าง Profile พร้อมกับ User
+        new_profile = Profile(user_id=new_user.userid, firstname='', lastname='')
+        db.session.add(new_profile)
+
         db.session.commit()
     except SQLAlchemyError as e:
         db.session.rollback()
@@ -64,7 +65,8 @@ def register():
     return jsonify({
         'message': 'ลงทะเบียนสำเร็จ',
         'access_token': access_token,
-        'refresh_token': refresh_token
+        'refresh_token': refresh_token,
+        'user_id': new_user.userid  # เพิ่ม user_id ในการตอบกลับ
     }), 201
 
 @user_bp.route('/login', methods=['POST'])
@@ -125,16 +127,12 @@ def refresh():
 def logout():
     try:
         jti = get_jwt()['jti']
-        redis_client = get_redis_client()
-        redis_client.set(jti, '', ex=current_app.config['JWT_ACCESS_TOKEN_EXPIRES'])
         response = jsonify({'message': 'ออกจากระบบสำเร็จ'})
         unset_jwt_cookies(response)
         return response, 200
     except Exception as e:
         current_app.logger.error(f"Error during logout: {str(e)}")
         return jsonify({"error": "เกิดข้อผิดพลาดระหว่างการออกจากระบบ"}), 500
-   
-
 
 @user_bp.route('/forgot_password', methods=['POST'])
 @limiter.limit("3 per hour")
@@ -185,26 +183,43 @@ def reset_password():
         return jsonify({'error': 'เกิดข้อผิดพลาดในการรีเซ็ตรหัสผ่าน'}), 500
 
 
-@user_bp.route('/profile/<string:user_id>', methods=['PUT'])
+@user_bp.route('/profile/<string:username>', methods=['GET'])
 @jwt_required()
-def update_user_profile(user_id):
-    current_user = get_jwt_identity()
-    if current_user != user_id:
-        return jsonify({'error': 'Unauthorized'}), 403
+def get_user_profile(username):
+    try:
+        # ตรวจสอบว่าผู้ใช้มีสิทธิ์ในการเข้าถึงข้อมูลโปรไฟล์นี้หรือไม่
+        current_user = get_jwt_identity()
+        if current_user != username:
+            return jsonify({'error': 'คุณไม่มีสิทธิ์เข้าถึงโปรไฟล์นี้'}), 403
+        
+        # ดึงข้อมูลผู้ใช้จากฐานข้อมูล
+        user = User.query.filter_by(username=username).first()
+        if not user:
+            return jsonify({'error': 'ไม่พบผู้ใช้'}), 404
+        
+        # ดึงข้อมูลโปรไฟล์
+        profile = Profile.query.filter_by(user_id=user.userid).first()
+        if not profile:
+            return jsonify({'error': 'ไม่พบข้อมูลโปรไฟล์'}), 404
+        
+        # สร้างข้อมูลที่จะตอบกลับ
+        user_data = {
+            'username': user.username,
+            'email': user.email,
+            'gender': user.gender,
+            'birth_date': user.birth_date.strftime('%Y-%m-%d') if user.birth_date else None,
+            'profile': {
+                'firstname': profile.firstname,
+                'lastname': profile.lastname,
+                'country': profile.country,
+                'state': profile.state,
+                'phone_number': profile.phone_number
+            }
+        }
 
-    data = request.json
-    profile = Profile.query.filter_by(user_id=user_id).first()
+        return jsonify(user_data), 200
 
-    if not profile:
-        return jsonify({'error': 'ไม่พบโปรไฟล์'}), 404
+    except Exception as e:
+        # จัดการข้อผิดพลาดทั่วไป
+        return jsonify({'error': 'เกิดข้อผิดพลาด: ' + str(e)}), 500
 
-    # อัปเดตข้อมูล
-    profile.firstname = data.get('firstname', profile.firstname)
-    profile.lastname = data.get('lastname', profile.lastname)
-    profile.country = data.get('country', profile.country)
-    profile.state = data.get('state', profile.state)
-    profile.phone_number = data.get('phone_number', profile.phone_number)
-    
-    db.session.commit()
-
-    return jsonify({'message': 'ข้อมูลโปรไฟล์ถูกอัปเดตเรียบร้อยแล้ว'}), 200

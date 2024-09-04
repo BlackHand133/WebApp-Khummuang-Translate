@@ -15,11 +15,6 @@ bcrypt = Bcrypt()
 def get_uuid():
     return uuid4().hex
 
-class Gender(enum.Enum):
-    MALE = "male"
-    FEMALE = "female"
-    LGBTQ = "LGBTQ"
-    OTHER = "other" 
 
 class User(UserMixin, db.Model):
     __tablename__ = 'user'
@@ -72,8 +67,8 @@ class Profile(db.Model):
     __tablename__ = 'profile'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.String(32), db.ForeignKey('user.userid'), nullable=False)
-    firstname = db.Column(db.String(50), nullable=False)
-    lastname = db.Column(db.String(50), nullable=False)
+    firstname = db.Column(db.String(50), nullable=True)
+    lastname = db.Column(db.String(50), nullable=True)
     country = db.Column(db.String(50))
     state = db.Column(db.String(50))
     phone_number = db.Column(db.String(15))

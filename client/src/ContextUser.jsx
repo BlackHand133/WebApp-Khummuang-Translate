@@ -8,6 +8,10 @@ export const UserProvider = ({ children }) => {
   const [username, setUsername] = useState('');
   const [userId, setUserId] = useState('');
   const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState(null); // เพิ่ม state สำหรับ profile
+  const [error, setError] = useState(null); // เพิ่ม state สำหรับ error
+
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
   useEffect(() => {
     const initializeAuth = () => {
@@ -49,7 +53,7 @@ export const UserProvider = ({ children }) => {
 
   const login = async (username, password) => {
     try {
-      const response = await axios.post('http://localhost:8080/api/login', { username, password });
+      const response = await axios.post(`${API_URL}/api/login`, { username, password });
       const { access_token, refresh_token, user_id } = response.data;
       setAuthData(username, user_id, access_token, refresh_token);
       return response.data;
@@ -61,7 +65,7 @@ export const UserProvider = ({ children }) => {
 
   const register = async (username, email, password, gender, birth_date) => {
     try {
-      const response = await axios.post('http://localhost:8080/api/register', { username, email, password, gender, birth_date });
+      const response = await axios.post(`${API_URL}/api/register`, { username, email, password, gender, birth_date });
       const { access_token, refresh_token, user_id } = response.data;
       setAuthData(username, user_id, access_token, refresh_token);
       return response.data;
@@ -76,7 +80,7 @@ export const UserProvider = ({ children }) => {
       const accessToken = localStorage.getItem('access_token');
       if (accessToken) {
         await axios.post(
-          'http://localhost:8080/api/logout',
+          `${API_URL}/api/logout`,
           {},
           { 
             headers: { Authorization: `Bearer ${accessToken}` },
@@ -85,18 +89,19 @@ export const UserProvider = ({ children }) => {
         );
       }
     } catch (error) {
-      console.warn('Logout failed:', error.message);
+      console.warn('Logout failed:', error.response?.data?.message || error.message);
     } finally {
       clearAuthData();
     }
   };
+  
 
   const refreshToken = async () => {
     try {
       const refreshToken = localStorage.getItem('refresh_token');
       if (!refreshToken) throw new Error('No refresh token found');
       const response = await axios.post(
-        'http://localhost:8080/api/refresh',
+        `${API_URL}/api/refresh`,
         {},
         { headers: { Authorization: `Bearer ${refreshToken}` } }
       );
@@ -115,7 +120,7 @@ export const UserProvider = ({ children }) => {
       const accessToken = localStorage.getItem('access_token');
       if (!accessToken) throw new Error('No access token found');
       const response = await axios.post(
-        'http://localhost:8080/api/check_token',
+        `${API_URL}/api/check_token`,
         {},
         { headers: { Authorization: `Bearer ${accessToken}` } }
       );
@@ -129,24 +134,9 @@ export const UserProvider = ({ children }) => {
     }
   };
 
-  const updateProfile = async (userId, profileData) => {
-    try {
-      const accessToken = localStorage.getItem('access_token');
-      const response = await axios.put(
-        `http://localhost:8080/api/profile/${userId}`,
-        profileData,
-        { headers: { Authorization: `Bearer ${accessToken}` } }
-      );
-      return response.data;
-    } catch (error) {
-      console.error('Profile update failed:', error.response?.data?.error || error.message);
-      throw error;
-    }
-  };
-
   const forgotPassword = async (email) => {
     try {
-      const response = await axios.post('http://localhost:8080/api/forgot_password', { email });
+      const response = await axios.post(`${API_URL}/api/forgot_password`, { email });
       return response.data;
     } catch (error) {
       console.error('Forgot password request failed:', error.response?.data?.error || error.message);
@@ -157,7 +147,7 @@ export const UserProvider = ({ children }) => {
   const resetPassword = async (token, newPassword) => {
     try {
       const response = await axios.post(
-        'http://localhost:8080/api/reset_password',
+        `${API_URL}/api/reset_password`,
         { new_password: newPassword },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -167,6 +157,41 @@ export const UserProvider = ({ children }) => {
       throw error;
     }
   };
+
+  const fetchProfile = async () => {
+    try {
+      const profile = await getProfile();
+      // ทำสิ่งที่ต้องการกับข้อมูลโปรไฟล์
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+      // อาจจะแสดงข้อความแสดงข้อผิดพลาดหรือทำการจัดการอื่น ๆ
+    }
+  };
+
+  
+  const getProfile = async () => {
+    try {
+      const accessToken = localStorage.getItem('access_token');
+      if (!accessToken) throw new Error('No access token found');
+      
+      const response = await axios.get(`${API_URL}/api/profile/${username}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        withCredentials: true
+      });
+      
+      return response.data;
+    } catch (error) {
+      if (error.response) {
+        // ข้อความข้อผิดพลาดจากเซิร์ฟเวอร์
+        console.error('Failed to fetch profile:', error.response.data.error || error.message);
+      } else {
+        // ข้อความข้อผิดพลาดอื่น ๆ
+        console.error('Failed to fetch profile:', error.message);
+      }
+      throw error;
+    }
+  };
+  
 
   const setAuthData = (username, userId, accessToken, refreshToken) => {
     setIsLoggedIn(true);
@@ -195,14 +220,16 @@ export const UserProvider = ({ children }) => {
         username, 
         userId, 
         loading, 
+        profile, // เพิ่ม profile
+        error, // เพิ่ม error
         login, 
         register, 
         logout, 
         refreshToken, 
         checkAuth,
-        updateProfile,
         forgotPassword,
-        resetPassword
+        resetPassword,
+        getProfile // เพิ่ม getProfile
       }}
     >
       {children}

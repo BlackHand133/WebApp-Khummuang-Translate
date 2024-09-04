@@ -20,12 +20,10 @@ class Config:
     UPLOAD_FOLDER = 'uploads'
     UPLOAD_FOLDERURL = 'uploads/audio'
     
-    # Redis configuration
-    REDIS_URL = os.environ.get('REDIS_URL') or 'redis://localhost:6379/0'
     
     # JWT blacklist
-    JWT_BLACKLIST_ENABLED = True
-    JWT_BLACKLIST_TOKEN_CHECKS = ['access', 'refresh']
+    JWT_BLACKLIST_ENABLED = False
+    JWT_BLACKLIST_TOKEN_CHECKS = []
     
     # ตั้งค่าเพิ่มเติมเพื่อความปลอดภัย
     SESSION_COOKIE_SECURE = True
