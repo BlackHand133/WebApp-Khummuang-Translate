@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import axios from 'axios';
 
 export const UserContext = createContext();
@@ -8,31 +8,37 @@ export const UserProvider = ({ children }) => {
   const [username, setUsername] = useState('');
   const [userId, setUserId] = useState('');
   const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState(null); // เพิ่ม state สำหรับ profile
-  const [error, setError] = useState(null); // เพิ่ม state สำหรับ error
+  const [profile, setProfile] = useState(null);
+  const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
 
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
+  const initializeAuth = useCallback(() => {
+    const storedUsername = localStorage.getItem('username');
+    const storedUserId = localStorage.getItem('userId');
+    const accessToken = localStorage.getItem('access_token');
+    if (storedUsername && storedUserId && accessToken) {
+      setIsLoggedIn(true);
+      setUsername(storedUsername);
+      setUserId(storedUserId);
+    } else {
+      setIsLoggedIn(false);
+      setUsername('');
+      setUserId('');
+    }
+    setLoading(false);
+  }, []);
+  
+
   useEffect(() => {
-    const initializeAuth = () => {
-      const storedUsername = localStorage.getItem('username');
-      const storedUserId = localStorage.getItem('userId');
-      const accessToken = localStorage.getItem('access_token');
-      if (storedUsername && storedUserId && accessToken) {
-        setIsLoggedIn(true);
-        setUsername(storedUsername);
-        setUserId(storedUserId);
-      }
-      setLoading(false);
-    };
     initializeAuth();
 
-    // ตั้งค่า axios interceptors
     const interceptor = axios.interceptors.response.use(
       (response) => response,
       async (error) => {
         const originalRequest = error.config;
-        if (error.response.status === 401 && !originalRequest._retry) {
+        if (error.response?.status === 401 && !originalRequest._retry) {
           originalRequest._retry = true;
           try {
             await refreshToken();
@@ -49,9 +55,30 @@ export const UserProvider = ({ children }) => {
     return () => {
       axios.interceptors.response.eject(interceptor);
     };
+  }, [initializeAuth]);
+
+  const setAuthData = useCallback((username, userId, accessToken, refreshToken) => {
+    setIsLoggedIn(true);
+    setUsername(username);
+    setUserId(userId);
+    localStorage.setItem('username', username);
+    localStorage.setItem('userId', userId);
+    localStorage.setItem('access_token', accessToken);
+    localStorage.setItem('refresh_token', refreshToken);
   }, []);
 
-  const login = async (username, password) => {
+  const clearAuthData = useCallback(() => {
+    setIsLoggedIn(false);
+    setUsername('');
+    setUserId('');
+    setProfile(null);
+    localStorage.removeItem('username');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+  }, []);
+
+  const login = useCallback(async (username, password) => {
     try {
       const response = await axios.post(`${API_URL}/api/login`, { username, password });
       const { access_token, refresh_token, user_id } = response.data;
@@ -61,9 +88,9 @@ export const UserProvider = ({ children }) => {
       console.error('Login failed:', error.response?.data?.error || error.message);
       throw error;
     }
-  };
+  }, [API_URL, setAuthData]);
 
-  const register = async (username, email, password, gender, birth_date) => {
+  const register = useCallback(async (username, email, password, gender, birth_date) => {
     try {
       const response = await axios.post(`${API_URL}/api/register`, { username, email, password, gender, birth_date });
       const { access_token, refresh_token, user_id } = response.data;
@@ -73,9 +100,9 @@ export const UserProvider = ({ children }) => {
       console.error('Registration failed:', error.response?.data?.error || error.message);
       throw error;
     }
-  };
+  }, [API_URL, setAuthData]);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       const accessToken = localStorage.getItem('access_token');
       if (accessToken) {
@@ -93,10 +120,9 @@ export const UserProvider = ({ children }) => {
     } finally {
       clearAuthData();
     }
-  };
-  
+  }, [API_URL, clearAuthData]);
 
-  const refreshToken = async () => {
+  const refreshToken = useCallback(async () => {
     try {
       const refreshToken = localStorage.getItem('refresh_token');
       if (!refreshToken) throw new Error('No refresh token found');
@@ -113,9 +139,9 @@ export const UserProvider = ({ children }) => {
       clearAuthData();
       throw error;
     }
-  };
+  }, [API_URL, clearAuthData]);
 
-  const checkAuth = async () => {
+  const checkAuth = useCallback(async () => {
     try {
       const accessToken = localStorage.getItem('access_token');
       if (!accessToken) throw new Error('No access token found');
@@ -132,9 +158,9 @@ export const UserProvider = ({ children }) => {
       }
       throw error;
     }
-  };
+  }, [API_URL, clearAuthData]);
 
-  const forgotPassword = async (email) => {
+  const forgotPassword = useCallback(async (email) => {
     try {
       const response = await axios.post(`${API_URL}/api/forgot_password`, { email });
       return response.data;
@@ -142,9 +168,9 @@ export const UserProvider = ({ children }) => {
       console.error('Forgot password request failed:', error.response?.data?.error || error.message);
       throw error;
     }
-  };
+  }, [API_URL]);
 
-  const resetPassword = async (token, newPassword) => {
+  const resetPassword = useCallback(async (token, newPassword) => {
     try {
       const response = await axios.post(
         `${API_URL}/api/reset_password`,
@@ -156,20 +182,9 @@ export const UserProvider = ({ children }) => {
       console.error('Password reset failed:', error.response?.data?.error || error.message);
       throw error;
     }
-  };
+  }, [API_URL]);
 
-  const fetchProfile = async () => {
-    try {
-      const profile = await getProfile();
-      // ทำสิ่งที่ต้องการกับข้อมูลโปรไฟล์
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-      // อาจจะแสดงข้อความแสดงข้อผิดพลาดหรือทำการจัดการอื่น ๆ
-    }
-  };
-
-  
-  const getProfile = async () => {
+  const getProfile = useCallback(async () => {
     try {
       const accessToken = localStorage.getItem('access_token');
       if (!accessToken) throw new Error('No access token found');
@@ -179,59 +194,73 @@ export const UserProvider = ({ children }) => {
         withCredentials: true
       });
       
+      setProfile(response.data);
+      setError(null);
       return response.data;
     } catch (error) {
-      if (error.response) {
-        // ข้อความข้อผิดพลาดจากเซิร์ฟเวอร์
-        console.error('Failed to fetch profile:', error.response.data.error || error.message);
-      } else {
-        // ข้อความข้อผิดพลาดอื่น ๆ
-        console.error('Failed to fetch profile:', error.message);
-      }
+      console.error('Failed to fetch profile:', error.response?.data?.error || error.message);
+      setError(error.message);
       throw error;
     }
-  };
+  }, [API_URL, username]);
+
+  const updateProfile = useCallback(async (updatedProfileData) => {
+    try {
+      const accessToken = localStorage.getItem('access_token');
+      if (!accessToken) throw new Error('No access token found');
+      
+      const response = await axios.patch(`${API_URL}/api/profile/${username}`, updatedProfileData, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        withCredentials: true,
+        timeout: 5000
+      });
+      
+      setProfile(response.data);
+      setError(null);
+      setSuccessMessage('Profile updated successfully!'); // Notify user of success
+      return response.data;
+    } catch (error) {
+      // ปรับปรุงการจัดการข้อผิดพลาด
+      if (error?.response) {
+        // Server responded with a status other than 2xx
+        console.error('Failed to update profile:', error.response.data.error || error.response.statusText);
+        setError(error.response.data.error || `Error: ${error.response.status} ${error.response.statusText}`);
+      } else if (error?.request) {
+        // Request was made but no response received
+        console.error('Failed to update profile: No response received from server');
+        setError('No response received from server');
+      } else {
+        // Something happened in setting up the request
+        console.error('Failed to update profile:', error.message);
+        setError(`Request error: ${error.message}`);
+      }
+      setSuccessMessage(null); // Clear success message on error
+      throw error;
+    }
+  }, [API_URL, username]);
   
 
-  const setAuthData = (username, userId, accessToken, refreshToken) => {
-    setIsLoggedIn(true);
-    setUsername(username);
-    setUserId(userId);
-    localStorage.setItem('username', username);
-    localStorage.setItem('userId', userId);
-    localStorage.setItem('access_token', accessToken);
-    localStorage.setItem('refresh_token', refreshToken);
-  };
 
-  const clearAuthData = () => {
-    setIsLoggedIn(false);
-    setUsername('');
-    setUserId('');
-    localStorage.removeItem('username');
-    localStorage.removeItem('userId');
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
+  const contextValue = {
+    isLoggedIn,
+    username,
+    userId,
+    loading,
+    profile,
+    error,
+    login,
+    register,
+    logout,
+    refreshToken,
+    checkAuth,
+    forgotPassword,
+    resetPassword,
+    getProfile,
+    updateProfile
   };
 
   return (
-    <UserContext.Provider 
-      value={{ 
-        isLoggedIn, 
-        username, 
-        userId, 
-        loading, 
-        profile, // เพิ่ม profile
-        error, // เพิ่ม error
-        login, 
-        register, 
-        logout, 
-        refreshToken, 
-        checkAuth,
-        forgotPassword,
-        resetPassword,
-        getProfile // เพิ่ม getProfile
-      }}
-    >
+    <UserContext.Provider value={contextValue}>
       {children}
     </UserContext.Provider>
   );

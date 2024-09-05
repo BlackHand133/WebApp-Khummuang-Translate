@@ -18,7 +18,7 @@ def get_uuid():
 
 class User(UserMixin, db.Model):
     __tablename__ = 'user'
-    userid = db.Column(db.String(32), primary_key=True, default=get_uuid, unique=True, nullable=False)
+    user_id = db.Column(db.String(32), primary_key=True, default=get_uuid, unique=True, nullable=False)
     username = db.Column(db.String(50), unique=True, nullable=False)
     email = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(60), nullable=False)
@@ -28,20 +28,12 @@ class User(UserMixin, db.Model):
     updated_at = db.Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def get_id(self):
-        return self.userid
-
-    @property
-    def age(self):
-        if not self.birth_date:
-            return None
-        today = datetime.today()
-        age = today.year - self.birth_date.year - ((today.month, today.day) < (self.birth_date.month, self.birth_date.day))
-        return age
+        return self.user_id
 
 class AudioRecord(db.Model):
     __tablename__ = 'audio_record'
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.String(32), db.ForeignKey('user.userid'), nullable=True)
+    user_id = db.Column(db.String(32), db.ForeignKey('user.user_id'), nullable=True)
     audio_url = db.Column(db.String(200))
     transcription = db.Column(db.Text)
     time = db.Column(db.String(20), nullable=False)
@@ -66,7 +58,7 @@ class SysAdmin(db.Model):
 class Profile(db.Model):
     __tablename__ = 'profile'
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.String(32), db.ForeignKey('user.userid'), nullable=False)
+    user_id = db.Column(db.String(32), db.ForeignKey('user.user_id'), nullable=False)
     firstname = db.Column(db.String(50), nullable=True)
     lastname = db.Column(db.String(50), nullable=True)
     country = db.Column(db.String(50))

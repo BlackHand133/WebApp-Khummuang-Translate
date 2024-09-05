@@ -48,10 +48,10 @@ def register():
     try:
         new_user = User(username=username, email=email, password=hashed_password, gender=gender, birth_date=birth_date)
         db.session.add(new_user)
-        db.session.flush()  # เพื่อให้ได้ userid ของ new_user
+        db.session.flush()
 
         # สร้าง Profile พร้อมกับ User
-        new_profile = Profile(user_id=new_user.userid, firstname='', lastname='')
+        new_profile = Profile(user_id=new_user.user_id, firstname='', lastname='', country='', state='', phone_number='')
         db.session.add(new_profile)
 
         db.session.commit()
@@ -66,8 +66,9 @@ def register():
         'message': 'ลงทะเบียนสำเร็จ',
         'access_token': access_token,
         'refresh_token': refresh_token,
-        'user_id': new_user.userid  # เพิ่ม user_id ในการตอบกลับ
+        'user_id': new_user.user_id  # ใช้ user_id ที่ถูกต้อง
     }), 201
+
 
 @user_bp.route('/login', methods=['POST'])
 @limiter.limit("10 per minute")
@@ -89,7 +90,7 @@ def login():
             'message': 'เข้าสู่ระบบสำเร็จ',
             'access_token': access_token,
             'refresh_token': refresh_token,
-            'user_id': user.userid,
+            'user_id': user.user_id,  # ใช้ user_id ที่ถูกต้อง
             'username': user.username
         })
         set_access_cookies(response, access_token)
@@ -187,22 +188,18 @@ def reset_password():
 @jwt_required()
 def get_user_profile(username):
     try:
-        # ตรวจสอบว่าผู้ใช้มีสิทธิ์ในการเข้าถึงข้อมูลโปรไฟล์นี้หรือไม่
         current_user = get_jwt_identity()
         if current_user != username:
             return jsonify({'error': 'คุณไม่มีสิทธิ์เข้าถึงโปรไฟล์นี้'}), 403
         
-        # ดึงข้อมูลผู้ใช้จากฐานข้อมูล
         user = User.query.filter_by(username=username).first()
         if not user:
             return jsonify({'error': 'ไม่พบผู้ใช้'}), 404
         
-        # ดึงข้อมูลโปรไฟล์
-        profile = Profile.query.filter_by(user_id=user.userid).first()
+        profile = Profile.query.filter_by(user_id=user.user_id).first()
         if not profile:
             return jsonify({'error': 'ไม่พบข้อมูลโปรไฟล์'}), 404
         
-        # สร้างข้อมูลที่จะตอบกลับ
         user_data = {
             'username': user.username,
             'email': user.email,
@@ -220,6 +217,64 @@ def get_user_profile(username):
         return jsonify(user_data), 200
 
     except Exception as e:
-        # จัดการข้อผิดพลาดทั่วไป
         return jsonify({'error': 'เกิดข้อผิดพลาด: ' + str(e)}), 500
 
+
+@user_bp.route('/profile/<string:username>', methods=['PATCH'])
+@jwt_required()
+def update_user_profile(username):
+    try:
+        # ตรวจสอบสิทธิ์ของผู้ใช้
+        current_user = get_jwt_identity()
+        if current_user != username:
+            return jsonify({'error': 'คุณไม่มีสิทธิ์แก้ไขโปรไฟล์นี้'}), 403
+        
+        # ดึงข้อมูลผู้ใช้ตาม username
+        user = User.query.filter_by(username=username).first()
+        if not user:
+            return jsonify({'error': 'ไม่พบผู้ใช้'}), 404
+        
+        # ดึงข้อมูลโปรไฟล์ที่เกี่ยวข้องกับผู้ใช้
+        profile = Profile.query.filter_by(user_id=user.user_id).first()
+        if not profile:
+            # ถ้าไม่พบข้อมูลโปรไฟล์ ให้สร้างโปรไฟล์ใหม่
+            profile = Profile(user_id=user.user_id)
+            db.session.add(profile)
+
+        # รับข้อมูลจากคำร้องขอ
+        data = request.get_json()
+        print("Received data:", data)
+
+        # อัปเดตข้อมูลผู้ใช้
+        if 'email' in data:
+            user.email = data['email']
+        if 'gender' in data:
+            user.gender = data['gender']
+        if 'birth_date' in data:
+            try:
+                user.birth_date = datetime.strptime(data['birth_date'], '%Y-%m-%d').date()
+            except ValueError:
+                return jsonify({'error': 'รูปแบบวันเกิดไม่ถูกต้อง กรุณาใช้รูปแบบ YYYY-MM-DD'}), 400
+
+        # อัปเดตข้อมูลโปรไฟล์
+        profile_data = data.get('profile', {})
+        profile.firstname = profile_data.get('firstname', profile.firstname)
+        profile.lastname = profile_data.get('lastname', profile.lastname)
+        profile.country = profile_data.get('country', profile.country)
+        profile.state = profile_data.get('state', profile.state)
+        profile.phone_number = profile_data.get('phone_number', profile.phone_number)
+
+        print("Updated user:", user)
+        print("Updated profile:", profile)
+
+        # บันทึกข้อมูลที่อัปเดตลงในฐานข้อมูล
+        try:
+            db.session.commit()
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            return jsonify({'error': 'เกิดข้อผิดพลาดในการบันทึกข้อมูล'}), 500
+        
+        return jsonify({'message': 'อัปเดตโปรไฟล์สำเร็จ'}), 200
+
+    except Exception as e:
+        return jsonify({'error': 'เกิดข้อผิดพลาด: ' + str(e)}), 500
