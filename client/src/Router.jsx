@@ -16,7 +16,7 @@ const AdminLogin = lazy(() => import('./Pages/AdminLogin.jsx'));
 const AdminDashboard = lazy(() => import('./Pages/AdminDashboard.jsx'));
 const ForgotPassword = lazy(() => import('./Pages/ForgotPassword.jsx'));
 const ResetPassword = lazy(() => import('./Pages/ResetPassword.jsx'));
-const Profile = lazy(() => import('./Pages/Profile.jsx'));
+const Wrapper = lazy(() => import('./components/Body/Wrapperwhite.jsx'));
 
 const ProtectedRoute = ({ children }) => {
   const { isLoggedIn, loading } = useUser();
@@ -64,7 +64,7 @@ const router = createBrowserRouter([
         path: ':username',
         element: (
           <ProtectedRoute>
-            <Profile />
+            <Wrapper />
           </ProtectedRoute>
         ),
       },

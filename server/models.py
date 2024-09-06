@@ -7,7 +7,6 @@ from wtforms import DateField, SelectField, StringField, PasswordField
 from wtforms.validators import DataRequired, Length
 from flask_bcrypt import Bcrypt
 from datetime import datetime
-import enum
 
 db = SQLAlchemy()
 bcrypt = Bcrypt()
@@ -64,10 +63,20 @@ class Profile(db.Model):
     country = db.Column(db.String(50))
     state = db.Column(db.String(50))
     phone_number = db.Column(db.String(15))
+    last_login = db.Column(DateTime)
     created_at = db.Column(DateTime, default=datetime.utcnow)
     updated_at = db.Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    user = db.relationship('User', backref=db.backref('profile', uselist=False))
+    user = db.relationship('User', backref=db.backref('profile', uselist=False))        
 
     def __repr__(self):
         return f'<Profile {self.firstname} {self.lastname}>'
+    
+class TokenBlacklist(db.Model):
+    __tablename__ = 'token_blacklist'
+    id = db.Column(db.Integer, primary_key=True)
+    jti = db.Column(db.String(36), nullable=False, unique=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<TokenBlacklist {self.jti}>'

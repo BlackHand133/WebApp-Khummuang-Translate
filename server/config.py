@@ -1,3 +1,4 @@
+from datetime import timedelta
 import secrets
 import os
 
@@ -30,3 +31,6 @@ class Config:
     SESSION_COOKIE_HTTPONLY = True
     REMEMBER_COOKIE_SECURE = True
     REMEMBER_COOKIE_HTTPONLY = True
+
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=15)  # ตั้งค่าอายุของ access token
+    JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)

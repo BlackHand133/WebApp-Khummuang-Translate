@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useUser } from '../ContextUser';
-import { TextField, Button, Container, CircularProgress, Alert, Grid, Box, Typography, List, ListItem, ListItemIcon, ListItemText, Divider } from '@mui/material';
-import { Person, Lock, Save } from '@mui/icons-material';
+import { TextField, Button, Container, CircularProgress, Alert, Grid, Box, Typography, List, ListItem, ListItemIcon, ListItemText, Divider, Snackbar } from '@mui/material';
+import { Person, Lock, Save, Email, Phone, Cake, Wc, Public, LocationCity } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 
 // Custom styled component for rounded menu buttons
@@ -35,7 +35,7 @@ const EnhancedSaveButton = styled(Button)(({ theme }) => ({
   minWidth: 250,
   height: 60,
   borderRadius: 30,
-  fontSize: '2 rem',
+  fontSize: '1.2rem',
   fontWeight: 'bold',
   textTransform: 'uppercase',
   boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
@@ -51,16 +51,61 @@ const EnhancedSaveButton = styled(Button)(({ theme }) => ({
 }));
 
 function Profile() {
-  const { username, getProfile, updateProfile } = useUser();
+  const { username, getProfile, updateProfile, resetPassword } = useUser();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [editProfile, setEditProfile] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState(null);
-  const [successMessage, setSuccessMessage] = useState(null);
-  const [activeSection, setActiveSection] = useState('profile');
   const [isProfileChanged, setIsProfileChanged] = useState(false);
+  const [activeSection, setActiveSection] = useState('profile');
+
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState(null);
+
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarSeverity, setSnackbarSeverity] = useState('success');
+
+  const showSnackbar = useCallback((message, severity = 'success') => {
+    setSnackbarMessage(message);
+    setSnackbarSeverity(severity);
+    setSnackbarOpen(true);
+  }, []);
+
+  const handleCloseSnackbar = (event, reason) => {
+    if (reason === 'clickaway') {
+      return;
+    }
+    setSnackbarOpen(false);
+  };
+
+  const handlePasswordChange = useCallback(async () => {
+    if (newPassword !== confirmPassword) {
+      setPasswordError("New passwords don't match");
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setPasswordError(null);
+
+      // Use resetPassword function instead of updateProfile
+      await resetPassword(currentPassword, newPassword);
+
+      showSnackbar('Password changed successfully');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err) {
+      setPasswordError('Failed to change password: ' + err.message);
+      showSnackbar('Failed to change password', 'error');
+    } finally {
+      setSaving(false);
+    }
+  }, [currentPassword, newPassword, confirmPassword, resetPassword, showSnackbar]);
 
   const fetchProfile = useCallback(async () => {
     try {
@@ -70,10 +115,11 @@ function Profile() {
       setEditProfile(profileData);
     } catch (err) {
       setError(err.message);
+      showSnackbar('Failed to fetch profile', 'error');
     } finally {
       setLoading(false);
     }
-  }, [getProfile]);
+  }, [getProfile, showSnackbar]);
 
   useEffect(() => {
     if (username) {
@@ -84,18 +130,18 @@ function Profile() {
   const handleChange = useCallback((e) => {
     const { name, value } = e.target;
     setEditProfile((prevProfile) => {
-      let updatedProfile = { ...prevProfile };
-      
+      const updatedProfile = { ...prevProfile };
+
       if (name.includes('.')) {
         const [parent, child] = name.split('.');
         updatedProfile[parent] = {
           ...updatedProfile[parent],
-          [child]: value
+          [child]: value,
         };
       } else {
         updatedProfile[name] = value;
       }
-      
+
       return updatedProfile;
     });
 
@@ -105,20 +151,18 @@ function Profile() {
   const handleSave = useCallback(async () => {
     try {
       setSaving(true);
-      setSaveError(null);
-      setSuccessMessage(null);
-      
+
       await updateProfile(editProfile);
-      
-      setSuccessMessage('Profile updated successfully');
+
+      showSnackbar('Profile updated successfully');
       setProfile(editProfile);
       setIsProfileChanged(false);
     } catch (err) {
-      setSaveError('Failed to save profile: ' + err.message);
+      showSnackbar('Failed to save profile: ' + err.message, 'error');
     } finally {
       setSaving(false);
     }
-  }, [editProfile, updateProfile]);
+  }, [editProfile, updateProfile, showSnackbar]);
 
   const ProfileForm = useMemo(() => {
     if (!editProfile) return null;
@@ -136,6 +180,9 @@ function Profile() {
               fullWidth
               disabled
               variant="outlined"
+              InputProps={{
+                startAdornment: <Person color="action" sx={{ mr: 1 }} />,
+              }}
             />
           </Grid>
           <Grid item xs={12} sm={6}>
@@ -146,6 +193,9 @@ function Profile() {
               onChange={handleChange}
               fullWidth
               variant="outlined"
+              InputProps={{
+                startAdornment: <Email color="action" sx={{ mr: 1 }} />,
+              }}
             />
           </Grid>
         </Grid>
@@ -184,6 +234,9 @@ function Profile() {
               variant="outlined"
               type="date"
               InputLabelProps={{ shrink: true }}
+              InputProps={{
+                startAdornment: <Cake color="action" sx={{ mr: 1 }} />,
+              }}
             />
           </Grid>
           <Grid item xs={12} sm={6}>
@@ -194,6 +247,9 @@ function Profile() {
               onChange={handleChange}
               fullWidth
               variant="outlined"
+              InputProps={{
+                startAdornment: <Wc color="action" sx={{ mr: 1 }} />,
+              }}
             />
           </Grid>
         </Grid>
@@ -210,6 +266,9 @@ function Profile() {
               onChange={handleChange}
               fullWidth
               variant="outlined"
+              InputProps={{
+                startAdornment: <Public color="action" sx={{ mr: 1 }} />,
+              }}
             />
           </Grid>
           <Grid item xs={12} sm={6}>
@@ -220,6 +279,9 @@ function Profile() {
               onChange={handleChange}
               fullWidth
               variant="outlined"
+              InputProps={{
+                startAdornment: <LocationCity color="action" sx={{ mr: 1 }} />,
+              }}
             />
           </Grid>
         </Grid>
@@ -228,125 +290,128 @@ function Profile() {
 
         <Typography variant="h6" gutterBottom>Contact Information</Typography>
         <Grid container spacing={3}>
-          <Grid item xs={12}>
+          <Grid item xs={12} sm={6}>
             <StyledTextField
               label="Phone Number"
-              name="profile.phone_number"
-              value={editProfile.profile?.phone_number || ''}
+              name="phone"
+              value={editProfile.phone || ''}
               onChange={handleChange}
               fullWidth
               variant="outlined"
+              InputProps={{
+                startAdornment: <Phone color="action" sx={{ mr: 1 }} />,
+              }}
             />
           </Grid>
         </Grid>
-      </Box>
-    );
-  }, [editProfile, handleChange]);
 
-  const PasswordChangeForm = useMemo(() => {
-    return () => (
-      <Box maxWidth={400} mx="auto">
-        <Typography variant="h6" gutterBottom>Change Password</Typography>
-        <StyledTextField
-          label="Current Password"
-          name="currentPassword"
-          type="password"
-          fullWidth
-          margin="normal"
-          variant="outlined"
-        />
-        <StyledTextField
-          label="New Password"
-          name="newPassword"
-          type="password"
-          fullWidth
-          margin="normal"
-          variant="outlined"
-        />
-        <StyledTextField
-          label="Confirm New Password"
-          name="confirmPassword"
-          type="password"
-          fullWidth
-          margin="normal"
-          variant="outlined"
-        />
         <Box display="flex" justifyContent="center" mt={3}>
-          <Button
+          <EnhancedSaveButton
             variant="contained"
             color="primary"
-            sx={{ minWidth: 200 }}
+            onClick={handleSave}
+            disabled={!isProfileChanged || saving}
           >
-            Change Password
-          </Button>
+            {saving ? <CircularProgress size={24} /> : 'Save Changes'}
+          </EnhancedSaveButton>
         </Box>
       </Box>
     );
-  }, []);
+  }, [editProfile, handleChange, handleSave, isProfileChanged, saving]);
 
-  if (loading) return <CircularProgress />;
-  if (error) return <Alert severity="error">{error}</Alert>;
-  if (!profile) return <div>No profile data found</div>;
-
-  return (
-    <Box sx={{ display: 'flex', backgroundColor: 'white', mt: 8 }}>
-      <Box sx={{ width: 250, flexShrink: 0, borderRight: 1, borderColor: 'divider', p: 2 }}>
-        <List>
-          <RoundedMenuItem
-            button
-            selected={activeSection === 'profile'}
-            onClick={() => setActiveSection('profile')}
-          >
-            <ListItemIcon><Person /></ListItemIcon>
-            <ListItemText primary="Profile" />
-          </RoundedMenuItem>
-          <RoundedMenuItem
-            button
-            selected={activeSection === 'password'}
-            onClick={() => setActiveSection('password')}
-          >
-            <ListItemIcon><Lock /></ListItemIcon>
-            <ListItemText primary="Change Password" />
-          </RoundedMenuItem>
-        </List>
-      </Box>
-
-      <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
-        <Container maxWidth="md">
-          <Typography variant="h4" gutterBottom sx={{ mb: 5, mt: 3 }}>
-            {activeSection === 'profile' ? 'Profile' : 'Change Password'}
-          </Typography>
-
-          {activeSection === 'profile' ? ProfileForm : <PasswordChangeForm />}
-
-          {activeSection === 'profile' && (
-            <Box mt={6}>
-              {saveError && (
-                <Alert severity="error" sx={{ mb: 2 }}>
-                  {saveError}
-                </Alert>
-              )}
-              {successMessage && (
-                <Alert severity="success" sx={{ mb: 2 }}>
-                  {successMessage}
-                </Alert>
-              )}
-              <Box display="flex" justifyContent="center">
-                <EnhancedSaveButton
-                  variant="contained"
-                  color="primary"
-                  onClick={handleSave}
-                  disabled={saving || !isProfileChanged}
-                  startIcon={saving ? <CircularProgress size={24} color="inherit" /> : <Save />}
-                >
-                  {saving ? 'Saving...' : 'Save'}
-                </EnhancedSaveButton>
-              </Box>
-            </Box>
-          )}
-        </Container>
+  const PasswordChangeForm = useMemo(() => (
+    <Box>
+      <Typography variant="h6" gutterBottom>Change Password</Typography>
+      <StyledTextField
+        label="Current Password"
+        name="currentPassword"
+        type="password"
+        value={currentPassword}
+        onChange={(e) => setCurrentPassword(e.target.value)}
+        fullWidth
+        margin="normal"
+        variant="outlined"
+        error={Boolean(passwordError)}
+        helperText={passwordError}
+        InputProps={{
+          startAdornment: <Lock color="action" sx={{ mr: 1 }} />,
+        }}
+      />
+      <StyledTextField
+        label="New Password"
+        name="newPassword"
+        type="password"
+        value={newPassword}
+        onChange={(e) => setNewPassword(e.target.value)}
+        fullWidth
+        margin="normal"
+        variant="outlined"
+        error={Boolean(passwordError)}
+        helperText={passwordError}
+        InputProps={{
+          startAdornment: <Lock color="action" sx={{ mr: 1 }} />,
+        }}
+      />
+      <StyledTextField
+        label="Confirm New Password"
+        name="confirmPassword"
+        type="password"
+        value={confirmPassword}
+        onChange={(e) => setConfirmPassword(e.target.value)}
+        fullWidth
+        margin="normal"
+        variant="outlined"
+        error={Boolean(passwordError)}
+        helperText={passwordError}
+        InputProps={{
+          startAdornment: <Lock color="action" sx={{ mr: 1 }} />,
+        }}
+      />
+      <Box display="flex" justifyContent="center" mt={3}>
+        <EnhancedSaveButton
+          variant="contained"
+          color="primary"
+          onClick={handlePasswordChange}
+          disabled={saving}
+        >
+          {saving ? <CircularProgress size={24} /> : 'Change Password'}
+        </EnhancedSaveButton>
       </Box>
     </Box>
+  ), [currentPassword, newPassword, confirmPassword, passwordError, handlePasswordChange, saving]);
+
+  if (loading) return <CircularProgress />;
+
+  return (
+    <Container>
+      <Grid container spacing={3}>
+        <Grid item xs={12} sm={3}>
+          <List>
+            <RoundedMenuItem button selected={activeSection === 'profile'} onClick={() => setActiveSection('profile')}>
+              <ListItemIcon><Person /></ListItemIcon>
+              <ListItemText primary="Profile" />
+            </RoundedMenuItem>
+            <RoundedMenuItem button selected={activeSection === 'password'} onClick={() => setActiveSection('password')}>
+              <ListItemIcon><Lock /></ListItemIcon>
+              <ListItemText primary="Change Password" />
+            </RoundedMenuItem>
+          </List>
+        </Grid>
+        <Grid item xs={12} sm={9}>
+          {activeSection === 'profile' ? ProfileForm : PasswordChangeForm}
+        </Grid>
+      </Grid>
+
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+      >
+        <Alert onClose={handleCloseSnackbar} severity={snackbarSeverity} sx={{ width: '100%' }}>
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
+    </Container>
   );
 }
 

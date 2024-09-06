@@ -29,7 +29,6 @@ export const UserProvider = ({ children }) => {
     }
     setLoading(false);
   }, []);
-  
 
   useEffect(() => {
     initializeAuth();
@@ -78,6 +77,13 @@ export const UserProvider = ({ children }) => {
     localStorage.removeItem('refresh_token');
   }, []);
 
+  const handleTokenExpiration = useCallback((error) => {
+    if (error.response && error.response.status === 401) {
+      clearAuthData();
+      // อาจจะเพิ่มการ redirect ไปยังหน้า login หรือแสดง notification ให้ผู้ใช้ทราบ
+    }
+  }, [clearAuthData]);
+
   const login = useCallback(async (username, password) => {
     try {
       const response = await axios.post(`${API_URL}/api/login`, { username, password });
@@ -86,9 +92,10 @@ export const UserProvider = ({ children }) => {
       return response.data;
     } catch (error) {
       console.error('Login failed:', error.response?.data?.error || error.message);
+      handleTokenExpiration(error);
       throw error;
     }
-  }, [API_URL, setAuthData]);
+  }, [API_URL, setAuthData, handleTokenExpiration]);
 
   const register = useCallback(async (username, email, password, gender, birth_date) => {
     try {
@@ -98,9 +105,10 @@ export const UserProvider = ({ children }) => {
       return response.data;
     } catch (error) {
       console.error('Registration failed:', error.response?.data?.error || error.message);
+      handleTokenExpiration(error);
       throw error;
     }
-  }, [API_URL, setAuthData]);
+  }, [API_URL, setAuthData, handleTokenExpiration]);
 
   const logout = useCallback(async () => {
     try {
@@ -129,10 +137,14 @@ export const UserProvider = ({ children }) => {
       const response = await axios.post(
         `${API_URL}/api/refresh`,
         {},
-        { headers: { Authorization: `Bearer ${refreshToken}` } }
+        { 
+          headers: { Authorization: `Bearer ${refreshToken}` },
+          withCredentials: true
+        }
       );
-      const { access_token } = response.data;
+      const { access_token, refresh_token } = response.data;
       localStorage.setItem('access_token', access_token);
+      localStorage.setItem('refresh_token', refresh_token);
       return response.data;
     } catch (error) {
       console.error('Token refresh failed:', error.response?.data?.error || error.message);
@@ -153,36 +165,50 @@ export const UserProvider = ({ children }) => {
       return response.data;
     } catch (error) {
       console.error('Token check failed:', error.response?.data?.error || error.message);
-      if (error.response && error.response.status === 401) {
-        clearAuthData();
-      }
+      handleTokenExpiration(error);
       throw error;
     }
-  }, [API_URL, clearAuthData]);
+  }, [API_URL, handleTokenExpiration]);
 
-  const forgotPassword = useCallback(async (email) => {
+  const forgotPassword = useCallback(async (username) => {
     try {
-      const response = await axios.post(`${API_URL}/api/forgot_password`, { email });
+      const response = await axios.post(`${API_URL}/api/forgot_password`, { username });
+      setSuccessMessage('Password reset token has been generated. Please check your notification.');
       return response.data;
     } catch (error) {
       console.error('Forgot password request failed:', error.response?.data?.error || error.message);
+      setError(error.response?.data?.error || 'Failed to process forgot password request.');
       throw error;
     }
   }, [API_URL]);
 
-  const resetPassword = useCallback(async (token, newPassword) => {
+  const resetPassword = useCallback(async (resetToken, newPassword) => {
     try {
       const response = await axios.post(
         `${API_URL}/api/reset_password`,
-        { new_password: newPassword },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { 
+          reset_token: resetToken,
+          new_password: newPassword
+        }
       );
+
+      // Check if response contains a new access token and store it
+      if (response.data.access_token) {
+        localStorage.setItem('access_token', response.data.access_token);
+      }
+
+      // Update the UI with success message
+      setSuccessMessage('รีเซ็ตรหัสผ่านสำเร็จ!');
+      setError(null);
       return response.data;
     } catch (error) {
-      console.error('Password reset failed:', error.response?.data?.error || error.message);
-      throw error;
+      // Log the error and update UI with error message
+      console.error('การรีเซ็ตรหัสผ่านล้มเหลว:', error.response?.data?.error || error.message);
+      setError(error.response?.data?.error || 'ไม่สามารถรีเซ็ตรหัสผ่านได้ โปรดลองอีกครั้ง.');
+      throw error; // Re-throw error for further handling if needed
     }
   }, [API_URL]);
+  
 
   const getProfile = useCallback(async () => {
     try {
@@ -199,10 +225,11 @@ export const UserProvider = ({ children }) => {
       return response.data;
     } catch (error) {
       console.error('Failed to fetch profile:', error.response?.data?.error || error.message);
+      handleTokenExpiration(error);
       setError(error.message);
       throw error;
     }
-  }, [API_URL, username]);
+  }, [API_URL, username, handleTokenExpiration]);
 
   const updateProfile = useCallback(async (updatedProfileData) => {
     try {
@@ -217,29 +244,45 @@ export const UserProvider = ({ children }) => {
       
       setProfile(response.data);
       setError(null);
-      setSuccessMessage('Profile updated successfully!'); // Notify user of success
+      setSuccessMessage('Profile updated successfully!');
       return response.data;
     } catch (error) {
-      // ปรับปรุงการจัดการข้อผิดพลาด
+      handleTokenExpiration(error);
       if (error?.response) {
-        // Server responded with a status other than 2xx
         console.error('Failed to update profile:', error.response.data.error || error.response.statusText);
         setError(error.response.data.error || `Error: ${error.response.status} ${error.response.statusText}`);
       } else if (error?.request) {
-        // Request was made but no response received
         console.error('Failed to update profile: No response received from server');
         setError('No response received from server');
       } else {
-        // Something happened in setting up the request
         console.error('Failed to update profile:', error.message);
         setError(`Request error: ${error.message}`);
       }
-      setSuccessMessage(null); // Clear success message on error
+      setSuccessMessage(null);
       throw error;
     }
-  }, [API_URL, username]);
-  
+  }, [API_URL, username, handleTokenExpiration]);
 
+  const setupAutoRefresh = useCallback(() => {
+    const refreshInterval = 15 * 60 * 1000; // 15 นาที
+    const intervalId = setInterval(async () => {
+      try {
+        await refreshToken();
+      } catch (error) {
+        console.error('Auto refresh failed:', error);
+        clearInterval(intervalId);
+      }
+    }, refreshInterval);
+
+    return () => clearInterval(intervalId);
+  }, [refreshToken]);
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      const cleanup = setupAutoRefresh();
+      return cleanup;
+    }
+  }, [isLoggedIn, setupAutoRefresh]);
 
   const contextValue = {
     isLoggedIn,
@@ -248,6 +291,7 @@ export const UserProvider = ({ children }) => {
     loading,
     profile,
     error,
+    successMessage,
     login,
     register,
     logout,

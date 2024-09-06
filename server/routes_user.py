@@ -1,7 +1,7 @@
 from flask import Blueprint, current_app, jsonify, request
-from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt, jwt_required, set_access_cookies, set_refresh_cookies, unset_jwt_cookies, get_jwt_identity
+from flask_jwt_extended import JWTManager, create_access_token, create_refresh_token, get_jwt, jwt_required, set_access_cookies, set_refresh_cookies, unset_jwt_cookies, get_jwt_identity
 from flask_login import login_user, logout_user, login_required, current_user
-from models import db, User, Profile
+from models import db, User, Profile, TokenBlacklist
 from flask_bcrypt import Bcrypt
 from datetime import datetime, timedelta
 from sqlalchemy.exc import SQLAlchemyError
@@ -9,12 +9,20 @@ import re
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from datetime import datetime
-from redis import Redis
+import logging
 
 
 user_bp = Blueprint('user', __name__)
 bcrypt = Bcrypt()
 limiter = Limiter(key_func=get_remote_address)
+
+jwt = JWTManager()
+
+@jwt.token_in_blocklist_loader
+def check_if_token_revoked(jwt_header, jwt_payload):
+    jti = jwt_payload['jti']
+    token = TokenBlacklist.query.filter_by(jti=jti).first()
+    return token is not None
 
 @user_bp.route('/register', methods=['POST'])
 @limiter.limit("5 per minute")
@@ -59,8 +67,18 @@ def register():
         db.session.rollback()
         return jsonify({'error': 'เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองอีกครั้ง'}), 500
 
-    access_token = create_access_token(identity=username)
-    refresh_token = create_refresh_token(identity=username)
+    access_token = create_access_token(
+        identity=username,
+        additional_claims={
+            'user_id': new_user.user_id,
+            'email': new_user.email
+        },
+        expires_delta=current_app.config['JWT_ACCESS_TOKEN_EXPIRES']
+    )
+    refresh_token = create_refresh_token(
+        identity=username,
+        expires_delta=current_app.config['JWT_REFRESH_TOKEN_EXPIRES']
+    )
 
     return jsonify({
         'message': 'ลงทะเบียนสำเร็จ',
@@ -68,7 +86,6 @@ def register():
         'refresh_token': refresh_token,
         'user_id': new_user.user_id  # ใช้ user_id ที่ถูกต้อง
     }), 201
-
 
 @user_bp.route('/login', methods=['POST'])
 @limiter.limit("10 per minute")
@@ -83,18 +100,27 @@ def login():
     user = User.query.filter_by(username=username).first()
 
     if user and bcrypt.check_password_hash(user.password, password):
-        login_user(user)
-        access_token = create_access_token(identity=username)
+        access_token = create_access_token(
+            identity=username,
+            additional_claims={
+                'user_id': user.user_id,
+                'email': user.email
+            }
+        )
         refresh_token = create_refresh_token(identity=username)
+        
         response = jsonify({
             'message': 'เข้าสู่ระบบสำเร็จ',
             'access_token': access_token,
             'refresh_token': refresh_token,
-            'user_id': user.user_id,  # ใช้ user_id ที่ถูกต้อง
+            'user_id': user.user_id,
             'username': user.username
         })
+        
+        # ตั้งค่า cookie สำหรับ token (ถ้าต้องการใช้)
         set_access_cookies(response, access_token)
         set_refresh_cookies(response, refresh_token)
+        
         return response
     else:
         return jsonify({'error': 'Username หรือ password ไม่ถูกต้อง'}), 401
@@ -115,11 +141,26 @@ def check_token():
 @user_bp.route('/refresh', methods=['POST'])
 @jwt_required(refresh=True)
 def refresh():
-    current_user_identity = get_jwt_identity()
-    new_access_token = create_access_token(identity=current_user_identity)
+    current_user = get_jwt_identity()
+    user = User.query.filter_by(username=current_user).first()
     
+    if not user:
+        return jsonify({'error': 'ไม่พบผู้ใช้'}), 404
+    
+    # สร้าง token ใหม่
+    new_access_token = create_access_token(
+        identity=current_user,
+        additional_claims={
+            'user_id': user.user_id,
+            'email': user.email
+        }
+    )
+    new_refresh_token = create_refresh_token(identity=current_user)
+    
+    # สร้าง response พร้อมตั้งค่า cookie
     response = jsonify({'message': 'Token ได้รับการต่ออายุแล้ว'})
     set_access_cookies(response, new_access_token)
+    set_refresh_cookies(response, new_refresh_token)
     
     return response
 
@@ -128,10 +169,16 @@ def refresh():
 def logout():
     try:
         jti = get_jwt()['jti']
+        now = datetime.utcnow()
+        token_block = TokenBlacklist(jti=jti, created_at=now)
+        db.session.add(token_block)
+        db.session.commit()
+        
         response = jsonify({'message': 'ออกจากระบบสำเร็จ'})
         unset_jwt_cookies(response)
         return response, 200
     except Exception as e:
+        db.session.rollback()
         current_app.logger.error(f"Error during logout: {str(e)}")
         return jsonify({"error": "เกิดข้อผิดพลาดระหว่างการออกจากระบบ"}), 500
 
@@ -156,34 +203,60 @@ def forgot_password():
 
     return jsonify({'message': 'หากอีเมลนี้มีอยู่ในระบบ เราจะส่งลิงก์สำหรับรีเซ็ตรหัสผ่านไปให้'}), 200
 
+@user_bp.route('/request_password_reset', methods=['POST'])
+@limiter.limit("3 per hour")
+def request_password_reset():
+    data = request.get_json()
+    username = data.get('username')
+
+    if not username:
+        return jsonify({'error': 'กรุณากรอก username'}), 400
+
+    user = User.query.filter_by(username=username).first()
+    if not user:
+        return jsonify({'error': 'ไม่พบผู้ใช้'}), 404
+
+    # สร้าง token สำหรับรีเซ็ตรหัสผ่าน
+    reset_token = create_access_token(identity=username, expires_delta=timedelta(hours=1))
+    # เก็บ token นี้ในฐานข้อมูลหรือในที่อื่นๆ เพื่อใช้ในการรีเซ็ต
+
+    return jsonify({'message': 'เราจะส่ง token สำหรับรีเซ็ตรหัสผ่านให้คุณ'}), 200
+
+
 @user_bp.route('/reset_password', methods=['POST'])
-@jwt_required()
 def reset_password():
     data = request.get_json()
+    reset_token = data.get('reset_token')
     new_password = data.get('new_password')
 
-    if not new_password:
-        return jsonify({'error': 'กรุณากรอกรหัสผ่านใหม่'}), 400
+    if not reset_token or not new_password:
+        return jsonify({'error': 'กรุณากรอก token และรหัสผ่านใหม่'}), 400
 
     if len(new_password) < 8 or not re.search(r"[A-Z]", new_password) or not re.search(r"\d", new_password):
         return jsonify({'error': 'รหัสผ่านต้องมีความยาวอย่างน้อย 8 ตัวอักษร และประกอบด้วยตัวพิมพ์ใหญ่และตัวเลข'}), 400
 
-    email = get_jwt_identity()
-    user = User.query.filter_by(email=email).first()
-
-    if not user:
-        return jsonify({'error': 'ไม่พบผู้ใช้'}), 404
-
     try:
-        hashed_password = bcrypt.generate_password_hash(new_password).decode('utf-8')
+        # Verify the reset_token here if needed
+        jwt_data = get_jwt_identity()
+        username = jwt_data
+        user = User.query.filter_by(username=username).first()
+
+        if not user:
+            return jsonify({'error': 'ไม่พบผู้ใช้'}), 404
+
+        # Hash new password
+        hashed_password = bcrypt.generate_password_hash(new_password)
         user.password = hashed_password
         db.session.commit()
+
         return jsonify({'message': 'รีเซ็ตรหัสผ่านสำเร็จ'}), 200
-    except SQLAlchemyError as e:
+
+    except Exception as e:
         db.session.rollback()
-        return jsonify({'error': 'เกิดข้อผิดพลาดในการรีเซ็ตรหัสผ่าน'}), 500
+        logging.error(f'Error resetting password: {e}')  # Log the error for debugging
+        return jsonify({'error': 'เกิดข้อผิดพลาดในการรีเซ็ตรหัสผ่าน กรุณาลองอีกครั้ง'}), 500
 
-
+    
 @user_bp.route('/profile/<string:username>', methods=['GET'])
 @jwt_required()
 def get_user_profile(username):
