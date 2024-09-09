@@ -22,12 +22,23 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(60), nullable=False)
     gender = db.Column(db.String(10), nullable=False)
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
     birth_date = db.Column(Date, nullable=False)
     created_at = db.Column(DateTime, default=datetime.utcnow)
     updated_at = db.Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    reset_token = db.Column(db.String(100), nullable=True)
+    reset_token_expires = db.Column(db.DateTime, nullable=True)
 
     def get_id(self):
         return self.user_id
+    
+    def set_password(self, password):
+        self.password = bcrypt.generate_password_hash(password).decode('utf-8')
+
+    def check_password(self, password):
+        return bcrypt.check_password_hash(self.password, password)
+    
+    profile = db.relationship('Profile', back_populates='user', uselist=False, cascade='all, delete-orphan')
 
 class AudioRecord(db.Model):
     __tablename__ = 'audio_record'
@@ -67,7 +78,7 @@ class Profile(db.Model):
     created_at = db.Column(DateTime, default=datetime.utcnow)
     updated_at = db.Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    user = db.relationship('User', backref=db.backref('profile', uselist=False))        
+    user = db.relationship('User', back_populates='profile')     
 
     def __repr__(self):
         return f'<Profile {self.firstname} {self.lastname}>'

@@ -1,21 +1,23 @@
 from flask import Blueprint, current_app, jsonify, request
 from flask_jwt_extended import JWTManager, create_access_token, create_refresh_token, get_jwt, jwt_required, set_access_cookies, set_refresh_cookies, unset_jwt_cookies, get_jwt_identity
 from flask_login import login_user, logout_user, login_required, current_user
-from models import db, User, Profile, TokenBlacklist
+from models import db, User, Profile, TokenBlacklist, AudioRecord
 from flask_bcrypt import Bcrypt
 from datetime import datetime, timedelta
 from sqlalchemy.exc import SQLAlchemyError
 import re
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
-
+from flask_mail import Mail, Message
+import secrets
 
 user_bp = Blueprint('user', __name__)
 bcrypt = Bcrypt()
 limiter = Limiter(key_func=get_remote_address)
 
+mail = Mail()
 jwt = JWTManager()
 
 @jwt.token_in_blocklist_loader
@@ -51,10 +53,9 @@ def register():
     except ValueError:
         return jsonify({'error': 'รูปแบบวันเกิดไม่ถูกต้อง กรุณาใช้รูปแบบ YYYY-MM-DD'}), 400
 
-    hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-
     try:
-        new_user = User(username=username, email=email, password=hashed_password, gender=gender, birth_date=birth_date)
+        new_user = User(username=username, email=email, gender=gender, birth_date=birth_date, is_active=True)
+        new_user.set_password(password)
         db.session.add(new_user)
         db.session.flush()
 
@@ -84,7 +85,7 @@ def register():
         'message': 'ลงทะเบียนสำเร็จ',
         'access_token': access_token,
         'refresh_token': refresh_token,
-        'user_id': new_user.user_id  # ใช้ user_id ที่ถูกต้อง
+        'user_id': new_user.user_id
     }), 201
 
 @user_bp.route('/login', methods=['POST'])
@@ -99,7 +100,7 @@ def login():
 
     user = User.query.filter_by(username=username).first()
 
-    if user and bcrypt.check_password_hash(user.password, password):
+    if user and user.check_password(password):
         access_token = create_access_token(
             identity=username,
             additional_claims={
@@ -181,80 +182,6 @@ def logout():
         db.session.rollback()
         current_app.logger.error(f"Error during logout: {str(e)}")
         return jsonify({"error": "เกิดข้อผิดพลาดระหว่างการออกจากระบบ"}), 500
-
-@user_bp.route('/forgot_password', methods=['POST'])
-@limiter.limit("3 per hour")
-def forgot_password():
-    data = request.get_json()
-    email = data.get('email')
-
-    if not email:
-        return jsonify({'error': 'กรุณากรอกอีเมล'}), 400
-
-    user = User.query.filter_by(email=email).first()
-    if not user:
-        return jsonify({'message': 'หากอีเมลนี้มีอยู่ในระบบ เราจะส่งลิงก์สำหรับรีเซ็ตรหัสผ่านไปให้'}), 200
-
-    # สร้าง token สำหรับรีเซ็ตรหัสผ่าน (ในที่นี้เป็นเพียงตัวอย่าง ควรใช้วิธีที่ปลอดภัยกว่านี้ในการใช้งานจริง)
-    reset_token = create_access_token(identity=email, expires_delta=timedelta(hours=1))
-
-    # ส่งอีเมลพร้อม reset_token (ในที่นี้เป็นเพียงการจำลอง)
-    print(f"Send password reset email to {email} with token: {reset_token}")
-
-    return jsonify({'message': 'หากอีเมลนี้มีอยู่ในระบบ เราจะส่งลิงก์สำหรับรีเซ็ตรหัสผ่านไปให้'}), 200
-
-@user_bp.route('/request_password_reset', methods=['POST'])
-@limiter.limit("3 per hour")
-def request_password_reset():
-    data = request.get_json()
-    username = data.get('username')
-
-    if not username:
-        return jsonify({'error': 'กรุณากรอก username'}), 400
-
-    user = User.query.filter_by(username=username).first()
-    if not user:
-        return jsonify({'error': 'ไม่พบผู้ใช้'}), 404
-
-    # สร้าง token สำหรับรีเซ็ตรหัสผ่าน
-    reset_token = create_access_token(identity=username, expires_delta=timedelta(hours=1))
-    # เก็บ token นี้ในฐานข้อมูลหรือในที่อื่นๆ เพื่อใช้ในการรีเซ็ต
-
-    return jsonify({'message': 'เราจะส่ง token สำหรับรีเซ็ตรหัสผ่านให้คุณ'}), 200
-
-
-@user_bp.route('/reset_password', methods=['POST'])
-def reset_password():
-    data = request.get_json()
-    reset_token = data.get('reset_token')
-    new_password = data.get('new_password')
-
-    if not reset_token or not new_password:
-        return jsonify({'error': 'กรุณากรอก token และรหัสผ่านใหม่'}), 400
-
-    if len(new_password) < 8 or not re.search(r"[A-Z]", new_password) or not re.search(r"\d", new_password):
-        return jsonify({'error': 'รหัสผ่านต้องมีความยาวอย่างน้อย 8 ตัวอักษร และประกอบด้วยตัวพิมพ์ใหญ่และตัวเลข'}), 400
-
-    try:
-        # Verify the reset_token here if needed
-        jwt_data = get_jwt_identity()
-        username = jwt_data
-        user = User.query.filter_by(username=username).first()
-
-        if not user:
-            return jsonify({'error': 'ไม่พบผู้ใช้'}), 404
-
-        # Hash new password
-        hashed_password = bcrypt.generate_password_hash(new_password)
-        user.password = hashed_password
-        db.session.commit()
-
-        return jsonify({'message': 'รีเซ็ตรหัสผ่านสำเร็จ'}), 200
-
-    except Exception as e:
-        db.session.rollback()
-        logging.error(f'Error resetting password: {e}')  # Log the error for debugging
-        return jsonify({'error': 'เกิดข้อผิดพลาดในการรีเซ็ตรหัสผ่าน กรุณาลองอีกครั้ง'}), 500
 
     
 @user_bp.route('/profile/<string:username>', methods=['GET'])
@@ -351,3 +278,77 @@ def update_user_profile(username):
 
     except Exception as e:
         return jsonify({'error': 'เกิดข้อผิดพลาด: ' + str(e)}), 500
+    
+@user_bp.route('/change-password', methods=['POST'])
+@jwt_required()
+def change_password():
+    data = request.get_json()
+    current_password = data.get('current_password')
+    new_password = data.get('new_password')
+    confirm_password = data.get('confirm_password')
+
+    if not all([current_password, new_password, confirm_password]):
+        return jsonify({'error': 'กรุณากรอกข้อมูลให้ครบถ้วน'}), 400
+
+    if new_password != confirm_password:
+        return jsonify({'error': 'รหัสผ่านใหม่และการยืนยันรหัสผ่านไม่ตรงกัน'}), 400
+
+    if len(new_password) < 8 or not re.search(r"[A-Z]", new_password) or not re.search(r"\d", new_password):
+        return jsonify({'error': 'รหัสผ่านใหม่ต้องมีความยาวอย่างน้อย 8 ตัวอักษร และประกอบด้วยตัวพิมพ์ใหญ่และตัวเลข'}), 400
+
+    current_user = get_jwt_identity()
+    user = User.query.filter_by(username=current_user).first()
+
+    if not user:
+        return jsonify({'error': 'ไม่พบผู้ใช้'}), 404
+
+    if not user.check_password(current_password):
+        return jsonify({'error': 'รหัสผ่านปัจจุบันไม่ถูกต้อง'}), 401
+
+    try:
+        user.set_password(new_password)
+        db.session.commit()
+        return jsonify({'message': 'เปลี่ยนรหัสผ่านสำเร็จ'}), 200
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({'error': 'เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองอีกครั้ง'}), 500
+    
+@user_bp.route('/delete-account', methods=['DELETE'])
+@jwt_required()
+def delete_account():
+    current_user = get_jwt_identity()
+    user = User.query.filter_by(username=current_user).first()
+
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
+    # รับรหัสผ่านจาก request
+    data = request.get_json()
+    password = data.get('password')
+
+    if not password:
+        return jsonify({'error': 'Password is required'}), 400
+
+    # ตรวจสอบรหัสผ่าน
+    if not user.check_password(password):
+        return jsonify({'error': 'Incorrect password'}), 401
+
+    try:
+        # อัปเดต AudioRecords ให้ไม่มีการอ้างอิงถึงผู้ใช้ที่ถูกลบ
+        AudioRecord.query.filter_by(user_id=user.user_id).update({'user_id': None})
+
+        # ลบ Profile ของ user
+        Profile.query.filter_by(user_id=user.user_id).delete()
+
+        # ลบ User
+        db.session.delete(user)
+
+        # Commit การเปลี่ยนแปลงทั้งหมด
+        db.session.commit()
+
+        return jsonify({'message': 'Account deleted successfully. Audio records have been preserved.'}), 200
+
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({'error': 'An error occurred while deleting the account'}), 500
+    

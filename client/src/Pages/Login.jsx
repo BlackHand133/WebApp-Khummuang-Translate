@@ -1,19 +1,41 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Button, TextField, Typography, CircularProgress } from '@mui/material';
-import styles from '../components/LoginPage/Login.module.css';
+import { 
+  Box, 
+  Button, 
+  TextField, 
+  Typography, 
+  CircularProgress, 
+  Dialog, 
+  DialogTitle, 
+  DialogContent, 
+  DialogActions, 
+  Link 
+} from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import IconButton from '@mui/material/IconButton';
-import IconWeb from '../assets/IconWeb.svg';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../ContextUser';
+import { usePasswordReset } from '../PasswordResetContext';
+import styles from '../components/LoginPage/Login.module.css';
+import IconWeb from '../assets/IconWeb.svg';
 
 function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [openForgotPassword, setOpenForgotPassword] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
+
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
   const { login, checkAuth, isLoggedIn } = useUser();
+  const { 
+    forgotPassword, 
+    loading: forgotPasswordLoading, 
+    error: forgotPasswordError, 
+    successMessage: forgotPasswordSuccess 
+  } = usePasswordReset();
+
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -43,6 +65,22 @@ function Login() {
     }
   };
 
+  const handleForgotPasswordClick = (event) => {
+    event.preventDefault(); // ป้องกันการ submit ฟอร์ม
+    setOpenForgotPassword(true);
+  };
+
+  const handleForgotPassword = async () => {
+    try {
+      await forgotPassword(forgotPasswordEmail);
+      // แสดงข้อความสำเร็จ
+      // ปิด dialog หลังจากส่งอีเมลสำเร็จ
+      setTimeout(() => setOpenForgotPassword(false), 3000);
+    } catch (error) {
+      // จัดการข้อผิดพลาดถ้ามี (error จะถูกจัดการใน context แล้ว)
+    }
+  };
+
   return (
     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '95vh' }}>
       <Box
@@ -57,11 +95,18 @@ function Login() {
           backgroundColor: 'white',
         }}
       >
-        <IconButton href='/' aria-label="close" size="large" sx={{ position: 'absolute', top: '10px', right: '10px' }}>
+        <IconButton 
+          href='/' 
+          aria-label="close" 
+          size="large" 
+          sx={{ position: 'absolute', top: '10px', right: '10px' }}
+        >
           <CloseIcon fontSize="inherit" />
         </IconButton>
         <Box>
-          <Typography variant="h6"><img src={IconWeb} className={styles.Logo} alt="" /></Typography>
+          <Typography variant="h6">
+            <img src={IconWeb} className={styles.Logo} alt="Khum Muang Logo" />
+          </Typography>
           <Typography variant="body1" className={styles.leftAlign}>
             Log in with Khum Muang
           </Typography>
@@ -85,29 +130,93 @@ function Login() {
                 size="small"
               />
             </Box>
-            <Button type="submit" variant="contained" className={styles.submit} sx={{ borderRadius: '50px', mt: 5 }}>
-              {loading ? <CircularProgress size={24} sx={{ color: 'white' }} /> : 'Enter'}
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1, mb: 2 }}>
+              <Link
+                component="button"
+                variant="body2"
+                onClick={handleForgotPasswordClick}
+                underline="hover"
+              >
+                Forgot Password?
+              </Link>
+            </Box>
+            <Button 
+              type="submit" 
+              variant="contained" 
+              fullWidth 
+              sx={{ 
+                mt: 2, 
+                mb: 2, 
+                height: '48px',
+                borderRadius: '24px',
+                fontSize: '16px',
+                textTransform: 'none'
+              }}
+              disabled={loading}
+            >
+              {loading ? <CircularProgress size={24} sx={{ color: 'white' }} /> : 'Log In'}
             </Button>
-            {errorMessage && (
-              <Typography color="error" sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
-                {errorMessage}
-              </Typography>
-            )}
           </form>
-          <Box sx={{ mt: 2 }}>
-            <Typography variant="body2" className={styles.register}>
-              Don't have an account? <a href="/register" style={{ marginLeft: '2px' }}>Register here</a>.
+          {errorMessage && (
+            <Typography color="error" sx={{ mt: 2, textAlign: 'center' }}>
+              {errorMessage}
+            </Typography>
+          )}
+          <Box sx={{ mt: 3, textAlign: 'center' }}>
+            <Typography variant="body2">
+              Don't have an account? <Link href="/register" underline="hover">Register here</Link>
             </Typography>
           </Box>
-          <hr />
-          <Box>
-            <Button variant="outlined" className={styles.suplogin} sx={{ mt: 2, borderRadius: '50px', height: '70px', width: '400px' }}>
-              <img src="logo.png" alt="logo" className={styles.logosup} />
-              <span className={styles.Text}>enter</span>
+          <Box sx={{ mt: 3 }}>
+            <Button 
+              variant="outlined" 
+              fullWidth 
+              sx={{ 
+                height: '48px',
+                borderRadius: '24px',
+                textTransform: 'none'
+              }}
+            >
+              <img src="logo.png" alt="logo" className={styles.logosup} style={{ marginRight: '8px' }} />
+              Log in with Sup
             </Button>
           </Box>
         </Box>
       </Box>
+
+      {/* Forgot Password Dialog */}
+      <Dialog open={openForgotPassword} onClose={() => setOpenForgotPassword(false)}>
+        <DialogTitle>Forgot Password</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            id="email"
+            label="Email Address"
+            type="email"
+            fullWidth
+            variant="outlined"
+            value={forgotPasswordEmail}
+            onChange={(e) => setForgotPasswordEmail(e.target.value)}
+          />
+          {forgotPasswordError && (
+            <Typography color="error" sx={{ mt: 2 }}>
+              {forgotPasswordError}
+            </Typography>
+          )}
+          {forgotPasswordSuccess && (
+            <Typography color="success" sx={{ mt: 2 }}>
+              {forgotPasswordSuccess}
+            </Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenForgotPassword(false)}>Cancel</Button>
+          <Button onClick={handleForgotPassword} disabled={forgotPasswordLoading}>
+            {forgotPasswordLoading ? <CircularProgress size={24} /> : 'Send Reset Link'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

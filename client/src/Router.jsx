@@ -5,6 +5,7 @@ import ErrorPage from './Pages/Error-page.jsx';
 import Loading from './components/Loading/Loading.jsx';
 import { UserProvider, useUser } from './ContextUser.jsx';
 import { AdminProvider } from './ContextAdmin.jsx';
+import { PasswordResetProvider } from './PasswordResetContext.jsx';
 import Navbar from './components/Navbar/Navbar';
 import Footer from './components/Footer/Footer';
 
@@ -104,13 +105,23 @@ const router = createBrowserRouter([
       </Suspense>
     ),
   },
+  {
+    path: '/reset-password/:token',
+    element: (
+      <Suspense fallback={<Loading />}>
+        <ResetPassword />
+      </Suspense>
+    ),
+  },
 ]);
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <UserProvider>
       <AdminProvider>
-        <RouterProvider router={router} />
+        <PasswordResetProvider>
+          <RouterProvider router={router} />
+        </PasswordResetProvider>
       </AdminProvider>
     </UserProvider>
   </React.StrictMode>

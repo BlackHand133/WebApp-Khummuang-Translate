@@ -14,8 +14,6 @@ class Config:
     # JWT settings
     JWT_COOKIE_SECURE = True  # ควรเป็น True ใน production
     JWT_SESSION_COOKIE = False
-    JWT_ACCESS_TOKEN_EXPIRES = 3600  # 1 hour
-    JWT_REFRESH_TOKEN_EXPIRES = 2592000  # 30 days
     
     # File upload
     UPLOAD_FOLDER = 'uploads'
@@ -34,3 +32,15 @@ class Config:
 
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=15)  # ตั้งค่าอายุของ access token
     JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
+
+    MAIL_SERVER = 'smtp.gmail.com'  # เปลี่ยนเป็น SMTP server ของมหาวิทยาลัย
+    MAIL_PORT = 587  # อาจแตกต่างกันไปตามการตั้งค่าของมหาวิทยาลัย
+    MAIL_USE_TLS = True  # หรือ False ขึ้นอยู่กับการตั้งค่าของเซิร์ฟเวอร์
+    MAIL_USERNAME = 'khummuang2545@gmail.com'
+    MAIL_DEFAULT_SENDER = 'khummuang2545@gmail.com'
+    MAIL_PASSWORD = 'pmbe cxlb hhia nmbf'
+    MAIL_USE_SSL = False
+
+    PASSWORD_RESET_EXPIRATION = timedelta(minutes=10)
+
+    FRONTEND_URL = 'http://localhost:5173'

@@ -170,46 +170,6 @@ export const UserProvider = ({ children }) => {
     }
   }, [API_URL, handleTokenExpiration]);
 
-  const forgotPassword = useCallback(async (username) => {
-    try {
-      const response = await axios.post(`${API_URL}/api/forgot_password`, { username });
-      setSuccessMessage('Password reset token has been generated. Please check your notification.');
-      return response.data;
-    } catch (error) {
-      console.error('Forgot password request failed:', error.response?.data?.error || error.message);
-      setError(error.response?.data?.error || 'Failed to process forgot password request.');
-      throw error;
-    }
-  }, [API_URL]);
-
-  const resetPassword = useCallback(async (resetToken, newPassword) => {
-    try {
-      const response = await axios.post(
-        `${API_URL}/api/reset_password`,
-        { 
-          reset_token: resetToken,
-          new_password: newPassword
-        }
-      );
-
-      // Check if response contains a new access token and store it
-      if (response.data.access_token) {
-        localStorage.setItem('access_token', response.data.access_token);
-      }
-
-      // Update the UI with success message
-      setSuccessMessage('รีเซ็ตรหัสผ่านสำเร็จ!');
-      setError(null);
-      return response.data;
-    } catch (error) {
-      // Log the error and update UI with error message
-      console.error('การรีเซ็ตรหัสผ่านล้มเหลว:', error.response?.data?.error || error.message);
-      setError(error.response?.data?.error || 'ไม่สามารถรีเซ็ตรหัสผ่านได้ โปรดลองอีกครั้ง.');
-      throw error; // Re-throw error for further handling if needed
-    }
-  }, [API_URL]);
-  
-
   const getProfile = useCallback(async () => {
     try {
       const accessToken = localStorage.getItem('access_token');
@@ -284,6 +244,75 @@ export const UserProvider = ({ children }) => {
     }
   }, [isLoggedIn, setupAutoRefresh]);
 
+  const changePassword = useCallback(async (currentPassword, newPassword, confirmPassword) => {
+    try {
+      const accessToken = localStorage.getItem('access_token');
+      if (!accessToken) throw new Error('No access token found');
+      
+      const response = await axios.post(
+        `${API_URL}/api/change-password`,
+        { current_password: currentPassword, new_password: newPassword, confirm_password: confirmPassword },
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+          withCredentials: true
+        }
+      );
+      
+      setSuccessMessage('Password changed successfully!');
+      setError(null);
+      return response.data;
+    } catch (error) {
+      handleTokenExpiration(error);
+      if (error.response) {
+        console.error('Failed to change password:', error.response.data.error || error.response.statusText);
+        setError(error.response.data.error || `Error: ${error.response.status} ${error.response.statusText}`);
+      } else if (error.request) {
+        console.error('Failed to change password: No response received from server');
+        setError('No response received from server');
+      } else {
+        console.error('Failed to change password:', error.message);
+        setError(`Request error: ${error.message}`);
+      }
+      setSuccessMessage(null);
+      throw error;
+    }
+  }, [API_URL, handleTokenExpiration]);
+
+  const deleteAccount = useCallback(async (password) => {
+    try {
+      const accessToken = localStorage.getItem('access_token');
+      if (!accessToken) throw new Error('No access token found');
+      
+      const response = await axios.delete(
+        `${API_URL}/api/delete-account`,
+        { 
+          data: { password },
+          headers: { Authorization: `Bearer ${accessToken}` },
+          withCredentials: true
+        }
+      );
+      
+      clearAuthData();
+      setSuccessMessage('Account deleted successfully. Audio records have been preserved.');
+      setError(null);
+      return response.data;
+    } catch (error) {
+      handleTokenExpiration(error);
+      if (error.response) {
+        console.error('Failed to delete account:', error.response.data.error || error.response.statusText);
+        setError(error.response.data.error || `Error: ${error.response.status} ${error.response.statusText}`);
+      } else if (error.request) {
+        console.error('Failed to delete account: No response received from server');
+        setError('No response received from server');
+      } else {
+        console.error('Failed to delete account:', error.message);
+        setError(`Request error: ${error.message}`);
+      }
+      setSuccessMessage(null);
+      throw error;
+    }
+  }, [API_URL, handleTokenExpiration, clearAuthData]);
+
   const contextValue = {
     isLoggedIn,
     username,
@@ -297,10 +326,10 @@ export const UserProvider = ({ children }) => {
     logout,
     refreshToken,
     checkAuth,
-    forgotPassword,
-    resetPassword,
     getProfile,
-    updateProfile
+    updateProfile,
+    changePassword,
+    deleteAccount 
   };
 
   return (
