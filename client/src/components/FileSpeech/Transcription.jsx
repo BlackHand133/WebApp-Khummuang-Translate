@@ -1,92 +1,130 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useCallback, useEffect, useRef, useMemo, useState } from 'react';
 import { Box, Typography, Paper, CircularProgress, IconButton } from '@mui/material';
 import ThumbUpAltIcon from '@mui/icons-material/ThumbUpAlt';
 import ThumbUpOffAltIcon from '@mui/icons-material/ThumbUpOffAlt';
 import { useUser } from '../../ContextUser';
+import { useApi } from '../../ServiceAPI';
 
-const Transcription = ({ file, onTranslation, language }) => {
-  const [transcription, setTranscription] = useState('');
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [liked, setLiked] = useState(false);
+const Transcription = ({
+  file,
+  onTranslation,
+  language,
+  username,
+  transcription,
+  setTranscription,
+  liked,
+  setLiked,
+  isLoading,
+  setIsLoading,
+  error,
+  setError,
+  transcribedFiles,
+  setTranscribedFiles, // Add this prop
+  getFileKey
+}) => {
+  const { userId } = useUser();
+  const { transcribe, translate, recordAudio } = useApi();
+  
+  const previousFileRef = useRef(null);
+  const hasTranscribedRef = useRef(false);
 
-  const { userId, username } = useUser();
+  const fileKey = useMemo(() => getFileKey(file), [getFileKey, file]);
+
+  const handleTranslate = useCallback(async (text) => {
+    if (!text) return;
+    
+    setIsLoading(true);
+    setError('');
+    try {
+      const sourceLang = language;
+      const targetLang = language === 'ไทย' ? 'คำเมือง' : 'ไทย';
+      const result = await translate(text, sourceLang, targetLang);
+      onTranslation(result);
+    } catch (err) {
+      console.error('Translation failed:', err);
+      setError('การแปลภาษาล้มเหลว');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [language, translate, onTranslation, setIsLoading, setError]);
+
+  const handleTranscribe = useCallback(async () => {
+    if (!file || hasTranscribedRef.current) return;
+
+    if (fileKey && transcribedFiles[fileKey]) {
+      setTranscription(transcribedFiles[fileKey]);
+      await handleTranslate(transcribedFiles[fileKey]);
+      hasTranscribedRef.current = true;
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+    try {
+      const result = await transcribe(file, language);
+      setTranscription(result);
+      setTranscribedFiles(prev => ({ ...prev, [fileKey]: result })); // Update transcribedFiles
+      await handleTranslate(result);
+      hasTranscribedRef.current = true;
+    } catch (err) {
+      console.error('Transcription failed:', err);
+      setError('การถอดความล้มเหลว');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [file, fileKey, language, transcribe, handleTranslate, setTranscription, setTranscribedFiles, setIsLoading, setError, transcribedFiles]);
+
+  const saveFile = useCallback(async () => {
+    if (!file || !transcription) return;
+  
+    setIsLoading(true);
+    setError('');
+    try {
+      const duration = Math.round(file.size / 16000);
+      const formData = new FormData();
+      formData.append('audio_file', file);
+      formData.append('user_id', userId || 'guest');
+      formData.append('language', language);
+      formData.append('transcription', transcription);
+      formData.append('duration', duration.toString());
+  
+      const result = await recordAudio(formData);
+      console.log('File saved successfully:', result);
+    } catch (err) {
+      console.error('Error saving file:', err);
+      setError('การบันทึกไฟล์ล้มเหลว');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [file, transcription, userId, language, recordAudio, setIsLoading, setError]);
+
+  const [hasSaved, setHasSaved] = useState(false);
+
+  const toggleLike = useCallback(async () => {
+    if (!liked && !hasSaved) {
+      await saveFile();
+      setHasSaved(true);
+    }
+    setLiked(prev => !prev);
+  }, [liked, hasSaved, saveFile, setLiked]);
 
   useEffect(() => {
-    const handleTranscribe = async () => {
-      if (!file) return;
-
-      setLoading(true);
-      setError(null);
-
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('language', language);
-
-      try {
-        const response = await axios.post('http://localhost:8080/api/transcribe', formData);
-
-        if (!response.data.transcription) {
-          throw new Error('Failed to transcribe audio');
-        }
-
-        setTranscription(response.data.transcription);
-        await handleTranslate(response.data.transcription);
-      } catch (error) {
-        setError(error.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    handleTranscribe();
-  }, [file, language]);
-
-  const handleTranslate = async (transcription) => {
-    const sentence = transcription;
-
-    try {
-      const response = await axios.post('http://localhost:8080/api/translate', { sentence, language });
-      onTranslation(response.data.translated_sentence); // ส่งผลการแปลกลับไปที่ Body
-    } catch (error) {
-      setError(error.message);
+    hasTranscribedRef.current = false;
+    setHasSaved(false);
+    if (file && file !== previousFileRef.current) {
+      handleTranscribe();
+      previousFileRef.current = file;
     }
-  };
-
-  const saveFile = async () => {
-    if (!file || !transcription) return;
-
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('user_id', userId || 'guest'); // ใช้ `userId` หรือ 'guest'
-    formData.append('transcription_text', transcription);
-
-    try {
-      await axios.post('http://localhost:8080/api/savefile', formData);
-    } catch (error) {
-      console.error('Error saving file:', error.message);
-    }
-  };
-
-  const toggleLike = async () => {
-    setLiked(prevLiked => !prevLiked); // สลับสถานะการกดปุ่ม
-
-    if (!liked) {
-      await saveFile(); // บันทึกไฟล์และข้อมูลเมื่อกดปุ่ม Like
-    }
-  };
+  }, [file, handleTranscribe]);
 
   return (
     <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      {loading && <CircularProgress sx={{ display: 'block', margin: '20px' }} />}
-
+      {isLoading && <CircularProgress sx={{ display: 'block', margin: '20px' }} />}
       {error && (
         <Typography color="error" variant="body1" sx={{ mb: 2 }}>
           Error: {error}
         </Typography>
       )}
-
       {transcription && (
         <Paper elevation={3} sx={{ p: 2, borderRadius: '8px', width: '100%', maxWidth: '800px' }}>
           <Box sx={{ bgcolor: 'black', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>

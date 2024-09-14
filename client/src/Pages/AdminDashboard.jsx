@@ -1,60 +1,86 @@
-import React, { useContext } from 'react';
-import { AdminContext } from '../ContextAdmin';
-import { useNavigate } from 'react-router-dom';
-import { Container, Typography, Button, Box, CircularProgress } from '@mui/material';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { Box, CircularProgress } from '@mui/material';
+import { useAdmin } from '../ContextAdmin';
+import useAdminAPI from '../APIadmin';
+import Sidebar from '../components/Admin/Sidebar';
+import Header from '../components/Admin/Header';
+import { Outlet, useLocation } from 'react-router-dom';
+import DashboardOverview from '../components/Admin/content/DashboardOverview';
+import UserManagement from '../components/Admin/content/UserManagement';
+import SearchForm, { SearchContext } from '../components/Admin/content/SearchForm';
 
 const AdminDashboard = () => {
-  const { admin, logout } = useContext(AdminContext);
-  const navigate = useNavigate();
+  const { admin, loading: adminLoading } = useAdmin();
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [searchParams, setSearchParams] = useState({
+    query: '',
+    minAge: '',
+    maxAge: '',
+    gender: '',
+    isActive: ''
+  });
+  const adminAPIRef = useRef(useAdminAPI());
+  const location = useLocation();
 
-  const handleLogout = async () => {
-    await logout();
-    navigate('/admin/login');
-  };
+  const fetchStats = useCallback(async () => {
+    if (admin && !stats) {
+      setLoading(true);
+      try {
+        const userStats = await adminAPIRef.current.getUserStats();
+        setStats({
+          users: userStats.total_users,
+          activeUsers: userStats.active_users,
+          audioRecords: userStats.audio_records
+        });
+      } catch (error) {
+        console.error('Error fetching stats:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+  }, [admin, stats]);
+
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
+
+  const updateSearchParams = useCallback((newParams) => {
+    setSearchParams(prevParams => ({ ...prevParams, ...newParams }));
+  }, []);
+
+  const isUserManagementPage = location.pathname === '/admin/dashboard/user-management';
+
+  const content = useMemo(() => {
+    switch (location.pathname) {
+      case '/admin/dashboard':
+      case '/admin/dashboard/':
+        return <DashboardOverview stats={stats} />;
+      case '/admin/dashboard/user-management':
+        return <UserManagement />;
+      default:
+        return <Outlet />;
+    }
+  }, [location.pathname, stats]);
+
+  if (adminLoading || loading) {
+    return <CircularProgress />;
+  }
 
   return (
-    <Container component="main" maxWidth="md">
-      <Box 
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          mt: 8
-        }}
-      >
-        <Typography component="h1" variant="h4" gutterBottom>
-          Admin Dashboard
-        </Typography>
-        {admin ? (
-          <Box 
-            sx={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              mt: 4
-            }}
-          >
-            <Typography variant="h6">Welcome, {admin}</Typography>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleLogout}
-              sx={{ mt: 2 }}
-            >
-              Logout
-            </Button>
+    <SearchContext.Provider value={{ searchParams, updateSearchParams }}>
+      <Box sx={{ display: 'flex', height: '100vh' }}>
+        <Sidebar />
+        <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+          <Header admin={admin} />
+          <Box sx={{ flexGrow: 1, p: 3 }}>
+            {isUserManagementPage && <SearchForm />}
+            {content}
           </Box>
-        ) : (
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 4 }}>
-            <CircularProgress />
-            <Typography variant="body1" sx={{ ml: 2 }}>
-              Loading...
-            </Typography>
-          </Box>
-        )}
+        </Box>
       </Box>
-    </Container>
+    </SearchContext.Provider>
   );
 };
 
-export default AdminDashboard;
+export default React.memo(AdminDashboard);

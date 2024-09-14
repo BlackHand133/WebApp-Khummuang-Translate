@@ -1,91 +1,150 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useMemo, useCallback, useContext } from 'react';
 import axios from 'axios';
 
 export const AdminContext = createContext();
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
 export const AdminProvider = ({ children }) => {
   const [admin, setAdmin] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // ฟังก์ชันเพื่อดึง token ของ admin จาก cookies
-  const getAdminToken = () => {
-    const cookies = document.cookie.split(';');
-    const tokenCookie = cookies.find(cookie => cookie.trim().startsWith('admin_token='));
-    if (tokenCookie) {
-      return tokenCookie.split('=')[1];
+  const getAdminToken = useCallback(() => {
+    return localStorage.getItem('admin_token');
+  }, []);
+
+  const setAdminToken = useCallback((token) => {
+    if (token) {
+      localStorage.setItem('admin_token', token);
+    } else {
+      localStorage.removeItem('admin_token');
     }
-    return null;
-  };
+  }, []);
+
+  const getRefreshToken = useCallback(() => {
+    return localStorage.getItem('admin_refresh_token');
+  }, []);
+
+  const setRefreshToken = useCallback((token) => {
+    if (token) {
+      localStorage.setItem('admin_refresh_token', token);
+    } else {
+      localStorage.removeItem('admin_refresh_token');
+    }
+  }, []);
+
+  const axiosInstance = useMemo(() => {
+    const instance = axios.create({
+      baseURL: API_BASE_URL,
+    });
+
+    instance.interceptors.request.use((config) => {
+      const token = getAdminToken();
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+      return config;
+    }, (error) => Promise.reject(error));
+
+    instance.interceptors.response.use(
+      (response) => response,
+      async (error) => {
+        const originalRequest = error.config;
+        if (error.response.status === 401 && !originalRequest._retry) {
+          originalRequest._retry = true;
+          try {
+            const refreshToken = getRefreshToken();
+            if (!refreshToken) {
+              throw new Error('No refresh token found');
+            }
+            const response = await axios.post(`${API_BASE_URL}/admin/refresh`, {}, {
+              headers: { Authorization: `Bearer ${refreshToken}` }
+            });
+            const { access_token } = response.data;
+            setAdminToken(access_token);
+            originalRequest.headers.Authorization = `Bearer ${access_token}`;
+            return axios(originalRequest);
+          } catch (refreshError) {
+            setAdmin(null);
+            setAdminToken(null);
+            setRefreshToken(null);
+            throw refreshError;
+          }
+        }
+        return Promise.reject(error);
+      }
+    );
+
+    return instance;
+  }, [getAdminToken, setAdminToken, getRefreshToken, setRefreshToken]);
 
   useEffect(() => {
     const checkAdminToken = async () => {
       try {
         const token = getAdminToken();
         if (token) {
-          const response = await axios.get('http://localhost:8080/api/admin/protected', {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          });
+          const response = await axiosInstance.get('/admin/protected');
           setAdmin(response.data.logged_in_as);
         } else {
           setAdmin(null);
         }
       } catch (error) {
+        console.error('Token validation failed', error);
         setAdmin(null);
+        setAdminToken(null);
+        setRefreshToken(null);
       } finally {
         setLoading(false);
       }
     };
 
     checkAdminToken();
-  }, []);
+  }, [axiosInstance, getAdminToken, setAdminToken, setRefreshToken]);
 
-  const login = async (username, password) => {
+  const login = useCallback(async (username, password) => {
     try {
-      const response = await axios.post('http://localhost:8080/api/admin/login', { username, password });
-      document.cookie = `admin_token=${response.data.access_token}`; // เก็บ token ของ admin ใน cookies
+      const response = await axios.post(`${API_BASE_URL}/admin/login`, { username, password });
+      setAdminToken(response.data.access_token);
+      setRefreshToken(response.data.refresh_token);
       setAdmin(response.data.username);
       return response.data;
     } catch (error) {
+      console.error('Login failed', error);
       throw error;
     }
-  };
+  }, [setAdminToken, setRefreshToken]);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
-      const token = getAdminToken(); // Get the token ของ admin
-      if (token) {
-        await axios.post('http://localhost:8080/api/admin/logout', {}, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
-      }
-      document.cookie = 'admin_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT'; // ลบ token ของ admin
-      setAdmin(null);
+      await axiosInstance.post('/admin/logout');
     } catch (error) {
       console.error('Logout failed', error);
+    } finally {
+      setAdminToken(null);
+      setRefreshToken(null);
+      setAdmin(null);
     }
-  };
+  }, [axiosInstance, setAdminToken, setRefreshToken]);
 
-  const refreshToken = async () => {
-    try {
-      const response = await axios.post('http://localhost:8080/api/admin/refresh', {}, {
-        headers: {
-          Authorization: `Bearer ${getAdminToken()}`
-        }
-      });
-      document.cookie = `admin_token=${response.data.access_token}`; // อัพเดต token ของ admin ใน cookies
-      return response.data;
-    } catch (error) {
-      console.error('Token refresh failed', error);
-    }
-  };
+  const contextValue = useMemo(() => ({
+    admin,
+    login,
+    logout,
+    loading,
+    axiosInstance
+  }), [admin, login, logout, loading, axiosInstance]);
 
   return (
-    <AdminContext.Provider value={{ admin, login, logout, refreshToken, loading }}>
+    <AdminContext.Provider value={contextValue}>
       {children}
     </AdminContext.Provider>
   );
+};
+
+export const useAdmin = () => {
+  const context = useContext(AdminContext);
+  if (context === undefined) {
+    throw new Error('useAdmin must be used within an AdminProvider');
+  }
+  return context;
 };

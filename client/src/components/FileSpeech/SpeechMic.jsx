@@ -1,21 +1,34 @@
-import React, { useState, useRef, forwardRef, useImperativeHandle, useCallback, useEffect } from 'react';
-import { Typography, Box, Paper, CircularProgress, IconButton } from '@mui/material';
-import axios from 'axios';
+import React, { useRef, forwardRef, useImperativeHandle, useCallback, useEffect, useState } from 'react';
+import { Typography, Box, Paper, IconButton, CircularProgress } from '@mui/material';
 import ThumbUpAltIcon from '@mui/icons-material/ThumbUpAlt';
 import ThumbUpOffAltIcon from '@mui/icons-material/ThumbUpOffAlt';
+import { useApi } from '../../ServiceAPI';
 import { useUser } from '../../ContextUser';
 
-const SpeechMic = forwardRef(({ onTranslation, language }, ref) => {
-  const [transcription, setTranscription] = useState('');
-  const [audioUrl, setAudioUrl] = useState('');
-  const [transcriptionStatus, setTranscriptionStatus] = useState('');
-  const [translation, setTranslation] = useState('');
-  const [liked, setLiked] = useState(false);
-
-  const { userId, username } = useUser();
+const SpeechMic = forwardRef(({ 
+  onTranslation, 
+  language,
+  transcription,
+  setTranscription,
+  audioUrl,
+  onAudioRecorded,
+  transcriptionStatus,
+  setTranscriptionStatus,
+  translation,
+  setTranslation,
+  liked,
+  setLiked,
+  isLoading,
+  setIsLoading,
+  error,
+  setError
+}, ref) => {
+  const { userId } = useUser();
+  const { transcribeMic, translate, recordAudio } = useApi();
 
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
+  const [hasSaved, setHasSaved] = useState(false);
 
   useImperativeHandle(ref, () => ({
     startRecording,
@@ -23,63 +36,62 @@ const SpeechMic = forwardRef(({ onTranslation, language }, ref) => {
   }));
 
   useEffect(() => {
-    // Retrieve saved data from sessionStorage when component mounts
-    const savedTranscription = sessionStorage.getItem('transcription');
-    const savedAudioUrl = sessionStorage.getItem('audioUrl');
-    const savedTranscriptionStatus = sessionStorage.getItem('transcriptionStatus');
-    const savedTranslation = sessionStorage.getItem('translation');
-
-    if (savedTranscription) setTranscription(savedTranscription);
-    if (savedAudioUrl) setAudioUrl(savedAudioUrl);
-    if (savedTranscriptionStatus) setTranscriptionStatus(savedTranscriptionStatus);
-    if (savedTranslation) setTranslation(savedTranslation);
+    return () => {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+        mediaRecorderRef.current.stop();
+      }
+    };
   }, []);
 
-  useEffect(() => {
-    // Save data to sessionStorage whenever they change
-    sessionStorage.setItem('transcription', transcription);
-    sessionStorage.setItem('audioUrl', audioUrl);
-    sessionStorage.setItem('transcriptionStatus', transcriptionStatus);
-    sessionStorage.setItem('translation', translation);
-  }, [transcription, audioUrl, transcriptionStatus, translation]);
-
-  const setupAudioProcessing = useCallback((stream) => {
-    // Setup audio processing (implement as needed)
-  }, []);
-
-  const translateText = async (text) => {
+  const translateText = useCallback(async (text) => {
+    setIsLoading(true);
+    setError('');
     try {
-      const response = await axios.post('http://localhost:8080/api/translate', {
-        sentence: text,
-        language: language,
-      });
-      const translatedText = response.data.translated_sentence;
+      const translatedText = await translate(text, language, language === 'ไทย' ? 'คำเมือง' : 'ไทย');
       setTranslation(translatedText);
       onTranslation(translatedText);
     } catch (error) {
       console.error('Error translating text:', error);
-      setTranslation('เกิดข้อผิดพลาดในการแปล');
+      setError('เกิดข้อผิดพลาดในการแปล');
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }, [language, onTranslation, setError, setIsLoading, setTranslation, translate]);
 
-  const saveFile = async () => {
-    if (!audioUrl || !transcription) return;
+  const saveFile = useCallback(async () => {
+    if (!audioUrl || !transcription || hasSaved) return;
 
-    const formData = new FormData();
-    formData.append('file', audioUrl, 'recording.webm');
-    formData.append('user_id', userId || 'guest');
-    formData.append('transcription_text', transcription);
-
+    setIsLoading(true);
+    setError('');
     try {
-      await axios.post('http://localhost:8080/api/savefile', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-    } catch (error) {
-      console.error('Error saving file:', error.message);
-    }
-  };
+      const audioBlob = await fetch(audioUrl).then(r => r.blob());
+      const duration = Math.round(audioBlob.size / 16000);
 
-  const startRecording = async () => {
+      const formData = new FormData();
+      formData.append('audio_file', audioBlob, 'recording.webm');
+      formData.append('user_id', userId || 'guest');
+      formData.append('transcription', transcription);
+      formData.append('language', language);
+      formData.append('duration', duration.toString());
+
+      const result = await recordAudio(formData);
+      console.log('File saved successfully:', result);
+      setHasSaved(true);
+    } catch (error) {
+      console.error('Error saving file:', error);
+      setError('เกิดข้อผิดพลาดในการบันทึกไฟล์');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [audioUrl, transcription, userId, language, recordAudio, setError, setIsLoading, hasSaved]);
+
+  const startRecording = useCallback(async () => {
+    setError('');
+    setTranscription('');
+    setTranslation('');
+    setTranscriptionStatus('');
+    setHasSaved(false);
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -89,8 +101,6 @@ const SpeechMic = forwardRef(({ onTranslation, language }, ref) => {
           autoGainControl: true,
         }
       });
-
-      setupAudioProcessing(stream);
 
       const mediaRecorder = new MediaRecorder(stream, {
         mimeType: 'audio/webm',
@@ -107,25 +117,23 @@ const SpeechMic = forwardRef(({ onTranslation, language }, ref) => {
 
       mediaRecorder.onstop = async () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        const newAudioUrl = URL.createObjectURL(audioBlob);
-        setAudioUrl(newAudioUrl);
-
-        const formData = new FormData();
-        formData.append('file', audioBlob, 'recording.webm');
-        formData.append('language', language);
-        formData.append('username', username);
-
+        onAudioRecorded(audioBlob);
+      
+        setIsLoading(true);
         try {
-          const response = await axios.post('http://localhost:8080/api/transcribe_Mic', formData, {
-            headers: { 'Content-Type': 'multipart/form-data' },
-          });
-          const transcriptionText = response.data.transcription;
+          const formData = new FormData();
+          formData.append('audio_file', audioBlob, 'recording.webm');
+          formData.append('language', language);
+      
+          const transcriptionText = await transcribeMic(formData);
           setTranscription(transcriptionText);
           setTranscriptionStatus('ถอดเสียงเสร็จสิ้น');
-          translateText(transcriptionText);
+          await translateText(transcriptionText);
         } catch (error) {
           console.error('Error transcribing audio:', error);
-          setTranscriptionStatus('เกิดข้อผิดพลาดในการถอดเสียง');
+          setError('เกิดข้อผิดพลาดในการถอดเสียง');
+        } finally {
+          setIsLoading(false);
         }
       };
 
@@ -133,33 +141,37 @@ const SpeechMic = forwardRef(({ onTranslation, language }, ref) => {
       setTranscriptionStatus('กำลังบันทึกเสียง...');
     } catch (error) {
       console.error('Error starting recording:', error);
-      setTranscriptionStatus('เกิดข้อผิดพลาดในการเริ่มบันทึก');
+      setError('เกิดข้อผิดพลาดในการเริ่มบันทึก');
     }
-  };
+  }, [language, setTranscription, setTranslation, setTranscriptionStatus, setIsLoading, setError, onAudioRecorded, transcribeMic, translateText]);
 
-  const stopRecording = () => {
-    if (mediaRecorderRef.current) {
+  const stopRecording = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
       mediaRecorderRef.current.stop();
-      saveFile(); // Save the file when stopping recording
     }
-  };
+  }, []);
 
-  const toggleLike = async () => {
-    setLiked(prevLiked => !prevLiked); // Toggle like status
-
-    if (!liked) {
-      await saveFile(); // Save file when liking
+  const toggleLike = useCallback(async () => {
+    if (!liked && !hasSaved) {
+      await saveFile();
     }
-  };
+    setLiked(prev => !prev);
+  }, [liked, hasSaved, saveFile, setLiked]);
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mt: 4 }}>
+      {isLoading && <CircularProgress />}
+      {error && (
+        <Typography color="error" sx={{ mt: 2 }}>
+          {error}
+        </Typography>
+      )}
       {transcriptionStatus && (
         <Typography variant="body1" sx={{ mt: 2, textAlign: 'center', fontFamily: '"Chakra Petch", sans-serif' }}>
           {transcriptionStatus}
         </Typography>
       )}
-      {!transcription && !transcriptionStatus && (
+      {!transcription && !transcriptionStatus && !isLoading && (
         <Typography variant="body1" sx={{ mt: 2, textAlign: 'center', fontFamily: '"Chakra Petch", sans-serif', color: 'grey' }}>
           กรุณาเริ่มบันทึกเสียงเพื่อถอดเสียง
         </Typography>
@@ -182,6 +194,7 @@ const SpeechMic = forwardRef(({ onTranslation, language }, ref) => {
           <IconButton
             sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2, ml: 'auto' }}
             onClick={toggleLike}
+            aria-label={liked ? "Unlike" : "Like"}
           >
             {liked ? <ThumbUpAltIcon /> : <ThumbUpOffAltIcon />}
           </IconButton>

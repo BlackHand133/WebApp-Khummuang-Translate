@@ -17,6 +17,7 @@
     "@mui/material": "^5.15.15",
     "axios": "^1.7.2",
     "lamejs": "^1.2.1",
+    "lodash": "^4.17.21",
     "material": "^0.9.11",
     "mic-recorder-to-mp3": "^2.2.2",
     "react": "^18.2.0",

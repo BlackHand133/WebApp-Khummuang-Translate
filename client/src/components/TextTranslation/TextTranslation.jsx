@@ -1,52 +1,42 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Typography, Paper } from '@mui/material';
-import axios from 'axios';
+import { useApi } from '../../ServiceAPI';  // Import useApi hook
 
 const TextTranslation = ({ textToTranslate, onClearTranslation, language }) => {
   const [translatedText, setTranslatedText] = useState('');
-  const [loading, setLoading] = useState(false);
+  const { translate, loading, error } = useApi();  // Use the Context API
 
   useEffect(() => {
     const fetchTranslation = async () => {
       if (!textToTranslate) {
         setTranslatedText('');
-        onClearTranslation(); // เรียกใช้ฟังก์ชันเพื่อล้างผลการแปล
+        onClearTranslation();
         return;
       }
 
-      setLoading(true);
-
       try {
-        const response = await axios.post('http://localhost:8080/api/translate', {
-          sentence: textToTranslate,
-          language: language // ส่งข้อมูลภาษาไปยัง API
-        });
-
-        if (response.status === 200) {
-          setTranslatedText(response.data.translated_sentence);
-        } else {
-          console.error(response.data.error);
-        }
-      } catch (error) {
-        console.error('Error:', error);
-      } finally {
-        setLoading(false);
+        const sourceLang = language;
+        const targetLang = language === 'ไทย' ? 'คำเมือง' : 'ไทย';
+        const result = await translate(textToTranslate, sourceLang, targetLang);
+        setTranslatedText(result);
+      } catch (err) {
+        console.error('Translation failed:', err);
       }
     };
 
     fetchTranslation();
-  }, [textToTranslate, onClearTranslation, language]);
+  }, [textToTranslate, onClearTranslation, language, translate]);
 
   useEffect(() => {
     if (translatedText) {
       const timer = setTimeout(() => {
         if (!textToTranslate) {
           setTranslatedText('');
-          onClearTranslation(); // ล้างผลการแปลเมื่อ input เป็นค่าว่าง
+          onClearTranslation();
         }
       }, 1000);
 
-      return () => clearTimeout(timer); // ล้าง timer เมื่อ component ถูก unmount
+      return () => clearTimeout(timer);
     }
   }, [translatedText, textToTranslate, onClearTranslation]);
 
@@ -56,6 +46,10 @@ const TextTranslation = ({ textToTranslate, onClearTranslation, language }) => {
         {loading ? (
           <Typography variant="body1" sx={{ mt: 1 }}>
             กำลังแปล...
+          </Typography>
+        ) : error ? (
+          <Typography variant="body1" color="error" sx={{ mt: 1 }}>
+            เกิดข้อผิดพลาด: {error}
           </Typography>
         ) : (
           <Typography variant="body1" sx={{ mt: 1, fontFamily: '"Chakra Petch", sans-serif', fontWeight: '500' }}>

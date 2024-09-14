@@ -4,7 +4,8 @@ import { createBrowserRouter, RouterProvider, Navigate, Outlet } from 'react-rou
 import ErrorPage from './Pages/Error-page.jsx';
 import Loading from './components/Loading/Loading.jsx';
 import { UserProvider, useUser } from './ContextUser.jsx';
-import { AdminProvider } from './ContextAdmin.jsx';
+import { AdminProvider, useAdmin } from './ContextAdmin.jsx';
+import { ApiProvider } from './ServiceAPI.jsx';
 import { PasswordResetProvider } from './PasswordResetContext.jsx';
 import Navbar from './components/Navbar/Navbar';
 import Footer from './components/Footer/Footer';
@@ -18,8 +19,11 @@ const AdminDashboard = lazy(() => import('./Pages/AdminDashboard.jsx'));
 const ForgotPassword = lazy(() => import('./Pages/ForgotPassword.jsx'));
 const ResetPassword = lazy(() => import('./Pages/ResetPassword.jsx'));
 const Wrapper = lazy(() => import('./components/Body/Wrapperwhite.jsx'));
+const UserManagement = lazy(() => import('./components/Admin/content/UserManagement.jsx'));
+const EditProfile = lazy(() => import('./components/Admin/content/Editprofile.jsx'));
+const AudioRecords = lazy(() => import('./components/Admin/content/AudioRecords.jsx'));
 
-const ProtectedRoute = ({ children }) => {
+const UserProtectedRoute = ({ children }) => {
   const { isLoggedIn, loading } = useUser();
 
   if (loading) {
@@ -28,6 +32,20 @@ const ProtectedRoute = ({ children }) => {
 
   if (!isLoggedIn) {
     return <Navigate to="/login" replace />;
+  }
+
+  return children;
+};
+
+const AdminProtectedRoute = ({ children }) => {
+  const { admin, loading } = useAdmin();
+
+  if (loading) {
+    return <Loading />;
+  }
+
+  if (!admin) {
+    return <Navigate to="/admin/login" replace />;
   }
 
   return children;
@@ -46,7 +64,7 @@ const Layout = () => (
 const router = createBrowserRouter([
   {
     path: '/',
-    element: <Layout />,  // ใช้ Layout ที่มีทั้ง Navbar และ Footer
+    element: <Layout />,
     errorElement: <ErrorPage />,
     children: [
       {
@@ -64,9 +82,9 @@ const router = createBrowserRouter([
       {
         path: ':username',
         element: (
-          <ProtectedRoute>
+          <UserProtectedRoute>
             <Wrapper />
-          </ProtectedRoute>
+          </UserProtectedRoute>
         ),
       },
     ],
@@ -99,11 +117,29 @@ const router = createBrowserRouter([
     path: '/admin/dashboard',
     element: (
       <Suspense fallback={<Loading />}>
-        <ProtectedRoute>
+        <AdminProtectedRoute>
           <AdminDashboard />
-        </ProtectedRoute>
+        </AdminProtectedRoute>
       </Suspense>
     ),
+    children: [
+      {
+        index: true,
+        element: <></>, // ไม่ต้องใส่อะไร เพราะ AdminDashboard จะแสดง dashboard overview เอง
+      },
+      {
+        path: 'user-management',
+        element: <UserManagement />,
+      },
+      {
+        path: 'user-profile/:userId',
+        element: <EditProfile />,
+      },
+      {
+        path: 'audio-records',
+        element: <AudioRecords />,
+      },
+    ],
   },
   {
     path: '/reset-password/:token',
@@ -119,9 +155,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <UserProvider>
       <AdminProvider>
-        <PasswordResetProvider>
-          <RouterProvider router={router} />
-        </PasswordResetProvider>
+        <ApiProvider>
+          <PasswordResetProvider>
+            <RouterProvider router={router} />
+          </PasswordResetProvider>
+        </ApiProvider>
       </AdminProvider>
     </UserProvider>
   </React.StrictMode>

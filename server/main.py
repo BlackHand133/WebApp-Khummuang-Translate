@@ -9,6 +9,7 @@ from flask_socketio import SocketIO
 from flask_mail import Mail
 from config import Config
 from models import db, User
+import os
 
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins":  ["http://localhost:5173"], "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"], "allow_headers": ["Content-Type", "Authorization"]}}, supports_credentials=True)
@@ -24,17 +25,21 @@ login_manager.login_view = 'login'
 principal = Principal(app)
 mail = Mail(app)
 
+os.makedirs(app.config['UPLOAD_FOLDERURL'], exist_ok=True)
+
 # Import blueprints
 from routes_admin import admin_bp
 from routes_user import user_bp, jwt as user_jwt
 from routes_service import service_bp
 from routes_auth import auth_bp
+from admin_service import admin_user_bp
 
 # Register blueprints
 app.register_blueprint(admin_bp, url_prefix='/api/admin')
 app.register_blueprint(user_bp, url_prefix='/api')
 app.register_blueprint(service_bp, url_prefix='/api')
 app.register_blueprint(auth_bp, url_prefix='/api/auth')
+app.register_blueprint(admin_user_bp, url_prefix='/api/admin')
 
 user_jwt.init_app(app)
 
