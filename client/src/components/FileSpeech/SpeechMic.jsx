@@ -1,9 +1,19 @@
 import React, { useRef, forwardRef, useImperativeHandle, useCallback, useEffect, useState } from 'react';
-import { Typography, Box, Paper, IconButton, CircularProgress } from '@mui/material';
+import { Typography, Box, Paper, IconButton, CircularProgress, Fade, Chip, Alert, Divider } from '@mui/material';
 import ThumbUpAltIcon from '@mui/icons-material/ThumbUpAlt';
 import ThumbUpOffAltIcon from '@mui/icons-material/ThumbUpOffAlt';
+import MicIcon from '@mui/icons-material/Mic';
+import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import { useApi } from '../../ServiceAPI';
 import { useUser } from '../../ContextUser';
+import { keyframes } from '@emotion/react';
+import InfoIcon from '@mui/icons-material/Info';
+
+const pulse = keyframes`
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 0.7; }
+  100% { transform: scale(1); opacity: 1; }
+`;
 
 const SpeechMic = forwardRef(({ 
   onTranslation, 
@@ -25,6 +35,8 @@ const SpeechMic = forwardRef(({
 }, ref) => {
   const { userId } = useUser();
   const { transcribeMic, translate, recordAudio } = useApi();
+  const [isRecording, setIsRecording] = useState(false);
+  const [isLikeAnimating, setIsLikeAnimating] = useState(false);
 
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
@@ -151,57 +163,114 @@ const SpeechMic = forwardRef(({
     }
   }, []);
 
-  const toggleLike = useCallback(async () => {
-    if (!liked && !hasSaved) {
-      await saveFile();
-    }
-    setLiked(prev => !prev);
-  }, [liked, hasSaved, saveFile, setLiked]);
+  const pulse = keyframes`
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.3);
+  }
+  100% {
+    transform: scale(1);
+  }
+`;
 
-  return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mt: 4 }}>
-      {isLoading && <CircularProgress />}
+const toggleLike = useCallback(async () => {
+  if (!liked && !hasSaved) {
+    await saveFile();
+  }
+  setLiked(prev => !prev);
+  setIsLikeAnimating(true);
+  setTimeout(() => setIsLikeAnimating(false), 300);
+}, [liked, hasSaved, saveFile, setLiked]);
+
+return (
+  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', mt: 2 }}>
+    <Paper elevation={3} sx={{ p: 1, width: '100%', maxWidth: 600, bgcolor: '#f5f5f5' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h6" sx={{ fontFamily: '"Chakra Petch", sans-serif', color: '#333' }}>
+          บันทึกเสียง
+        </Typography>
+        
+        <Chip
+          icon={<MicIcon />}
+          label={isRecording ? "กำลังบันทึก..." : "พร้อมบันทึก"}
+          color={isRecording ? "secondary" : "default"}
+          sx={{
+            animation: isRecording ? `${pulse} 1.5s ease-in-out infinite` : 'none',
+            '& .MuiChip-icon': {
+              color: isRecording ? 'inherit' : '#757575',
+            },
+          }}
+        />
+        
+      </Box>
+      <Alert
+      severity="info" 
+      icon={<InfoIcon />}
+      sx={{ 
+        mt: 2, 
+        fontFamily: '"Chakra Petch", sans-serif',
+        '& .MuiAlert-icon': {
+          color: '#1976d2',
+        },
+      }}>กดปุ่มไมโครโฟนแถบด้านซ้าย เพื่อเริ่มบันทึก</Alert>
+
+      {isLoading && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
+          <CircularProgress size={24} />
+        </Box>
+      )}
+      
       {error && (
-        <Typography color="error" sx={{ mt: 2 }}>
+        <Typography color="error" sx={{ mt: 2, textAlign: 'center', fontFamily: '"Chakra Petch", sans-serif' }}>
           {error}
         </Typography>
       )}
+
       {transcriptionStatus && (
-        <Typography variant="body1" sx={{ mt: 2, textAlign: 'center', fontFamily: '"Chakra Petch", sans-serif' }}>
-          {transcriptionStatus}
-        </Typography>
+        <Fade in={Boolean(transcriptionStatus)}>
+          <Typography variant="body2" sx={{ mt: 2, textAlign: 'center', fontFamily: '"Chakra Petch", sans-serif', color: '#666' }}>
+            {transcriptionStatus}
+          </Typography>
+        </Fade>
       )}
-      {!transcription && !transcriptionStatus && !isLoading && (
-        <Typography variant="body1" sx={{ mt: 2, textAlign: 'center', fontFamily: '"Chakra Petch", sans-serif', color: 'grey' }}>
-          กรุณาเริ่มบันทึกเสียงเพื่อถอดเสียง
-        </Typography>
-      )}
+
       {audioUrl && (
-        <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <Paper sx={{ p: 2, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <audio controls src={audioUrl} />
-          </Paper>
+        <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', width: '100%' }}>
+          <VolumeUpIcon sx={{ mr: 1, color: '#1976d2' }} />
+          <audio controls src={audioUrl} style={{ width: '100%' }} />
         </Box>
       )}
+
       {transcription && (
-        <Paper sx={{ mt: 3, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <Typography variant="body1" sx={{ textAlign: 'center', fontFamily: '"Chakra Petch", sans-serif', bgcolor: 'black', color: 'white', p: 1, borderRadius: 1 }}>
-            ผลการถอดเสียง
-          </Typography>
-          <Typography variant="body1" sx={{ textAlign: 'center', fontFamily: '"Chakra Petch", sans-serif', p: 2, borderRadius: 1, mb: 1 }}>
-            {transcription}
-          </Typography>
-          <IconButton
-            sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2, ml: 'auto' }}
-            onClick={toggleLike}
-            aria-label={liked ? "Unlike" : "Like"}
-          >
-            {liked ? <ThumbUpAltIcon /> : <ThumbUpOffAltIcon />}
-          </IconButton>
-        </Paper>
+        <Fade in={Boolean(transcription)}>
+          <Box sx={{ mt: 3, width: '100%' }}>
+          <Box sx={{ bgcolor: 'black', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center', mb:3 }}>
+            <Typography variant="h6" sx={{ fontFamily: '"Chakra Petch", sans-serif', color: 'white' }} gutterBottom>
+              ผลลัพธ์การถอดความ
+            </Typography>
+          </Box>
+              <Typography variant="body1" sx={{ fontFamily: '"Chakra Petch", sans-serif',p:2 }}>
+                {transcription}
+              </Typography>
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2, alignItems: 'center' }}>
+              <IconButton
+                onClick={toggleLike}
+                sx={{
+                  animation: isLikeAnimating ? `${pulse} 0.3s ease-in-out` : 'none',
+                }}
+              >
+                {liked ? <ThumbUpAltIcon sx={{ fontSize: '1.5rem', color: '#1976d2' }} /> : <ThumbUpOffAltIcon sx={{ fontSize: '1.5rem' }} />}
+              </IconButton>
+            </Box>
+
+          </Box>
+        </Fade>
       )}
-    </Box>
-  );
+    </Paper>
+  </Box>
+);
 });
 
 export default SpeechMic;

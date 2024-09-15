@@ -1,9 +1,22 @@
 import React, { useCallback, useEffect, useRef, useMemo, useState } from 'react';
-import { Box, Typography, Paper, CircularProgress, IconButton } from '@mui/material';
+import { Box, Typography, Paper, CircularProgress, IconButton, Alert } from '@mui/material';
 import ThumbUpAltIcon from '@mui/icons-material/ThumbUpAlt';
 import ThumbUpOffAltIcon from '@mui/icons-material/ThumbUpOffAlt';
 import { useUser } from '../../ContextUser';
 import { useApi } from '../../ServiceAPI';
+import { keyframes } from '@emotion/react';
+
+const pulse = keyframes`
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.3);
+  }
+  100% {
+    transform: scale(1);
+  }
+`;
 
 const Transcription = ({
   file,
@@ -29,6 +42,8 @@ const Transcription = ({
   const hasTranscribedRef = useRef(false);
 
   const fileKey = useMemo(() => getFileKey(file), [getFileKey, file]);
+  const [isLikeAnimating, setIsLikeAnimating] = useState(false);
+  const [showUploadAlert, setShowUploadAlert] = useState(false);
 
   const handleTranslate = useCallback(async (text) => {
     if (!text) return;
@@ -106,6 +121,8 @@ const Transcription = ({
       setHasSaved(true);
     }
     setLiked(prev => !prev);
+    setIsLikeAnimating(true);
+    setTimeout(() => setIsLikeAnimating(false), 300); // Animation duration
   }, [liked, hasSaved, saveFile, setLiked]);
 
   useEffect(() => {
@@ -114,11 +131,19 @@ const Transcription = ({
     if (file && file !== previousFileRef.current) {
       handleTranscribe();
       previousFileRef.current = file;
+      setShowUploadAlert(false);
+    } else if (!file) {
+      setShowUploadAlert(true);
     }
   }, [file, handleTranscribe]);
 
   return (
     <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      {showUploadAlert && (
+  <Alert severity="info" sx={{ width: '100%', maxWidth: '800px', mb: 2 }}>
+    กรุณากดปุ่มอัปโหลดไฟล์ที่แถบด้านซ้ายเพื่อเริ่มการถอดความ
+  </Alert>
+)}
       {isLoading && <CircularProgress sx={{ display: 'block', margin: '20px' }} />}
       {error && (
         <Typography color="error" variant="body1" sx={{ mb: 2 }}>
@@ -139,7 +164,11 @@ const Transcription = ({
             sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2, ml: 'auto' }}
             onClick={toggleLike}
           >
-            {liked ? <ThumbUpAltIcon /> : <ThumbUpOffAltIcon />}
+            {liked ? (
+              <ThumbUpAltIcon sx={{ fontSize: '2rem', color: '#1976d2' }} />
+            ) : (
+              <ThumbUpOffAltIcon sx={{ fontSize: '1.5rem' }} />
+            )}
           </IconButton>
         </Paper>
       )}

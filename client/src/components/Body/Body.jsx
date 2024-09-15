@@ -1,5 +1,9 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
-import { Box, Paper, Typography, TextField } from '@mui/material';
+import { Box, Paper, Typography, TextField, InputAdornment, Alert } from '@mui/material';
+import CreateIcon from '@mui/icons-material/Create';
+import AudioFileIcon from '@mui/icons-material/AudioFile';
+import TranslateIcon from '@mui/icons-material/Translate';
+import InfoIcon from '@mui/icons-material/Info';
 import Sidebar from '../Sidebar/Sidebar';
 import Transcription from '../FileSpeech/Transcription';
 import TextTranslation from '../TextTranslation/TextTranslation';
@@ -239,9 +243,6 @@ const Body = ({username}) => {
                           backgroundColor: '#f5f5f5', borderRadius: 1,
                           opacity: 0.6, textAlign: 'center', mt: 7
                         }}>
-                          <Typography variant="body1" sx={{ color: '#404040' }}>
-                            กรุณาอัปโหลดไฟล์เสียง
-                          </Typography>
                         </Box>
                       ) : (
                         <>
@@ -255,20 +256,102 @@ const Body = ({username}) => {
               )}
 
               {selectedOption === 'text' && (
-                <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                  <Paper sx={{ p: 1 }}>
-                    <TextField
-                      label="ป้อนข้อความ"
-                      multiline
-                      variant="outlined"
-                      value={inputText}
-                      onChange={handleTextChange}
-                      fullWidth
-                      sx={{ flex: 1, mb: 2, minHeight: '200px', resize: 'vertical', mt: 1, fontFamily: '"Chakra Petch", sans-serif' }}
-                      maxRows={20}
-                    />
-                  </Paper>
-                </Box>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                      <Paper 
+                        elevation={3}
+                        sx={{ 
+                          p: 3, 
+                          backgroundColor: '#f5f5f5',
+                          border: '1px solid #e0e0e0',
+                          borderRadius: '8px'
+                        }}
+                      >
+                        <Typography 
+                          variant="h6" 
+                          sx={{ 
+                            mb: 2, 
+                            display: 'flex', 
+                            alignItems: 'center',
+                            color: '#333',
+                            fontFamily: '"Chakra Petch", sans-serif'
+                          }}
+                        >
+                          <TranslateIcon sx={{ mr: 1 }} />
+                          แปลข้อความ
+                        </Typography>
+                        <Typography 
+                          variant="body2" 
+                          sx={{ 
+                            mb: 2, 
+                            color: '#666',
+                            fontFamily: '"Chakra Petch", sans-serif'
+                          }}
+                        >
+                          พิมพ์หรือวางข้อความที่คุณต้องการแปลในช่องด้านล่าง
+                        </Typography>
+                        <TextField
+                          label="ป้อนข้อความ"
+                          multiline
+                          variant="outlined"
+                          value={inputText}
+                          onChange={handleTextChange}
+                          fullWidth
+                          sx={{
+                            backgroundColor: '#ffffff',
+                            '& .MuiOutlinedInput-root': {
+                              '& fieldset': {
+                                borderColor: '#bdbdbd',
+                              },
+                              '&:hover fieldset': {
+                                borderColor: '#9e9e9e',
+                              },
+                              '&.Mui-focused fieldset': {
+                                borderColor: '#1976d2',
+                              },
+                            },
+                            '& .MuiInputLabel-root': {
+                              fontFamily: '"Chakra Petch", sans-serif',
+                              fontSize: '1.2rem',
+                              fontWeight: 500,
+                              color: '#1976d2',
+                            },
+                            '& .MuiInputBase-input': {
+                              fontFamily: '"Chakra Petch", sans-serif',
+                              fontSize: '1.1rem',
+                            },
+                          }}
+                          InputProps={{
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                <CreateIcon color="action" />
+                              </InputAdornment>
+                            ),
+                          }}
+                          minRows={5}
+                          maxRows={10}
+                        />
+                        <Alert 
+                          severity="info" 
+                          icon={<InfoIcon />}
+                          sx={{ 
+                            mt: 2, 
+                            fontFamily: '"Chakra Petch", sans-serif',
+                            '& .MuiAlert-icon': {
+                              color: '#1976d2',
+                            },
+                          }}
+                        >
+                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                            คำเตือน: นี่เป็นเพียง prototype
+                          </Typography>
+                          <Typography variant="body2">
+                            - สามารถแปลได้เพียงคำเท่านั้น<br />
+                            - ไม่สามารถแปลได้ทุกคำ<br />
+                            - ผลการแปลอาจไม่สมบูรณ์หรือไม่ถูกต้องทั้งหมด
+                          </Typography>
+                        </Alert>
+                      </Paper>
+                    </Box>
               )}
 
               {selectedOption !== 'text' && (
