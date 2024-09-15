@@ -66,7 +66,6 @@ class AudioRecord(db.Model):
     duration = db.Column(db.Integer)  # Duration in seconds
     language = db.Column(db.String(10))  # เพิ่มบรรทัดนี้
     created_at = db.Column(DateTime, default=datetime.utcnow)
-    updated_at = db.Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     user = db.relationship('User', backref=db.backref('audio_records', lazy=True))
 
