@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
-import { Box, Paper, Typography, TextField, InputAdornment, Alert } from '@mui/material';
+import { Box, Paper, Typography, TextField, InputAdornment, Alert, Container, useTheme, useMediaQuery } from '@mui/material';
 import CreateIcon from '@mui/icons-material/Create';
 import AudioFileIcon from '@mui/icons-material/AudioFile';
 import TranslateIcon from '@mui/icons-material/Translate';
@@ -10,6 +10,8 @@ import TextTranslation from '../TextTranslation/TextTranslation';
 import SpeechMic from '../FileSpeech/SpeechMic';
 
 const Body = ({username}) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [selectedOption, setSelectedOption] = useState('text');
   const [file, setFile] = useState(null);
   const [fileUrl, setFileUrl] = useState(null);
@@ -212,8 +214,26 @@ const Body = ({username}) => {
   }, []);
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: '#ffffff', p: 1, ml: '-7px', mr: '-7px' }}>
-      <Box sx={{ width: { xs: '100%', md: '300px' }, flexShrink: 0, backgroundColor: '#ffffff', p: 1, display: 'flex', flexDirection: 'column', borderRadius: '8px' }}>
+    <Container maxWidth="xl" disableGutters sx={{ 
+      display: 'flex', 
+      flexDirection: { xs: 'column', md: 'row' },
+      minHeight: 'calc(100vh - 64px)',
+      backgroundColor: '#ffffff', 
+      p: { xs: 1, md: 2 },
+      mt: '10px'
+    }}>
+      <Box sx={{ 
+        width: { xs: '100%', md: '300px' }, 
+        mb: { xs: 2, md: 0 },
+        mr: { xs: 0, md: 2 },
+        flexShrink: 0, 
+        position: { md: 'sticky' },
+        top: { md: '100px' },
+        alignSelf: { md: 'flex-start' },
+        maxHeight: { md: 'calc(100vh - 70px)' },
+        overflowY: { md: 'auto' },
+        mt: { xs: 0, md: '-60px' }
+      }}>
         <Sidebar 
           onOptionChange={handleOptionChange} 
           onFileUpload={handleFileUpload} 
@@ -225,9 +245,27 @@ const Body = ({username}) => {
         />
       </Box>
 
-      <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', p: 5, minHeight: '100vh', mt: 5 }}>
-        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2 }}>
-          <Paper sx={{ flex: 1, p: 2, borderRadius: '8px', display: 'flex', flexDirection: 'column', height: '100%', bgcolor: '#EFEFEF' }} elevation={3}>
+      <Box sx={{ 
+        flexGrow: 1, 
+        display: 'flex', 
+        flexDirection: 'column',
+        gap: 2
+      }}>
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: { xs: 'column', lg: 'row' }, 
+          gap: 2
+        }}>
+          <Paper sx={{ 
+            flex: 1, 
+            p: 2, 
+            borderRadius: '8px', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            height: '100%', 
+            bgcolor: '#EFEFEF',
+            mb: { xs: 2, lg: 0 }
+          }} elevation={3}>
             <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
               {activeInput === 'upload' && (
                 <Box sx={{ width: '100%', mb: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -256,150 +294,165 @@ const Body = ({username}) => {
               )}
 
               {selectedOption === 'text' && (
-                      <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                      <Paper 
-                        elevation={3}
+                <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                  <Paper 
+                    elevation={3}
+                    sx={{ 
+                      p: 3, 
+                      backgroundColor: '#f5f5f5',
+                      border: '1px solid #e0e0e0',
+                      borderRadius: '8px'
+                    }}
+                  >
+                    <Typography 
+                      variant="h6" 
+                      sx={{ 
+                        mb: 2, 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        color: '#333',
+                        fontFamily: '"Chakra Petch", sans-serif'
+                      }}
+                    >
+                      <TranslateIcon sx={{ mr: 1 }} />
+                      แปลข้อความ
+                    </Typography>
+                    {!isMobile && (
+                      <Typography 
+                        variant="body2" 
                         sx={{ 
-                          p: 3, 
-                          backgroundColor: '#f5f5f5',
-                          border: '1px solid #e0e0e0',
-                          borderRadius: '8px'
+                          mb: 2, 
+                          color: '#666',
+                          fontFamily: '"Chakra Petch", sans-serif'
                         }}
                       >
-                        <Typography 
-                          variant="h6" 
-                          sx={{ 
-                            mb: 2, 
-                            display: 'flex', 
-                            alignItems: 'center',
-                            color: '#333',
-                            fontFamily: '"Chakra Petch", sans-serif'
-                          }}
-                        >
-                          <TranslateIcon sx={{ mr: 1 }} />
-                          แปลข้อความ
+                        พิมพ์หรือวางข้อความที่คุณต้องการแปลในช่องด้านล่าง
+                      </Typography>
+                    )}
+                    <TextField
+                      label="ป้อนข้อความ"
+                      multiline
+                      variant="outlined"
+                      value={inputText}
+                      onChange={handleTextChange}
+                      fullWidth
+                      sx={{
+                        backgroundColor: '#ffffff',
+                        '& .MuiOutlinedInput-root': {
+                          '& fieldset': {
+                            borderColor: '#bdbdbd',
+                          },
+                          '&:hover fieldset': {
+                            borderColor: '#9e9e9e',
+                          },
+                          '&.Mui-focused fieldset': {
+                            borderColor: '#1976d2',
+                          },
+                        },
+                        '& .MuiInputLabel-root': {
+                          fontFamily: '"Chakra Petch", sans-serif',
+                          fontSize: isMobile ? '1rem' : '1.2rem',
+                          fontWeight: 500,
+                          color: '#1976d2',
+                        },
+                        '& .MuiInputBase-input': {
+                          fontFamily: '"Chakra Petch", sans-serif',
+                          fontSize: isMobile ? '1rem' : '1.1rem',
+                        },
+                      }}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <CreateIcon color="action" />
+                          </InputAdornment>
+                        ),
+                      }}
+                      minRows={isMobile ? 3 : 5}
+                      maxRows={isMobile ? 5 : 10}
+                    />
+                    {!isMobile && (
+                      <Alert 
+                        severity="info" 
+                        icon={<InfoIcon />}
+                        sx={{ 
+                          mt: 2, 
+                          fontFamily: '"Chakra Petch", sans-serif',
+                          '& .MuiAlert-icon': {
+                            color: '#1976d2',
+                          },
+                        }}
+                      >
+                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                          คำเตือน: นี่เป็นเพียง prototype
                         </Typography>
-                        <Typography 
-                          variant="body2" 
-                          sx={{ 
-                            mb: 2, 
-                            color: '#666',
-                            fontFamily: '"Chakra Petch", sans-serif'
-                          }}
-                        >
-                          พิมพ์หรือวางข้อความที่คุณต้องการแปลในช่องด้านล่าง
+                        <Typography variant="body2">
+                          - สามารถแปลได้เพียงคำเท่านั้น<br />
+                          - ไม่สามารถแปลได้ทุกคำ<br />
+                          - ผลการแปลอาจไม่สมบูรณ์หรือไม่ถูกต้องทั้งหมด
                         </Typography>
-                        <TextField
-                          label="ป้อนข้อความ"
-                          multiline
-                          variant="outlined"
-                          value={inputText}
-                          onChange={handleTextChange}
-                          fullWidth
-                          sx={{
-                            backgroundColor: '#ffffff',
-                            '& .MuiOutlinedInput-root': {
-                              '& fieldset': {
-                                borderColor: '#bdbdbd',
-                              },
-                              '&:hover fieldset': {
-                                borderColor: '#9e9e9e',
-                              },
-                              '&.Mui-focused fieldset': {
-                                borderColor: '#1976d2',
-                              },
-                            },
-                            '& .MuiInputLabel-root': {
-                              fontFamily: '"Chakra Petch", sans-serif',
-                              fontSize: '1.2rem',
-                              fontWeight: 500,
-                              color: '#1976d2',
-                            },
-                            '& .MuiInputBase-input': {
-                              fontFamily: '"Chakra Petch", sans-serif',
-                              fontSize: '1.1rem',
-                            },
-                          }}
-                          InputProps={{
-                            startAdornment: (
-                              <InputAdornment position="start">
-                                <CreateIcon color="action" />
-                              </InputAdornment>
-                            ),
-                          }}
-                          minRows={5}
-                          maxRows={10}
-                        />
-                        <Alert 
-                          severity="info" 
-                          icon={<InfoIcon />}
-                          sx={{ 
-                            mt: 2, 
-                            fontFamily: '"Chakra Petch", sans-serif',
-                            '& .MuiAlert-icon': {
-                              color: '#1976d2',
-                            },
-                          }}
-                        >
-                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                            คำเตือน: นี่เป็นเพียง prototype
-                          </Typography>
-                          <Typography variant="body2">
-                            - สามารถแปลได้เพียงคำเท่านั้น<br />
-                            - ไม่สามารถแปลได้ทุกคำ<br />
-                            - ผลการแปลอาจไม่สมบูรณ์หรือไม่ถูกต้องทั้งหมด
-                          </Typography>
-                        </Alert>
-                      </Paper>
-                    </Box>
+                      </Alert>
+                    )}
+                  </Paper>
+                </Box>
               )}
 
               {selectedOption !== 'text' && (
                 activeInput === 'microphone' ? (
                   <SpeechMic
-                  ref={speechMicRef}
-                  onTranslation={handleTranslationMic}
-                  language={Voicelanguage}
-                  transcription={transcription}
-                  setTranscription={setTranscription}
-                  audioUrl={audioUrl}
-                  onAudioRecorded={handleAudioRecorded}
-                  transcriptionStatus={transcriptionStatus}
-                  setTranscriptionStatus={setTranscriptionStatus}
-                  translation={translations.microphone}
-                  setTranslation={(newTranslation) => setTranslations(prev => ({ ...prev, microphone: newTranslation }))}
-                  liked={liked}
-                  setLiked={setLiked}
-                  isLoading={isLoading}
-                  setIsLoading={setIsLoading}
-                  error={error}
-                  setError={setError}
+                    ref={speechMicRef}
+                    onTranslation={handleTranslationMic}
+                    language={Voicelanguage}
+                    transcription={transcription}
+                    setTranscription={setTranscription}
+                    audioUrl={audioUrl}
+                    onAudioRecorded={handleAudioRecorded}
+                    transcriptionStatus={transcriptionStatus}
+                    setTranscriptionStatus={setTranscriptionStatus}
+                    translation={translations.microphone}
+                    setTranslation={(newTranslation) => setTranslations(prev => ({ ...prev, microphone: newTranslation }))}
+                    liked={liked}
+                    setLiked={setLiked}
+                    isLoading={isLoading}
+                    setIsLoading={setIsLoading}
+                    error={error}
+                    setError={setError}
+                    isMobile={isMobile}
                   />
                 ) : (
                   <Transcription           
-                  file={file}
-                  onTranslation={handleTranslationUpload}
-                  language={Voicelanguage}
-                  username={username}
-                  transcription={transcriptionText}
-                  setTranscription={handleTranscriptionChange}
-                  liked={transcriptionLiked}
-                  setLiked={handleTranscriptionLikeToggle}
-                  isLoading={transcriptionIsLoading}
-                  setIsLoading={handleTranscriptionLoadingChange}
-                  error={transcriptionError}
-                  setError={handleTranscriptionErrorChange}
-                  transcribedFiles={transcribedFiles}
-                  setTranscribedFiles={setTranscribedFiles}
-                  getFileKey={getFileKey}
-                  onComponentSwitch={handleComponentSwitch}
+                    file={file}
+                    onTranslation={handleTranslationUpload}
+                    language={Voicelanguage}
+                    username={username}
+                    transcription={transcriptionText}
+                    setTranscription={handleTranscriptionChange}
+                    liked={transcriptionLiked}
+                    setLiked={handleTranscriptionLikeToggle}
+                    isLoading={transcriptionIsLoading}
+                    setIsLoading={handleTranscriptionLoadingChange}
+                    error={transcriptionError}
+                    setError={handleTranscriptionErrorChange}
+                    transcribedFiles={transcribedFiles}
+                    setTranscribedFiles={setTranscribedFiles}
+                    getFileKey={getFileKey}
+                    onComponentSwitch={handleComponentSwitch}
+                    isMobile={isMobile}
+                    onFileUpload={handleFileUpload}
                   />
                 )
               )}
             </Box>
           </Paper>
 
-          <Paper sx={{ flex: 1, p: 2, borderRadius: '8px', backgroundColor: '#f5f5f5', height: '100%' }} elevation={3}>
+          <Paper sx={{ 
+            flex: 1, 
+            p: 2, 
+            borderRadius: '8px', 
+            backgroundColor: '#f5f5f5', 
+            height: '100%',
+            minWidth: { xs: '100%', lg: '300px' },
+            maxWidth: { lg: '500px' }
+          }} elevation={3}>
             <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               <Box sx={{ bgcolor: 'black', p: 1, borderRadius: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
                 <Typography variant="h6" sx={{ fontFamily: '"Chakra Petch", sans-serif', color: 'white' }}>
@@ -408,11 +461,11 @@ const Body = ({username}) => {
               </Box>
               {selectedOption === 'text' && (
                 <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <TextTranslation textToTranslate={inputText} onTranslation={handleTranslationText} onClearTranslation={clearTranslation} language={Textlanguage} />
+                  <TextTranslation textToTranslate={inputText} onTranslation={handleTranslationText} onClearTranslation={clearTranslation} language={Textlanguage} isMobile={isMobile} />
                 </Box>
               )}
               {memoizedTranslation && (
-                <Paper elevation={3} sx={{ mt: 2, p: 2, borderRadius: '8px', width: '100%', maxWidth: '500px' }}>
+                <Paper elevation={3} sx={{ mt: 2, p: 2, borderRadius: '8px', width: '100%' }}>
                   <Typography variant="body1" sx={{ mt: 1, fontFamily: '"Chakra Petch", sans-serif', fontWeight: '500' }}>
                     {memoizedTranslation}
                   </Typography>
@@ -422,7 +475,7 @@ const Body = ({username}) => {
           </Paper>
         </Box>
       </Box>
-    </Box>
+    </Container>
   );
 };
 

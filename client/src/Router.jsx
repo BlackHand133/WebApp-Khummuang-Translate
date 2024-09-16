@@ -1,6 +1,7 @@
 import React, { Suspense, lazy } from 'react';
 import ReactDOM from 'react-dom/client';
 import { createBrowserRouter, RouterProvider, Navigate, Outlet } from 'react-router-dom';
+import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import ErrorPage from './Pages/Error-page.jsx';
 import Loading from './components/Loading/Loading.jsx';
 import { UserProvider, useUser } from './ContextUser.jsx';
@@ -9,6 +10,7 @@ import { ApiProvider } from './ServiceAPI.jsx';
 import { PasswordResetProvider } from './PasswordResetContext.jsx';
 import Navbar from './components/Navbar/Navbar';
 import Footer from './components/Footer/Footer';
+
 
 // Dynamic imports
 const App = lazy(() => import('./App.jsx'));
@@ -51,6 +53,55 @@ const AdminProtectedRoute = ({ children }) => {
   return children;
 };
 
+const theme = createTheme({
+  components: {
+    MuiCssBaseline: {
+      styleOverrides: {
+        body: {
+          margin: 0,
+          padding: 0,
+          overflow: 'auto',  // ป้องกันการเลื่อนที่ body
+        },
+        '#root': {
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: '100vh',
+          maxWidth: '100vw',
+          overflow: 'hidden',  // ป้องกันการเลื่อนที่ root
+        },
+      },
+    },
+    MuiContainer: {
+      styleOverrides: {
+        root: {
+          paddingLeft: '16px',
+          paddingRight: '16px',
+          '@media (min-width: 600px)': {
+            paddingLeft: '24px',
+            paddingRight: '24px',
+          },
+        },
+        maxWidthLg: {
+          '@media (min-width: 1280px)': {
+            maxWidth: '1200px',
+          },
+        },
+      },
+    },
+  },
+  palette: {
+    primary: {
+      main: '#43CCF8',
+    },
+    secondary: {
+      main: '#000000',
+    },
+  },
+});
+
+export default theme;
+
+
 const Layout = () => (
   <>
     <Navbar />
@@ -60,6 +111,8 @@ const Layout = () => (
     <Footer />
   </>
 );
+
+
 
 const router = createBrowserRouter([
   {
@@ -153,14 +206,17 @@ const router = createBrowserRouter([
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <UserProvider>
-      <AdminProvider>
-        <ApiProvider>
-          <PasswordResetProvider>
-            <RouterProvider router={router} />
-          </PasswordResetProvider>
-        </ApiProvider>
-      </AdminProvider>
-    </UserProvider>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <UserProvider>
+        <AdminProvider>
+          <ApiProvider>
+            <PasswordResetProvider>
+              <RouterProvider router={router} />
+            </PasswordResetProvider>
+          </ApiProvider>
+        </AdminProvider>
+      </UserProvider>
+    </ThemeProvider>
   </React.StrictMode>
 );

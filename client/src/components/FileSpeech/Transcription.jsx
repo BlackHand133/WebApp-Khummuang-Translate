@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useRef, useMemo, useState } from 'react';
-import { Box, Typography, Paper, CircularProgress, IconButton, Alert } from '@mui/material';
+import { Box, Typography, Paper, CircularProgress, IconButton, Alert, Button, useTheme } from '@mui/material';
 import ThumbUpAltIcon from '@mui/icons-material/ThumbUpAlt';
 import ThumbUpOffAltIcon from '@mui/icons-material/ThumbUpOffAlt';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { useUser } from '../../ContextUser';
 import { useApi } from '../../ServiceAPI';
 import { keyframes } from '@emotion/react';
@@ -32,8 +33,10 @@ const Transcription = ({
   error,
   setError,
   transcribedFiles,
-  setTranscribedFiles, // Add this prop
-  getFileKey
+  setTranscribedFiles,
+  getFileKey,
+  isMobile,
+  onFileUpload
 }) => {
   const { userId } = useUser();
   const { transcribe, translate, recordAudio } = useApi();
@@ -78,7 +81,7 @@ const Transcription = ({
     try {
       const result = await transcribe(file, language);
       setTranscription(result);
-      setTranscribedFiles(prev => ({ ...prev, [fileKey]: result })); // Update transcribedFiles
+      setTranscribedFiles(prev => ({ ...prev, [fileKey]: result }));
       await handleTranslate(result);
       hasTranscribedRef.current = true;
     } catch (err) {
@@ -122,7 +125,7 @@ const Transcription = ({
     }
     setLiked(prev => !prev);
     setIsLikeAnimating(true);
-    setTimeout(() => setIsLikeAnimating(false), 300); // Animation duration
+    setTimeout(() => setIsLikeAnimating(false), 300);
   }, [liked, hasSaved, saveFile, setLiked]);
 
   useEffect(() => {
@@ -137,13 +140,76 @@ const Transcription = ({
     }
   }, [file, handleTranscribe]);
 
+  const theme = useTheme();
+
+  const handleFileUpload = (event) => {
+    const uploadedFile = event.target.files[0];
+    if (uploadedFile) {
+      onFileUpload(uploadedFile);
+    }
+  };
+
   return (
     <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      {showUploadAlert && (
-  <Alert severity="info" sx={{ width: '100%', maxWidth: '800px', mb: 2 }}>
-    กรุณากดปุ่มอัปโหลดไฟล์ที่แถบด้านซ้ายเพื่อเริ่มการถอดความ
-  </Alert>
-)}
+      {!isMobile && showUploadAlert && (
+        <Alert severity="info" sx={{ width: '100%', maxWidth: '800px', mb: 2 }}>
+          กรุณากดปุ่มอัปโหลดไฟล์ที่แถบด้านซ้ายเพื่อเริ่มการถอดความ
+        </Alert>
+      )}
+
+      {isMobile && (
+        <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center', mb: 3 }}>
+          <Paper
+            elevation={3}
+            sx={{
+              width: '100%',
+              maxWidth: '300px',
+              height: '120px',
+              borderRadius: '20px',
+              overflow: 'hidden',
+              position: 'relative',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                transform: 'translateY(-5px)',
+                boxShadow: '0 10px 20px rgba(0, 0, 0, 0.2)',
+              },
+            }}
+          >
+            <Button
+              component="label"
+              sx={{
+                width: '100%',
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: theme.palette.primary.main,
+                color: 'white',
+                '&:hover': {
+                  backgroundColor: theme.palette.primary.dark,
+                },
+              }}
+            >
+              <CloudUploadIcon sx={{ fontSize: '3rem', mb: 1 }} />
+              <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                อัปโหลดไฟล์เสียง
+              </Typography>
+              <Typography variant="caption" sx={{ mt: 0.5 }}>
+                แตะเพื่อเลือกไฟล์
+              </Typography>
+              <input
+                type="file"
+                hidden
+                accept="audio/*"
+                onChange={handleFileUpload}
+              />
+            </Button>
+          </Paper>
+        </Box>
+      )}
+
       {isLoading && <CircularProgress sx={{ display: 'block', margin: '20px' }} />}
       {error && (
         <Typography color="error" variant="body1" sx={{ mb: 2 }}>
@@ -161,7 +227,13 @@ const Transcription = ({
             {transcription}
           </Typography>
           <IconButton
-            sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2, ml: 'auto' }}
+            sx={{ 
+              display: 'flex', 
+              justifyContent: 'flex-end', 
+              mt: 2, 
+              ml: 'auto',
+              animation: isLikeAnimating ? `${pulse} 0.3s ease-in-out` : 'none',
+            }}
             onClick={toggleLike}
           >
             {liked ? (
