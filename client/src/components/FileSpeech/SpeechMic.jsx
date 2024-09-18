@@ -1,9 +1,10 @@
 import React, { useRef, forwardRef, useImperativeHandle, useCallback, useEffect, useState } from 'react';
-import { Typography, Box, Paper, IconButton, CircularProgress, Fade, Chip, Alert, Divider } from '@mui/material';
+import { Typography, Box, Paper, IconButton, CircularProgress, Fade, Chip, Alert, Divider, Button } from '@mui/material';
 import ThumbUpAltIcon from '@mui/icons-material/ThumbUpAlt';
 import ThumbUpOffAltIcon from '@mui/icons-material/ThumbUpOffAlt';
 import MicIcon from '@mui/icons-material/Mic';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import { useApi } from '../../ServiceAPI';
 import { useUser } from '../../ContextUser';
 import { keyframes } from '@emotion/react';
@@ -12,6 +13,7 @@ import InfoIcon from '@mui/icons-material/Info';
 const SpeechMic = forwardRef(({ 
   onTranslation, 
   language,
+  setLanguage,
   transcription,
   setTranscription,
   audioUrl,
@@ -65,6 +67,19 @@ const SpeechMic = forwardRef(({
     }
   }, [language, onTranslation, setError, setIsLoading, setTranslation, translate]);
 
+  const toggleLanguage = useCallback(async () => {
+    try {
+      const newLanguage = language === 'คำเมือง' ? 'ไทย' : 'คำเมือง';
+      setLanguage(newLanguage);
+      if (transcription) {
+        await translateText(transcription);
+      }
+    } catch (error) {
+      console.error('Error toggling language:', error);
+      setError('เกิดข้อผิดพลาดในการเปลี่ยนภาษา');
+    }
+  }, [language, setLanguage, transcription, translateText, setError]);
+
   const saveFile = useCallback(async () => {
     if (!audioUrl || !transcription || hasSaved) return;
 
@@ -93,6 +108,7 @@ const SpeechMic = forwardRef(({
   }, [audioUrl, transcription, userId, language, recordAudio, setError, setIsLoading, hasSaved]);
 
   const startRecording = useCallback(async () => {
+    setLiked(false);
     setError('');
     setTranscription('');
     setTranslation('');
@@ -180,6 +196,48 @@ const ripple = keyframes`
   100% { transform: scale(2.4); opacity: 0; }
 `;
 
+const LanguageSwitch = () => (
+  <Box sx={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap', my: '1em' }}>
+    <Button 
+      sx={{ 
+        borderRadius: '20px', 
+        padding: '8px 15px', 
+        border: '2px solid #e0e0e0', 
+        minWidth: '80px', 
+        bgcolor: 'ButtonShadow',
+        color: 'black',
+        transition: 'background-color 0.3s', 
+        '&:hover': {
+          bgcolor: '#CBC3E3'
+        }
+      }}
+      onClick={toggleLanguage}
+    >
+      <Typography sx={{ fontFamily: '"Mitr", sans-serif', fontWeight: 400, fontSize: '0.8rem' }}>{language}</Typography>
+    </Button>
+    <IconButton sx={{ color: '#4a90e2' }} onClick={toggleLanguage}>
+      <SwapHorizIcon />
+    </IconButton>
+    <Button 
+      sx={{ 
+        borderRadius: '20px', 
+        padding: '8px 15px', 
+        border: '1px solid #e0e0e0', 
+        minWidth: '80px', 
+        bgcolor: 'ButtonShadow',
+        color: 'black',
+        transition: 'background-color 0.3s', 
+        '&:hover': {
+          bgcolor: '#CBC3E3'
+        }
+      }}
+      onClick={toggleLanguage}
+    >
+      <Typography sx={{ fontFamily: '"Mitr", sans-serif', fontWeight: 400, fontSize: '0.8rem' }}>{language === 'คำเมือง' ? 'ไทย' : 'คำเมือง'}</Typography>
+    </Button>
+  </Box>
+);
+
 return (
   <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', mt: 2 }}>
     <Paper elevation={3} sx={{ p: 3, width: '100%', maxWidth: 600, bgcolor: '#f5f5f5', borderRadius: '16px' }}>
@@ -203,6 +261,8 @@ return (
         )}
       </Box>
       
+      {isMobile && <LanguageSwitch />}
+
       {!isMobile && (
         <Alert
           severity="info" 

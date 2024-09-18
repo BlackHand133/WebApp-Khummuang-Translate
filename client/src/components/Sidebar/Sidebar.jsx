@@ -1,30 +1,35 @@
 import React, { useState } from 'react';
 import { 
   Grid, Button, Typography, Collapse, Divider, Box, 
-  useMediaQuery, useTheme, SwipeableDrawer, IconButton,
-  List, ListItem, ListItemIcon, ListItemText
+  useMediaQuery, useTheme
 } from '@mui/material';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import MicIcon from '@mui/icons-material/Mic';
 import MicOffIcon from '@mui/icons-material/MicOff';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
-import MenuIcon from '@mui/icons-material/Menu';
-import TextFieldsIcon from '@mui/icons-material/TextFields';
-import RecordVoiceOverIcon from '@mui/icons-material/RecordVoiceOver';
-import CloseIcon from '@mui/icons-material/Close';
-import styles from '../Sidebar/Sidebar.module.css';
+import styles from './Sidebar.module.css';
 
-const Sidebar = ({ onOptionChange, onFileUpload, onInputToggle, onStartRecording, onStopRecording, onTextLanguageChange, onVoiceLanguageChange }) => {
+const Sidebar = ({ 
+  onOptionChange, 
+  onFileUpload, 
+  onInputToggle, 
+  onStartRecording, 
+  onStopRecording, 
+  onTextLanguageChange, 
+  onVoiceLanguageChange 
+}) => {
   const [selectedOption, setSelectedOption] = useState('text');
   const [activeInput, setActiveInput] = useState('microphone');
   const [microphoneOn, setMicrophoneOn] = useState(false);
-  const [file, setFile] = useState(null);
   const [textLanguage, setTextLanguage] = useState('คำเมือง');
   const [voiceLanguage, setVoiceLanguage] = useState('คำเมือง');
-  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  if (isMobile) {
+    return null; // Don't render on mobile
+  }
 
   const handleOptionChange = (option) => {
     setSelectedOption(option);
@@ -49,7 +54,6 @@ const Sidebar = ({ onOptionChange, onFileUpload, onInputToggle, onStartRecording
 
   const handleFileChange = (event) => {
     const uploadedFile = event.target.files[0];
-    setFile(uploadedFile);
     onFileUpload(uploadedFile);
   };
 
@@ -106,7 +110,7 @@ const Sidebar = ({ onOptionChange, onFileUpload, onInputToggle, onStartRecording
     </Box>
   );
 
-  const SidebarContent = () => (
+  return (
     <Grid container direction="column" sx={{ 
       borderRadius: '50px', 
       height: '100%', 
@@ -273,138 +277,6 @@ const Sidebar = ({ onOptionChange, onFileUpload, onInputToggle, onStartRecording
       </Box>
     </Grid>
   );
-
-  const MobileSidebarContent = () => (
-    <Box sx={{ 
-      height: '100%', 
-      padding: '20px', 
-      backgroundColor: '#202020', 
-      display: 'flex',
-      flexDirection: 'column',
-    }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h6" sx={{ fontFamily: '"Mitr", sans-serif', fontWeight: 500, color: 'white' }}>
-          ตัวเลือก
-        </Typography>
-        <IconButton onClick={() => setDrawerOpen(false)} sx={{ color: 'white' }}>
-          <CloseIcon />
-        </IconButton>
-      </Box>
-      
-      <List component="nav">
-        <ListItem 
-          button 
-          selected={selectedOption === 'text'}
-          onClick={() => {
-            handleOptionChange('text');
-            setDrawerOpen(false);
-          }}
-          sx={{ 
-            borderRadius: '10px', 
-            mb: 1,
-            backgroundColor: selectedOption === 'text' ? '#4a90e2' : 'transparent',
-            '&:hover': { backgroundColor: selectedOption === 'text' ? '#4a90e2' : 'rgba(255, 255, 255, 0.1)' },
-          }}
-        >
-          <ListItemIcon>
-            <TextFieldsIcon sx={{ color: 'white' }} />
-          </ListItemIcon>
-          <ListItemText primary="ข้อความ" sx={{ color: 'white' }} />
-        </ListItem>
-        <ListItem 
-          button 
-          selected={selectedOption === 'voice'}
-          onClick={() => handleOptionChange('voice')}
-          sx={{ 
-            borderRadius: '10px',
-            backgroundColor: selectedOption === 'voice' ? '#4a90e2' : 'transparent',
-            '&:hover': { backgroundColor: selectedOption === 'voice' ? '#4a90e2' : 'rgba(255, 255, 255, 0.1)' },
-          }}
-        >
-          <ListItemIcon>
-            <RecordVoiceOverIcon sx={{ color: 'white' }} />
-          </ListItemIcon>
-          <ListItemText primary="เสียง" sx={{ color: 'white' }} />
-        </ListItem>
-        <Collapse in={selectedOption === 'voice'} timeout="auto" unmountOnExit>
-          <List component="div" disablePadding>
-            <ListItem 
-              button 
-              sx={{ pl: 4 }}
-              onClick={() => {
-                handleInputToggle('microphone');
-                setDrawerOpen(false);
-              }}
-            >
-              <ListItemIcon>
-                <MicIcon sx={{ color: 'white' }} />
-              </ListItemIcon>
-              <ListItemText primary="ไมโครโฟน" sx={{ color: 'white' }} />
-            </ListItem>
-            <ListItem 
-              button 
-              sx={{ pl: 4 }}
-              onClick={() => {
-                handleInputToggle('upload');
-                setDrawerOpen(false);
-              }}
-            >
-              <ListItemIcon>
-                <UploadFileIcon sx={{ color: 'white' }} />
-              </ListItemIcon>
-              <ListItemText primary="อัปโหลดไฟล์" sx={{ color: 'white' }} />
-            </ListItem>
-          </List>
-        </Collapse>
-      </List>
-    </Box>
-  );
-
-  if (isMobile) {
-    return (
-      <>
-        <IconButton
-          edge="start"
-          color="inherit"
-          aria-label="open sidebar"
-          onClick={() => setDrawerOpen(true)}
-          sx={{ 
-            position: 'fixed',
-            mt: 5, 
-            top: 16, 
-            left: 16, 
-            zIndex: 1200,
-            backgroundColor: 'rgba(32, 32, 32, 0.7)',
-            color: 'white',
-            '&:hover': {
-              backgroundColor: 'rgba(32, 32, 32, 0.9)',
-            }
-          }}
-        >
-          <MenuIcon />
-        </IconButton>
-        <SwipeableDrawer
-          anchor="left"
-          open={drawerOpen}
-          onClose={() => setDrawerOpen(false)}
-          onOpen={() => setDrawerOpen(true)}
-          swipeAreaWidth={30}
-          PaperProps={{
-            sx: { 
-              width: '80%', 
-              maxWidth: 360,
-              backgroundColor: '#202020',
-            }
-          }}
-        >
-          <MobileSidebarContent />
-        </SwipeableDrawer>
-      </>
-    );
-  }
-
-  // Desktop version (original)
-  return <SidebarContent />;
 };
 
 export default Sidebar;

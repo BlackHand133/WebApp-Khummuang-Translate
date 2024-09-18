@@ -3,26 +3,22 @@ import { Box, Typography, Paper, CircularProgress, IconButton, Alert, Button, us
 import ThumbUpAltIcon from '@mui/icons-material/ThumbUpAlt';
 import ThumbUpOffAltIcon from '@mui/icons-material/ThumbUpOffAlt';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import { useUser } from '../../ContextUser';
 import { useApi } from '../../ServiceAPI';
 import { keyframes } from '@emotion/react';
 
 const pulse = keyframes`
-  0% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.3);
-  }
-  100% {
-    transform: scale(1);
-  }
+  0% { transform: scale(1); }
+  50% { transform: scale(1.3); }
+  100% { transform: scale(1); }
 `;
 
 const Transcription = ({
   file,
   onTranslation,
   language,
+  setLanguage,
   username,
   transcription,
   setTranscription,
@@ -47,6 +43,7 @@ const Transcription = ({
   const fileKey = useMemo(() => getFileKey(file), [getFileKey, file]);
   const [isLikeAnimating, setIsLikeAnimating] = useState(false);
   const [showUploadAlert, setShowUploadAlert] = useState(false);
+  const [hasSaved, setHasSaved] = useState(false);
 
   const handleTranslate = useCallback(async (text) => {
     if (!text) return;
@@ -108,6 +105,7 @@ const Transcription = ({
   
       const result = await recordAudio(formData);
       console.log('File saved successfully:', result);
+      setHasSaved(true);
     } catch (err) {
       console.error('Error saving file:', err);
       setError('การบันทึกไฟล์ล้มเหลว');
@@ -116,17 +114,27 @@ const Transcription = ({
     }
   }, [file, transcription, userId, language, recordAudio, setIsLoading, setError]);
 
-  const [hasSaved, setHasSaved] = useState(false);
-
   const toggleLike = useCallback(async () => {
     if (!liked && !hasSaved) {
       await saveFile();
-      setHasSaved(true);
     }
     setLiked(prev => !prev);
     setIsLikeAnimating(true);
     setTimeout(() => setIsLikeAnimating(false), 300);
   }, [liked, hasSaved, saveFile, setLiked]);
+
+  const toggleLanguage = useCallback(async () => {
+    try {
+      const newLanguage = language === 'คำเมือง' ? 'ไทย' : 'คำเมือง';
+      setLanguage(newLanguage);
+      if (transcription) {
+        await handleTranslate(transcription);
+      }
+    } catch (error) {
+      console.error('Error toggling language:', error);
+      setError('เกิดข้อผิดพลาดในการเปลี่ยนภาษา');
+    }
+  }, [language, setLanguage, transcription, handleTranslate, setError]);
 
   useEffect(() => {
     hasTranscribedRef.current = false;
@@ -149,6 +157,50 @@ const Transcription = ({
     }
   };
 
+  const LanguageSwitch = () => (
+    <Box sx={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap', my: '1em' }}>
+      <Button 
+        sx={{ 
+          borderRadius: '20px', 
+          padding: '8px 15px', 
+          border: '2px solid #e0e0e0', 
+          minWidth: '80px', 
+          bgcolor: 'ButtonShadow',
+          color: 'black',
+          transition: 'background-color 0.3s', 
+          '&:hover': {
+            bgcolor: '#CBC3E3'
+          }
+        }}
+        onClick={toggleLanguage}
+        disabled={isLoading}
+      >
+        <Typography sx={{ fontFamily: '"Mitr", sans-serif', fontWeight: 400, fontSize: '0.8rem' }}>{language}</Typography>
+      </Button>
+      <IconButton sx={{ color: '#4a90e2' }} onClick={toggleLanguage} disabled={isLoading}>
+        <SwapHorizIcon />
+      </IconButton>
+      <Button 
+        sx={{ 
+          borderRadius: '20px', 
+          padding: '8px 15px', 
+          border: '1px solid #e0e0e0', 
+          minWidth: '80px', 
+          bgcolor: 'ButtonShadow',
+          color: 'black',
+          transition: 'background-color 0.3s', 
+          '&:hover': {
+            bgcolor: '#CBC3E3'
+          }
+        }}
+        onClick={toggleLanguage}
+        disabled={isLoading}
+      >
+        <Typography sx={{ fontFamily: '"Mitr", sans-serif', fontWeight: 400, fontSize: '0.8rem' }}>{language === 'คำเมือง' ? 'ไทย' : 'คำเมือง'}</Typography>
+      </Button>
+    </Box>
+  );
+
   return (
     <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       {!isMobile && showUploadAlert && (
@@ -158,56 +210,59 @@ const Transcription = ({
       )}
 
       {isMobile && (
-        <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center', mb: 3 }}>
-          <Paper
-            elevation={3}
-            sx={{
-              width: '100%',
-              maxWidth: '300px',
-              height: '120px',
-              borderRadius: '20px',
-              overflow: 'hidden',
-              position: 'relative',
-              cursor: 'pointer',
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                transform: 'translateY(-5px)',
-                boxShadow: '0 10px 20px rgba(0, 0, 0, 0.2)',
-              },
-            }}
-          >
-            <Button
-              component="label"
+        <>
+          <LanguageSwitch />
+          <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center', mb: 3 }}>
+            <Paper
+              elevation={3}
               sx={{
                 width: '100%',
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: theme.palette.primary.main,
-                color: 'white',
+                maxWidth: '300px',
+                height: '120px',
+                borderRadius: '20px',
+                overflow: 'hidden',
+                position: 'relative',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
                 '&:hover': {
-                  backgroundColor: theme.palette.primary.dark,
+                  transform: 'translateY(-5px)',
+                  boxShadow: '0 10px 20px rgba(0, 0, 0, 0.2)',
                 },
               }}
             >
-              <CloudUploadIcon sx={{ fontSize: '3rem', mb: 1 }} />
-              <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                อัปโหลดไฟล์เสียง
-              </Typography>
-              <Typography variant="caption" sx={{ mt: 0.5 }}>
-                แตะเพื่อเลือกไฟล์
-              </Typography>
-              <input
-                type="file"
-                hidden
-                accept="audio/*"
-                onChange={handleFileUpload}
-              />
-            </Button>
-          </Paper>
-        </Box>
+              <Button
+                component="label"
+                sx={{
+                  width: '100%',
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: theme.palette.primary.main,
+                  color: 'white',
+                  '&:hover': {
+                    backgroundColor: theme.palette.primary.dark,
+                  },
+                }}
+              >
+                <CloudUploadIcon sx={{ fontSize: '3rem', mb: 1 }} />
+                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                  อัปโหลดไฟล์เสียง
+                </Typography>
+                <Typography variant="caption" sx={{ mt: 0.5 }}>
+                  แตะเพื่อเลือกไฟล์
+                </Typography>
+                <input
+                  type="file"
+                  hidden
+                  accept="audio/*"
+                  onChange={handleFileUpload}
+                />
+              </Button>
+            </Paper>
+          </Box>
+        </>
       )}
 
       {isLoading && <CircularProgress sx={{ display: 'block', margin: '20px' }} />}
