@@ -153,19 +153,37 @@ def record_audio():
         language = request.form.get('language')
         transcription = request.form.get('transcription')
         duration = request.form.get('duration')
+        is_logged_in = request.form.get('is_logged_in', 'false').lower() == 'true'
 
-        if not audio_file or not user_id or not language or not transcription or not duration:
+        if not audio_file or not language or not transcription or not duration:
             return jsonify({"error": "Missing required data"}), 400
 
-        # บันทึกไฟล์
-        filename = secure_filename(f"{user_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}_{audio_file.filename}")
-        file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
-        audio_file.save(file_path)
+        # Create a temporary file to store the uploaded audio
+        with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(audio_file.filename)[1]) as temp_file:
+            audio_file.save(temp_file.name)
+            temp_file_path = temp_file.name
 
-        # สร้างและบันทึกรายการในฐานข้อมูล
+        # Convert the audio to WAV format
+        wav_file_path = convert_to_wav(temp_file_path)
+
+        # Generate a unique ID for the file (6 digits)
+        file_id = str(uuid4().int)[:6].zfill(6)
+
+        # Create the new filename
+        current_year = datetime.now().year
+        user_prefix = 'u' if is_logged_in else 'g'
+        new_filename = f"audio-{current_year}-{user_prefix}{file_id}.wav"
+
+        # Define the path where the file will be saved
+        file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], new_filename)
+
+        # Move the converted WAV file to the upload folder
+        os.rename(wav_file_path, file_path)
+
+        # Create and save the database record
         new_record = AudioRecord(
-            user_id=user_id,
-            audio_url=f"/uploads/{filename}",
+            user_id=user_id if is_logged_in else None,
+            audio_url=f"/uploads/{new_filename}",
             transcription=transcription,
             time=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             duration=int(duration),
@@ -173,6 +191,9 @@ def record_audio():
         )
         db.session.add(new_record)
         db.session.commit()
+
+        # Clean up the temporary file
+        os.remove(temp_file_path)
 
         return jsonify({"message": "Audio record saved successfully", "record_id": new_record.id}), 201
     except Exception as e:

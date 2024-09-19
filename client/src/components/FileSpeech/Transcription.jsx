@@ -158,7 +158,7 @@ const Transcription = ({
   };
 
   const LanguageSwitch = () => (
-    <Box sx={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap', my: '1em' }}>
+    <Box sx={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap',mb:1 }}>
       <Button 
         sx={{ 
           borderRadius: '20px', 
@@ -212,7 +212,7 @@ const Transcription = ({
       {isMobile && (
         <>
           <LanguageSwitch />
-          <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center', mb: 3 }}>
+          <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center', mb: 1 }}>
             <Paper
               elevation={3}
               sx={{

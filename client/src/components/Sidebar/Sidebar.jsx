@@ -1,13 +1,111 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Grid, Button, Typography, Collapse, Divider, Box, 
-  useMediaQuery, useTheme
+  useMediaQuery, useTheme, Paper
 } from '@mui/material';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import MicIcon from '@mui/icons-material/Mic';
 import MicOffIcon from '@mui/icons-material/MicOff';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
+import AudiotrackIcon from '@mui/icons-material/Audiotrack';
 import styles from './Sidebar.module.css';
+
+const useAudioFeedback = () => {
+  const playSound = useCallback((soundName) => {
+    console.log(`Playing sound: ${soundName}`);
+    // Future implementation:
+    // const audio = new Audio(`/sounds/${soundName}.mp3`);
+    // audio.play();
+  }, []);
+
+  return { playSound };
+};
+
+const UploadButton = ({ onFileUpload }) => {
+  const [dragActive, setDragActive] = useState(false);
+  const theme = useTheme();
+
+  const handleDrag = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      onFileUpload(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleChange = (e) => {
+    e.preventDefault();
+    if (e.target.files && e.target.files[0]) {
+      onFileUpload(e.target.files[0]);
+    }
+  };
+
+  return (
+    <Paper
+      elevation={3}
+      sx={{
+        backgroundColor: theme.palette.background.paper,
+        borderRadius: '15px',
+        overflow: 'hidden',
+        transition: 'all 0.3s ease',
+        border: dragActive ? `2px dashed ${theme.palette.primary.main}` : '2px solid transparent',
+      }}
+    >
+      <Box
+        onDragEnter={handleDrag}
+        onDragLeave={handleDrag}
+        onDragOver={handleDrag}
+        onDrop={handleDrop}
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          padding: '20px',
+          cursor: 'pointer',
+          transition: 'all 0.3s ease',
+          backgroundColor: dragActive ? 'rgba(25, 118, 210, 0.08)' : 'transparent',
+        }}
+      >
+        <input
+          type="file"
+          id="file-upload"
+          onChange={handleChange}
+          accept="audio/*"
+          style={{ display: 'none' }}
+        />
+        <label htmlFor="file-upload" style={{ width: '100%', cursor: 'pointer' }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <AudiotrackIcon sx={{ fontSize: 60, color: theme.palette.primary.main, mb: 2 }} />
+            <Typography variant="h6" align="center" gutterBottom>
+              อัปโหลดไฟล์เสียง
+            </Typography>
+            <Typography variant="body2" align="center" color="textSecondary">
+              ลากและวางไฟล์ที่นี่ หรือคลิกเพื่อเลือกไฟล์
+            </Typography>
+            <Button
+              variant="contained"
+              startIcon={<UploadFileIcon />}
+              sx={{ mt: 2 }}
+            >
+              เลือกไฟล์
+            </Button>
+          </Box>
+        </label>
+      </Box>
+    </Paper>
+  );
+};
 
 const Sidebar = ({ 
   onOptionChange, 
@@ -24,6 +122,7 @@ const Sidebar = ({
   const [textLanguage, setTextLanguage] = useState('คำเมือง');
   const [voiceLanguage, setVoiceLanguage] = useState('คำเมือง');
 
+  const { playSound } = useAudioFeedback();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -47,14 +146,15 @@ const Sidebar = ({
     setMicrophoneOn(!microphoneOn);
     if (!microphoneOn) {
       onStartRecording();
+      playSound('start_recording');
     } else {
       onStopRecording();
+      playSound('stop_recording');
     }
   };
 
-  const handleFileChange = (event) => {
-    const uploadedFile = event.target.files[0];
-    onFileUpload(uploadedFile);
+  const handleFileChange = (file) => {
+    onFileUpload(file);
   };
 
   const toggleTextLanguage = () => {
@@ -68,6 +168,10 @@ const Sidebar = ({
     setVoiceLanguage(newLanguage);
     onVoiceLanguageChange(newLanguage);
   };
+
+  useEffect(() => {
+    onTextLanguageChange(textLanguage);
+  }, [textLanguage, onTextLanguageChange]);
 
   const LanguageSwitch = ({ language, toggleLanguage }) => (
     <Box sx={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap', mb: '1em' }}>
@@ -168,110 +272,97 @@ const Sidebar = ({
         <Collapse in={selectedOption === 'voice'}>
           <LanguageSwitch language={voiceLanguage} toggleLanguage={toggleVoiceLanguage} />
           <Divider sx={{ width: '100%', my: '15px', backgroundColor: '#e0e0e0' }} />
-          <Box sx={{ display: 'flex', flexDirection: 'row', gap: '5px', justifyContent: 'space-between' }}>
-            <Button
-              fullWidth
-              onClick={() => handleInputToggle('microphone')}
-              sx={{ 
-                backgroundColor: activeInput === 'microphone' ? '#e3f2fd' : '#404040',
-                color: activeInput === 'microphone' ? '#757de8' : 'white',
-                fontFamily: '"Mitr", sans-serif',
-                border: activeInput === 'microphone' ? '2px solid white' : '1px solid white',
-                padding: '10px',
-                '&:hover': { 
-                  backgroundColor: '#bbdefb',
-                },
-              }}
-            >
-              <MicIcon sx={{ fontSize: '2rem', mr: 1 }} />
-              <Typography>ไมโครโฟน</Typography>
-            </Button>
-            <Button
-              fullWidth
-              onClick={() => handleInputToggle('upload')}
-              sx={{ 
-                backgroundColor: activeInput === 'upload' ? '#e3f2fd' : '#404040',
-                color: activeInput === 'upload' ? '#757de8' : 'white',
-                fontFamily: '"Mitr", sans-serif',
-                border: activeInput === 'upload' ? '2px solid white' : '1px solid white',
-                padding: '10px',
-                '&:hover': { 
-                  backgroundColor: '#bbdefb',
-                }
-              }}
-            >
-              <UploadFileIcon sx={{ fontSize: '2rem', mr: 1 }} />
-              <Typography>ไฟล์เสียง</Typography>
-            </Button>
-          </Box>
-          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
-            {activeInput === 'microphone' ? (
-              <Button onClick={handleMicrophoneToggle} sx={{ 
-                bgcolor: 'white',
-                borderRadius: '100px',
-                height: '80px',
-                width: '80px',
-                transition: 'transform 0.3s, background-color 0.3s',
-                '&:hover': {
-                  backgroundColor: 'lightgray',
-                  transform: 'scale(1.05)',
-                }
-              }}>
-                {microphoneOn ? (
-                  <MicIcon className={styles.mic} sx={{ fontSize: '2.5rem', color: 'red' }} />
-                ) : (
-                  <MicOffIcon sx={{ fontSize: '2.5rem', color: 'red' }} />
-                )}
-              </Button>
-            ) : (
-              <Button component="label" sx={{ 
-                position: 'relative', 
-                display: 'inline-flex', 
-                alignItems: 'center', 
-                justifyContent: 'center',
-                height: '80px',
-                width: '80px',
-                bgcolor: '#303030',
-                borderRadius: '10px',
-                '&:hover': {
-                  bgcolor: 'white',
-                  '& .uploadIcon': {
-                    color: '#303030',
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <Paper elevation={3} sx={{ 
+              backgroundColor: activeInput === 'microphone' ? '#e3f2fd' : '#404040',
+              borderRadius: '10px',
+              overflow: 'hidden'
+            }}>
+              <Button
+                fullWidth
+                onClick={() => handleInputToggle('microphone')}
+                sx={{ 
+                  color: activeInput === 'microphone' ? '#1976d2' : 'white',
+                  fontFamily: '"Mitr", sans-serif',
+                  padding: '15px',
+                  textAlign: 'left',
+                  justifyContent: 'flex-start',
+                  '&:hover': { 
+                    backgroundColor: activeInput === 'microphone' ? '#bbdefb' : '#505050',
                   },
-                  '& .uploadText': {
-                    color: '#303030',
-                  },
-                }
-              }}>
-                <input type="file" hidden accept="audio/*" onChange={handleFileChange} />
-                <UploadFileIcon
-                  className="uploadIcon"
-                  sx={{
-                    fontSize: '2.5rem',
-                    color: '#4a90e2',
-                    transition: 'color 0.3s',
-                  }}
-                />
-                <Typography
-                  className="uploadText"
-                  sx={{
-                    position: 'absolute',
-                    bottom: '5px',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    color: '#4a90e2',
-                    fontFamily: '"Mitr", sans-serif',
-                    fontWeight: 400,
-                    fontSize: '0.7rem',
-                    textAlign: 'center',
-                    whiteSpace: 'nowrap',
-                    transition: 'color 0.3s',
-                  }}
-                >
-                  อัปโหลด
-                </Typography>
+                }}
+              >
+                <MicIcon sx={{ fontSize: '2rem', mr: 2 }} />
+                <Typography>ไมโครโฟน</Typography>
               </Button>
-            )}
+              {activeInput === 'microphone' && (
+                <Box sx={{ p: 2, display: 'flex', justifyContent: 'center' }}>
+                  <Button 
+                    onClick={handleMicrophoneToggle} 
+                    variant="contained" 
+                    color={microphoneOn ? "error" : "success"}
+                    sx={{ 
+                      borderRadius: '50px',
+                      padding: '15px 30px',
+                      fontSize: '1.2rem',
+                      fontWeight: 'bold',
+                      textTransform: 'none',
+                      boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                      animation: microphoneOn ? `${styles.pulse} 2s infinite` : 'none',
+                      '&:hover': {
+                        transform: 'translateY(-2px)',
+                        boxShadow: '0 6px 8px rgba(0,0,0,0.15)',
+                      },
+                    }}
+                  >
+                    {microphoneOn ? "หยุดบันทึก" : "เริ่มบันทึก"}
+                    {microphoneOn ? <MicIcon sx={{ ml: 1 }} /> : <MicOffIcon sx={{ ml: 1 }} />}
+                  </Button>
+                </Box>
+              )}
+            </Paper>
+            <Paper elevation={3} sx={{ 
+              backgroundColor: activeInput === 'upload' ? '#e3f2fd' : '#404040',
+              borderRadius: '10px',
+              overflow: 'hidden'
+            }}>
+              <Button
+                fullWidth
+                onClick={() => handleInputToggle('upload')}
+                sx={{ 
+                  color: activeInput === 'upload' ? '#1976d2' : 'white',
+                  fontFamily: '"Mitr", sans-serif',
+                  padding: '15px',
+                  textAlign: 'left',
+                  justifyContent: 'flex-start',
+                  '&:hover': { 
+                    backgroundColor: activeInput === 'upload' ? '#bbdefb' : '#505050',
+                  },
+                }}
+              >
+                <UploadFileIcon sx={{ fontSize: '2rem', mr: 2 }} />
+                <Typography>ไฟล์เสียง</Typography>
+              </Button>
+              {activeInput === 'upload' && (
+                <Box sx={{ p: 2 }}>
+                  <Button
+                    component="label"
+                    variant="contained"
+                    fullWidth
+                    startIcon={<UploadFileIcon />}
+                    sx={{ 
+                      borderRadius: '50px',
+                      padding: '10px',
+                      fontSize: '1rem',
+                      textTransform: 'none',
+                    }}
+                  >
+                    อัปโหลดไฟล์
+                    <input type="file" hidden accept="audio/*" onChange={(e) => handleFileChange(e.target.files[0])} />
+                  </Button>
+                </Box>
+              )}
+            </Paper>
           </Box>
         </Collapse>
       </Box>

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+import { debounce } from 'lodash';
 import { Box, Paper, Typography, TextField, InputAdornment, Alert, Container, useTheme, useMediaQuery, Button, IconButton } from '@mui/material';
 import CreateIcon from '@mui/icons-material/Create';
 import AudioFileIcon from '@mui/icons-material/AudioFile';
@@ -28,6 +29,8 @@ const Body = ({username}) => {
   const [Textlanguage, setTextLanguage] = useState('คำเมือง');
   const [Voicelanguage, setVoiceLanguage] = useState('คำเมือง');
   const [translatedText, setTranslatedText] = useState('');
+  const [debouncedInputText, setDebouncedInputText] = useState('');
+  
 
   // Lifted state from SpeechMic
   const [transcription, setTranscription] = useState('');
@@ -47,6 +50,11 @@ const Body = ({username}) => {
   const [transcriptionError, setTranscriptionError] = useState('');
 
   const [transcribedFiles, setTranscribedFiles] = useState({});
+
+  const debouncedSetDebouncedInputText = useCallback(
+    debounce((text) => setDebouncedInputText(text), 300),
+    []
+  );
   
 
   useEffect(() => {
@@ -131,6 +139,7 @@ const Body = ({username}) => {
 
   const handleTextLanguageChange = useCallback((newLanguage) => {
     setTextLanguage(newLanguage);
+    // Don't swap text here, let TextTranslation handle it
   }, []);
   
   const handleVoiceLanguageChange = useCallback((newLanguage) => {
@@ -153,7 +162,9 @@ const Body = ({username}) => {
   }, [handleComponentSwitch]);
 
   const handleTextChange = useCallback((event) => {
-    setInputText(event.target.value);
+    const newText = event.target.value;
+    setInputText(newText);
+    debouncedSetDebouncedInputText(newText);
   }, []);
 
   const handleTranslationUpload = useCallback((translation) => {
@@ -165,7 +176,6 @@ const Body = ({username}) => {
   }, []);
 
   const handleTranslationText = useCallback((translation) => {
-    console.log('Body: received translation', translation);
     setTranslatedText(translation);
   }, []);
 
@@ -537,12 +547,14 @@ const Body = ({username}) => {
                 {selectedOption === 'text' && (
                   <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                     <TextTranslation 
-                      textToTranslate={inputText} 
-                      onTranslation={handleTranslationText} 
-                      onClearTranslation={clearTranslation} 
-                      language={Textlanguage}
-                      isMobile={isMobile}
-                      translatedText={translatedText}
+        textToTranslate={debouncedInputText} 
+        onTranslation={handleTranslationText} 
+        onClearTranslation={clearTranslation} 
+        language={Textlanguage}
+        isMobile={isMobile}
+        translatedText={translatedText}
+        inputText={inputText}
+        setInputText={setInputText}
                     />
                   </Box>
                 )}
@@ -574,14 +586,16 @@ const Body = ({username}) => {
               </Box>
               {selectedOption === 'text' && (
                 <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-<TextTranslation 
-  textToTranslate={inputText} 
-  onTranslation={handleTranslationText} 
-  onClearTranslation={clearTranslation} 
-  language={Textlanguage}
-  isMobile={isMobile}
-  translatedText={translatedText}
-/>
+                <TextTranslation 
+                  textToTranslate={inputText} 
+                  onTranslation={handleTranslationText} 
+                  onClearTranslation={clearTranslation} 
+                  language={Textlanguage}
+                  isMobile={isMobile}
+                  translatedText={translatedText}
+                  inputText={inputText}
+                  setInputText={setInputText}
+                  />
                 </Box>
               )}
               {memoizedTranslation && (
