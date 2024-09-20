@@ -9,6 +9,8 @@ from pythainlp.tokenize import word_tokenize
 import torch
 from datetime import datetime
 from models import db, AudioRecord 
+from flask import current_app
+from werkzeug.utils import secure_filename
 
 # Path to ffmpeg
 ffmpeg_path = "C:/ffmpeg/bin/ffmpeg.exe"
@@ -197,3 +199,49 @@ def process_and_save_audio(audio_file, language, user_id):
         # ลบไฟล์ชั่วคราว
         if os.path.exists(wav_file_path):
             os.remove(wav_file_path)
+
+def convert_and_save_audio_file(audio_file, user_type, file_id):
+    try:
+        # สร้างชื่อไฟล์ใหม่
+        filename = f"audio-{datetime.now().year}-{user_type}{file_id:06d}.wav"
+        
+        # กำหนด path สำหรับบันทึกไฟล์
+        upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'audio')
+        if not os.path.exists(upload_folder):
+            os.makedirs(upload_folder)
+        
+        output_file_path = os.path.join(upload_folder, filename)
+        
+        # บันทึกไฟล์ที่อัปโหลดมาชั่วคราว
+        temp_file_path = os.path.join(upload_folder, secure_filename(audio_file.filename))
+        audio_file.save(temp_file_path)
+        
+        # ตรวจสอบนามสกุลไฟล์
+        file_extension = os.path.splitext(temp_file_path)[1].lower()
+        
+        if file_extension != '.wav':
+            # แปลงไฟล์เป็น WAV ถ้าไม่ใช่ไฟล์ WAV
+            command = [
+                ffmpeg_path,
+                "-i", temp_file_path,
+                "-ar", "16000",  # Sample rate
+                "-ac", "1",      # Number of channels (mono)
+                output_file_path
+            ]
+            subprocess.run(command, check=True)
+            os.remove(temp_file_path)  # ลบไฟล์ชั่วคราว
+        else:
+            # ถ้าเป็นไฟล์ WAV อยู่แล้ว ให้เปลี่ยนชื่อไฟล์
+            os.rename(temp_file_path, output_file_path)
+        
+        return output_file_path
+    except subprocess.CalledProcessError as e:
+        current_app.logger.error(f"Error converting audio to WAV: {e}")
+        if os.path.exists(temp_file_path):
+            os.remove(temp_file_path)
+        raise
+    except Exception as e:
+        current_app.logger.error(f"Unexpected error in convert_and_save_audio_file: {e}")
+        if os.path.exists(temp_file_path):
+            os.remove(temp_file_path)
+        raise

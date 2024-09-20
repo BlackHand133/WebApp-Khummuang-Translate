@@ -5,7 +5,7 @@ from models import db, AudioRecord
 from datetime import datetime
 import tempfile
 from flask_cors import CORS
-from ModelASR.modelWav import AudioTranscriber, AudioTranscriberMic, convert_to_wav, process_and_save_audio
+from ModelASR.modelWav import AudioTranscriber, AudioTranscriberMic, convert_to_wav, process_and_save_audio, convert_and_save_audio_file
 from ModelASR.Translator import Translator
 from uuid import uuid4
 
@@ -153,47 +153,31 @@ def record_audio():
         language = request.form.get('language')
         transcription = request.form.get('transcription')
         duration = request.form.get('duration')
-        is_logged_in = request.form.get('is_logged_in', 'false').lower() == 'true'
 
-        if not audio_file or not language or not transcription or not duration:
+        if not audio_file or not user_id or not language or not transcription or not duration:
             return jsonify({"error": "Missing required data"}), 400
 
-        # Create a temporary file to store the uploaded audio
-        with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(audio_file.filename)[1]) as temp_file:
-            audio_file.save(temp_file.name)
-            temp_file_path = temp_file.name
+        # กำหนดประเภทผู้ใช้
+        user_type = 'g' if user_id == 'guest' else 'u'
 
-        # Convert the audio to WAV format
-        wav_file_path = convert_to_wav(temp_file_path)
+        # หา ID ถัดไป
+        last_record = AudioRecord.query.order_by(AudioRecord.id.desc()).first()
+        next_id = (last_record.id + 1) if last_record else 1
 
-        # Generate a unique ID for the file (6 digits)
-        file_id = str(uuid4().int)[:6].zfill(6)
+        # แปลงและบันทึกไฟล์เสียง
+        file_path = convert_and_save_audio_file(audio_file, user_type, next_id)
 
-        # Create the new filename
-        current_year = datetime.now().year
-        user_prefix = 'u' if is_logged_in else 'g'
-        new_filename = f"audio-{current_year}-{user_prefix}{file_id}.wav"
-
-        # Define the path where the file will be saved
-        file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], new_filename)
-
-        # Move the converted WAV file to the upload folder
-        os.rename(wav_file_path, file_path)
-
-        # Create and save the database record
+        # สร้างและบันทึกรายการในฐานข้อมูล
         new_record = AudioRecord(
-            user_id=user_id if is_logged_in else None,
-            audio_url=f"/uploads/{new_filename}",
+            user_id=user_id,
+            audio_url=f"/uploads/audio/{os.path.basename(file_path)}",
             transcription=transcription,
-            time=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            time=datetime.now(),
             duration=int(duration),
             language=language
         )
         db.session.add(new_record)
         db.session.commit()
-
-        # Clean up the temporary file
-        os.remove(temp_file_path)
 
         return jsonify({"message": "Audio record saved successfully", "record_id": new_record.id}), 201
     except Exception as e:

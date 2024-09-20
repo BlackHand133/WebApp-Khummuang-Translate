@@ -139,6 +139,7 @@ const Transcription = ({
   useEffect(() => {
     hasTranscribedRef.current = false;
     setHasSaved(false);
+    setLiked(false);
     if (file && file !== previousFileRef.current) {
       handleTranscribe();
       previousFileRef.current = file;
@@ -146,7 +147,7 @@ const Transcription = ({
     } else if (!file) {
       setShowUploadAlert(true);
     }
-  }, [file, handleTranscribe]);
+  }, [file, handleTranscribe,setLiked]);
 
   const theme = useTheme();
 

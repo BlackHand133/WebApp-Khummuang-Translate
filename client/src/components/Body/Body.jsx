@@ -154,8 +154,10 @@ const Body = ({username}) => {
 
   const handleFileUpload = useCallback((uploadedFile) => {
     setFile(uploadedFile);
+    setLiked(false);  // รีเซ็ตสถานะ liked เมื่อมีการอัปโหลดไฟล์ใหม่
+    setTranscriptionLiked(false);
   }, []);
-
+  
   const handleInputToggle = useCallback((input) => {
     setActiveInput(input);
     handleComponentSwitch();

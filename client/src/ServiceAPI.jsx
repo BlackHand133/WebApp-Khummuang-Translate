@@ -102,7 +102,7 @@ export const ApiProvider = ({ children }) => {
   
     try {
       const response = await api.post('/record_audio', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
       setLoading(false);
       return response.data;
