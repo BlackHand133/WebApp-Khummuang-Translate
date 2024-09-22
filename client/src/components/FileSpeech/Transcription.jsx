@@ -42,7 +42,6 @@ const Transcription = ({
 
   const fileKey = useMemo(() => getFileKey(file), [getFileKey, file]);
   const [isLikeAnimating, setIsLikeAnimating] = useState(false);
-  const [showUploadAlert, setShowUploadAlert] = useState(false);
   const [hasSaved, setHasSaved] = useState(false);
 
   const handleTranslate = useCallback(async (text) => {
@@ -140,13 +139,6 @@ const Transcription = ({
     hasTranscribedRef.current = false;
     setHasSaved(false);
     setLiked(false);
-    if (file && file !== previousFileRef.current) {
-      handleTranscribe();
-      previousFileRef.current = file;
-      setShowUploadAlert(false);
-    } else if (!file) {
-      setShowUploadAlert(true);
-    }
   }, [file, handleTranscribe,setLiked]);
 
   const theme = useTheme();
@@ -206,13 +198,6 @@ const Transcription = ({
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center',  height: '100%',  // เพิ่มบรรทัดนี้
       minHeight: '500px', }}>
-      {!isMobile && showUploadAlert && (
-        <Paper elevation={3} sx={{display:'flex', flexDirection: 'column', alignItems: 'center',}}>
-        <Alert severity="info" sx={{ width: '100%', maxWidth: '800px', mb: 1,mt:1 }}>
-          กรุณากดปุ่มอัปโหลดไฟล์ที่แถบด้านซ้ายเพื่อเริ่มการถอดความ
-        </Alert>
-        </Paper>
-      )}
 
       {isMobile && (
         <>

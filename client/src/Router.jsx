@@ -24,6 +24,7 @@ const Wrapper = lazy(() => import('./components/Body/Wrapperwhite.jsx'));
 const UserManagement = lazy(() => import('./components/Admin/content/UserManagement.jsx'));
 const EditProfile = lazy(() => import('./components/Admin/content/Editprofile.jsx'));
 const AudioRecords = lazy(() => import('./components/Admin/content/AudioRecords.jsx'));
+const Body = lazy(() => import('./components/Body/Body.jsx'));
 
 const UserProtectedRoute = ({ children }) => {
   const { isLoggedIn, loading } = useUser();

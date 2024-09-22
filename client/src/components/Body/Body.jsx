@@ -11,7 +11,7 @@ import TextTranslation from '../TextTranslation/TextTranslation';
 import SpeechMic from '../FileSpeech/SpeechMic';
 import MobileMenu from '../MobileMenu/MobileMenu';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
-
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 
 const Body = ({username}) => {
   const theme = useTheme();
@@ -30,7 +30,7 @@ const Body = ({username}) => {
   const [Voicelanguage, setVoiceLanguage] = useState('คำเมือง');
   const [translatedText, setTranslatedText] = useState('');
   const [debouncedInputText, setDebouncedInputText] = useState('');
-  
+  const [isDragging, setIsDragging] = useState(false);
 
   // Lifted state from SpeechMic
   const [transcription, setTranscription] = useState('');
@@ -55,6 +55,33 @@ const Body = ({username}) => {
     debounce((text) => setDebouncedInputText(text), 300),
     []
   );
+
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFileUpload(e.dataTransfer.files[0]);
+    }
+  };
   
 
   useEffect(() => {
@@ -317,10 +344,12 @@ const Body = ({username}) => {
             onStopRecording={handleStopRecording} 
             onTextLanguageChange={handleTextLanguageChange}
             onVoiceLanguageChange={handleVoiceLanguageChange}
+            selectedOption={selectedOption}
+            activeInput={activeInput}
           />
         </Box>
       )}
-
+  
       <Box sx={{ 
         flexGrow: 1, 
         display: 'flex', 
@@ -337,11 +366,12 @@ const Body = ({username}) => {
             activeInput={activeInput}
           />
         )}
-
+  
         <Box sx={{ 
           display: 'flex', 
           flexDirection: { xs: 'column', lg: 'row' }, 
-          gap: isMobile ? 1 : 2
+          gap: isMobile ? 1 : 2,
+          flexGrow: 1
         }}>
           <Paper sx={{ 
             flex: 1, 
@@ -349,47 +379,21 @@ const Body = ({username}) => {
             borderRadius: isMobile ? 0 : '8px', 
             display: 'flex', 
             flexDirection: 'column', 
-            height: '100%', 
+            height: '100%',
+            minHeight:'100px', 
             bgcolor: '#EFEFEF',
             mb: { xs: 1, lg: 0 },
             boxShadow: isMobile ? 'none' : 3
           }} elevation={isMobile ? 0 : 3}>
             <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-              {activeInput === 'upload' && (
-                <Box sx={{ width: '100%', mb: isMobile ? 1 : 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <Paper sx={{ p: 1, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <Typography variant="h6" sx={{ fontFamily: '"Chakra Petch", sans-serif', fontSize: isMobile ? '1rem' : '1.25rem' }}>
-                      ไฟล์เสียงที่อัปโหลด
-                    </Typography>
-                    <Box sx={{ position: 'relative', width: '100%', mt: 1 }}>
-                      {!fileUrl ? (
-                        <Box sx={{
-                          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          backgroundColor: '#f5f5f5', borderRadius: 1,
-                          opacity: 0.6, textAlign: 'center', mt: 7
-                        }}>
-                        </Box>
-                      ) : (
-                        <>
-                          <audio controls src={fileUrl} style={{ width: '100%' }} />
-                          <Typography variant="body2" sx={{ mt: 1, color: '#757575', textAlign: 'center', fontSize: isMobile ? '0.8rem' : '1rem' }}>{file.name}</Typography>
-                        </>
-                      )}
-                    </Box>
-                  </Paper>
-                </Box>
-              )}
-
               {selectedOption === 'text' && (
                 <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                  {isMobile && selectedOption === 'text' && (
-  <LanguageSwitch 
-    language={Textlanguage} 
-    toggleLanguage={handleTextLanguageToggle}
-  />
-)}
-                  
+                  {isMobile && (
+                    <LanguageSwitch 
+                      language={Textlanguage} 
+                      toggleLanguage={handleTextLanguageToggle}
+                    />
+                  )}
                   <Paper 
                     elevation={isMobile ? 0 : 3}
                     sx={{ 
@@ -479,61 +483,93 @@ const Body = ({username}) => {
                   </Paper>
                 </Box>
               )}
-
+  
               {selectedOption !== 'text' && (
-                activeInput === 'microphone' ? (
-                  <SpeechMic
-                    ref={speechMicRef}
-                    onTranslation={handleTranslationMic}
-                    language={Voicelanguage}
-                    setLanguage={handleVoiceLanguageChange}
-                    transcription={transcription}
-                    setTranscription={setTranscription}
-                    audioUrl={audioUrl}
-                    onAudioRecorded={handleAudioRecorded}
-                    transcriptionStatus={transcriptionStatus}
-                    setTranscriptionStatus={setTranscriptionStatus}
-                    translation={translations.microphone}
-                    setTranslation={(newTranslation) => setTranslations(prev => ({ ...prev, microphone: newTranslation }))}
-                    liked={liked}
-                    setLiked={setLiked}
-                    isLoading={isLoading}
-                    setIsLoading={setIsLoading}
-                    error={error}
-                    setError={setError}
-                    isMobile={isMobile}
-                  />
-                ) : (
-                  <Transcription           
-                    file={file}
-                    onTranslation={handleTranslationUpload}
-                    language={Voicelanguage}
-                    setLanguage={handleVoiceLanguageChange}
-                    username={username}
-                    transcription={transcriptionText}
-                    setTranscription={handleTranscriptionChange}
-                    liked={transcriptionLiked}
-                    setLiked={handleTranscriptionLikeToggle}
-                    isLoading={transcriptionIsLoading}
-                    setIsLoading={handleTranscriptionLoadingChange}
-                    error={transcriptionError}
-                    setError={handleTranscriptionErrorChange}
-                    transcribedFiles={transcribedFiles}
-                    setTranscribedFiles={setTranscribedFiles}
-                    getFileKey={getFileKey}
-                    onComponentSwitch={handleComponentSwitch}
-                    isMobile={isMobile}
-                    onFileUpload={handleFileUpload}
-                  />
-                )
+                <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                  {activeInput === 'upload' && (
+                    <Box sx={{ width: '100%', mb: isMobile ? 1 : 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      <Paper 
+                        sx={{ 
+                          p: 1, 
+                          width: '100%', 
+                          display: 'flex', 
+                          flexDirection: 'column', 
+                          alignItems: 'center',
+                          border: isDragging ? '2px dashed #1976d2' : '2px dashed #ccc',
+                          backgroundColor: isDragging ? '#e3f2fd' : '#f5f5f5',
+                          transition: 'all 0.3s ease'
+                        }}
+                        onDragEnter={handleDragEnter}
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                      >
+                        <Typography variant="h6" sx={{ fontFamily: '"Chakra Petch", sans-serif', fontSize: isMobile ? '1rem' : '1.25rem' }}>
+                          ไฟล์เสียงที่อัปโหลด
+                        </Typography>
+                        {!fileUrl ? (
+                          <Box sx={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            height: '150px',
+                            width: '100%',
+                            backgroundColor: '#f5f5f5',
+                            borderRadius: 1,
+                            opacity: 0.6,
+                            textAlign: 'center',
+                          }}>
+                            <CloudUploadIcon sx={{ fontSize: 50, color: isDragging ? '#1976d2' : '#757575', mb: 2 }} />
+                            <Typography variant="body1" sx={{ color: isDragging ? '#1976d2' : '#757575' }}>
+                              {isDragging ? 'วางไฟล์เสียงที่นี่' : 'ลากและวางไฟล์เสียงที่นี่'}
+                            </Typography>
+                          </Box>
+                        ) : (
+                          <>
+                            <audio controls src={fileUrl} style={{ width: '100%', marginTop: '10px' }} />
+                            <Typography variant="body2" sx={{ mt: 1, color: '#757575', textAlign: 'center', fontSize: isMobile ? '0.8rem' : '1rem' }}>{file.name}</Typography>
+                          </>
+                        )}
+                        {!fileUrl && (
+                          <Alert severity="info" sx={{ mt: 2, width: '100%' }}>
+                            กรุณากดปุ่มอัปโหลดไฟล์ที่แถบด้านซ้ายเพื่อเริ่มการถอดความ
+                          </Alert>
+                        )}
+                      </Paper>
+                    </Box>
+                  )}
+                  {activeInput === 'microphone' && (
+                    <SpeechMic
+                      ref={speechMicRef}
+                      onTranslation={handleTranslationMic}
+                      language={Voicelanguage}
+                      setLanguage={handleVoiceLanguageChange}
+                      transcription={transcription}
+                      setTranscription={setTranscription}
+                      audioUrl={audioUrl}
+                      onAudioRecorded={handleAudioRecorded}
+                      transcriptionStatus={transcriptionStatus}
+                      setTranscriptionStatus={setTranscriptionStatus}
+                      translation={translations.microphone}
+                      setTranslation={(newTranslation) => setTranslations(prev => ({ ...prev, microphone: newTranslation }))}
+                      liked={liked}
+                      setLiked={setLiked}
+                      isLoading={isLoading}
+                      setIsLoading={setIsLoading}
+                      error={error}
+                      setError={setError}
+                      isMobile={isMobile}
+                    />
+                  )}
+                </Box>
               )}
             </Box>
           </Paper>
-
+  
           {!isMobile && (
             <Paper sx={{ 
-              flex: 1, 
-              p: 2, 
+              flex: 1,  
               borderRadius: '8px', 
               backgroundColor: '#f5f5f5', 
               height: '100%',
@@ -549,14 +585,14 @@ const Body = ({username}) => {
                 {selectedOption === 'text' && (
                   <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                     <TextTranslation 
-        textToTranslate={debouncedInputText} 
-        onTranslation={handleTranslationText} 
-        onClearTranslation={clearTranslation} 
-        language={Textlanguage}
-        isMobile={isMobile}
-        translatedText={translatedText}
-        inputText={inputText}
-        setInputText={setInputText}
+                      textToTranslate={debouncedInputText} 
+                      onTranslation={handleTranslationText} 
+                      onClearTranslation={clearTranslation} 
+                      language={Textlanguage}
+                      isMobile={isMobile}
+                      translatedText={translatedText}
+                      inputText={inputText}
+                      setInputText={setInputText}
                     />
                   </Box>
                 )}
@@ -571,7 +607,7 @@ const Body = ({username}) => {
             </Paper>
           )}
         </Box>
-
+  
         {isMobile && (
           <Paper sx={{ 
             p: 1, 
@@ -588,7 +624,7 @@ const Body = ({username}) => {
               </Box>
               {selectedOption === 'text' && (
                 <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <TextTranslation 
+                  <TextTranslation 
                   textToTranslate={inputText} 
                   onTranslation={handleTranslationText} 
                   onClearTranslation={clearTranslation} 
@@ -597,22 +633,22 @@ const Body = ({username}) => {
                   translatedText={translatedText}
                   inputText={inputText}
                   setInputText={setInputText}
-                  />
-                </Box>
-              )}
-              {memoizedTranslation && (
-                <Paper elevation={1} sx={{ mt: 1, p: 1, borderRadius: '4px', width: '100%' }}>
-                  <Typography variant="body2" sx={{ fontFamily: '"Chakra Petch", sans-serif', fontWeight: '500', fontSize: '0.9rem' }}>
-                    {memoizedTranslation}
-                  </Typography>
-                </Paper>
-              )}
-            </Box>
-          </Paper>
-        )}
-      </Box>
-    </Container>
-  );
+                />
+              </Box>
+            )}
+            {memoizedTranslation && (
+              <Paper elevation={1} sx={{ mt: 1, p: 1, borderRadius: '4px', width: '100%' }}>
+                <Typography variant="body2" sx={{ fontFamily: '"Chakra Petch", sans-serif', fontWeight: '500', fontSize: '0.9rem' }}>
+                  {memoizedTranslation}
+                </Typography>
+              </Paper>
+            )}
+          </Box>
+        </Paper>
+      )}
+    </Box>
+  </Container>
+);
 };
 
 export default Body;
