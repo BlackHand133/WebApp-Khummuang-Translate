@@ -155,6 +155,7 @@ const Transcription = ({
     const uploadedFile = event.target.files[0];
     if (uploadedFile) {
       onFileUpload(uploadedFile);
+      setLiked(false);
     }
   };
 
@@ -203,11 +204,14 @@ const Transcription = ({
   );
 
   return (
-    <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center',  height: '100%',  // เพิ่มบรรทัดนี้
+      minHeight: '500px', }}>
       {!isMobile && showUploadAlert && (
-        <Alert severity="info" sx={{ width: '100%', maxWidth: '800px', mb: 2 }}>
+        <Paper elevation={3} sx={{display:'flex', flexDirection: 'column', alignItems: 'center',}}>
+        <Alert severity="info" sx={{ width: '100%', maxWidth: '800px', mb: 1,mt:1 }}>
           กรุณากดปุ่มอัปโหลดไฟล์ที่แถบด้านซ้ายเพื่อเริ่มการถอดความ
         </Alert>
+        </Paper>
       )}
 
       {isMobile && (
@@ -274,7 +278,7 @@ const Transcription = ({
       )}
       {transcription && (
         <Paper elevation={3} sx={{ p: 2, borderRadius: '8px', width: '100%', maxWidth: '800px' }}>
-          <Box sx={{ bgcolor: 'black', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <Box sx={{ bgcolor: 'black', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center' ,width:'100%'}}>
             <Typography variant="h6" sx={{ fontFamily: '"Chakra Petch", sans-serif', color: 'white' }} gutterBottom>
               ผลลัพธ์การถอดความ
             </Typography>

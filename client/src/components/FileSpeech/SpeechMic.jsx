@@ -140,26 +140,26 @@ const SpeechMic = forwardRef(({
       };
 
       mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        onAudioRecorded(audioBlob);
-      
-        setIsLoading(true);
-        try {
-          const formData = new FormData();
-          formData.append('audio_file', audioBlob, 'recording.webm');
-          formData.append('language', language);
-      
-          const transcriptionText = await transcribeMic(formData);
-          setTranscription(transcriptionText);
-          setTranscriptionStatus('ถอดเสียงเสร็จสิ้น');
-          await translateText(transcriptionText);
-        } catch (error) {
-          console.error('Error transcribing audio:', error);
-          setError('เกิดข้อผิดพลาดในการถอดเสียง');
-        } finally {
-          setIsLoading(false);
-        }
-      };
+      const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+      onAudioRecorded(audioBlob);
+
+      setIsLoading(true);
+      try {
+        const formData = new FormData();
+        formData.append('audio_file', audioBlob, 'recording.webm');
+        formData.append('language', language);
+
+        const transcriptionText = await transcribeMic(formData);
+        setTranscription(transcriptionText);
+        setTranscriptionStatus('ถอดเสียงเสร็จสิ้น');
+        await translateText(transcriptionText);
+      } catch (error) {
+        console.error('Error transcribing audio:', error);
+        setError('เกิดข้อผิดพลาดในการถอดเสียง');
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
       mediaRecorder.start();
       setTranscriptionStatus('กำลังบันทึกเสียง...');
