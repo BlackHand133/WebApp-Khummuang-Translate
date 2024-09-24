@@ -101,6 +101,11 @@ export const ApiProvider = ({ children }) => {
     setError(null);
   
     try {
+      // ตรวจสอบว่า formData มี 'source' หรือไม่ ถ้าไม่มีให้เพิ่มค่าเริ่มต้นเป็น 'UPLOAD'
+      if (!formData.has('source')) {
+        formData.append('source', 'UPLOAD');
+      }
+  
       const response = await api.post('/record_audio', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
@@ -113,9 +118,45 @@ export const ApiProvider = ({ children }) => {
     }
   };
 
+  const updateRating = async (audioRecordId, rating) => {
+    setLoading(true);
+    setError(null);
+  
+    try {
+      const response = await api.post('/update_audio_rating', {
+        audio_record_id: audioRecordId,
+        rating: rating
+      });
+      setLoading(false);
+      return response.data;
+    } catch (err) {
+      setError(err.response?.data?.error || 'An error occurred while updating rating');
+      setLoading(false);
+      throw err;
+    }
+  };
+
+  const getAudioRecords = async (userId, page = 1, perPage = 10) => {
+    setLoading(true);
+    setError(null);
+  
+    try {
+      const response = await api.get('/get_audio_records', {
+        params: { user_id: userId, page, per_page: perPage }
+      });
+      setLoading(false);
+      return response.data;
+    } catch (err) {
+      setError(err.response?.data?.error || 'An error occurred while fetching audio records');
+      setLoading(false);
+      throw err;
+    }
+  };
+
   const clearError = () => {
     setError(null);
   };
+
 
   const value = {
     transcribe,
@@ -125,6 +166,8 @@ export const ApiProvider = ({ children }) => {
     testConnection,
     loading,
     error,
+    updateRating,
+    getAudioRecords,
     clearError
   };
 

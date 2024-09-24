@@ -6,7 +6,18 @@ from flask_wtf import FlaskForm
 from wtforms import DateField, SelectField, StringField, PasswordField
 from wtforms.validators import DataRequired, Length
 from flask_bcrypt import Bcrypt
-from datetime import datetime
+from datetime import datetime,timedelta
+import enum
+from audio_utils import calculate_expiration_date
+
+class RatingEnum(enum.Enum):
+    UNKNOWN = 'unknown'
+    LIKE = 'like'
+    DISLIKE = 'dislike'
+
+class SourceEnum(enum.Enum):
+    MICROPHONE = 'microphone'
+    UPLOAD = 'upload'
 
 db = SQLAlchemy()
 bcrypt = Bcrypt()
@@ -59,15 +70,26 @@ class User(UserMixin, db.Model):
 class AudioRecord(db.Model):
     __tablename__ = 'audio_record'
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.String(32), db.ForeignKey('user.user_id'), nullable=True)
+    user_id = db.Column(db.String(32), db.ForeignKey('user.user_id'), nullable=False)
     audio_url = db.Column(db.String(200))
     transcription = db.Column(db.Text)
     time = db.Column(db.String(20), nullable=False)
     duration = db.Column(db.Integer)  # Duration in seconds
-    language = db.Column(db.String(10))  # เพิ่มบรรทัดนี้
-    created_at = db.Column(DateTime, default=datetime.utcnow)
+    language = db.Column(db.String(10))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    expiration_date = db.Column(db.DateTime)
+    rating = db.Column(db.Enum(RatingEnum), default=RatingEnum.UNKNOWN)
+    audio_hash = db.Column(db.String(64), unique=True)
+    source = db.Column(db.Enum(SourceEnum), nullable=False)  # New field for source
 
     user = db.relationship('User', backref=db.backref('audio_records', lazy=True))
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.set_expiration_date()
+
+    def set_expiration_date(self):
+        self.expiration_date = calculate_expiration_date(self.source, self.rating)
 
     def to_dict(self):
         return {
@@ -77,10 +99,14 @@ class AudioRecord(db.Model):
             'transcription': self.transcription,
             'time': self.time,
             'duration': self.duration,
+            'language': self.language,
             'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat()
+            'expiration_date': self.expiration_date.isoformat(),
+            'rating': self.rating.value,
+            'audio_hash': self.audio_hash,
+            'source': self.source.value
         }
-
+    
 class SysAdmin(db.Model):
     __tablename__ = 'admin'
     admin_id = db.Column(db.Integer, primary_key=True)

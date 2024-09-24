@@ -2,6 +2,8 @@ import React, { useRef, forwardRef, useImperativeHandle, useCallback, useEffect,
 import { Typography, Box, Paper, IconButton, CircularProgress, Fade, Chip, Alert, Divider, Button } from '@mui/material';
 import ThumbUpAltIcon from '@mui/icons-material/ThumbUpAlt';
 import ThumbUpOffAltIcon from '@mui/icons-material/ThumbUpOffAlt';
+import ThumbDownAltIcon from '@mui/icons-material/ThumbDownAlt';
+import ThumbDownOffAltIcon from '@mui/icons-material/ThumbDownOffAlt';
 import MicIcon from '@mui/icons-material/Mic';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
@@ -31,9 +33,12 @@ const SpeechMic = forwardRef(({
   isMobile
 }, ref) => {
   const { userId } = useUser();
-  const { transcribeMic, translate, recordAudio } = useApi();
+  const { transcribeMic, translate, recordAudio, updateRating } = useApi();
   const [isRecording, setIsRecording] = useState(false);
   const [isLikeAnimating, setIsLikeAnimating] = useState(false);
+  const [isDislikeAnimating, setIsDislikeAnimating] = useState(false);
+  const [rating, setRating] = useState('unknown');
+  const [audioRecordId, setAudioRecordId] = useState(null);
 
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
@@ -95,10 +100,12 @@ const SpeechMic = forwardRef(({
       formData.append('transcription', transcription);
       formData.append('language', language);
       formData.append('duration', duration.toString());
+      formData.append('source', 'MICROPHONE');
 
       const result = await recordAudio(formData);
       console.log('File saved successfully:', result);
       setHasSaved(true);
+      setAudioRecordId(result.record_id);
     } catch (error) {
       console.error('Error saving file:', error);
       setError('เกิดข้อผิดพลาดในการบันทึกไฟล์');
@@ -106,6 +113,30 @@ const SpeechMic = forwardRef(({
       setIsLoading(false);
     }
   }, [audioUrl, transcription, userId, language, recordAudio, setError, setIsLoading, hasSaved]);
+
+  const handleRating = useCallback(async (newRating) => {
+    if (!audioRecordId) {
+      await saveFile();
+    }
+    
+    setIsLoading(true);
+    try {
+      await updateRating(audioRecordId, newRating);
+      setRating(newRating);
+      if (newRating === 'like') {
+        setIsLikeAnimating(true);
+        setTimeout(() => setIsLikeAnimating(false), 300);
+      } else if (newRating === 'dislike') {
+        setIsDislikeAnimating(true);
+        setTimeout(() => setIsDislikeAnimating(false), 300);
+      }
+    } catch (error) {
+      console.error('Error updating rating:', error);
+      setError('เกิดข้อผิดพลาดในการอัปเดตเรตติ้ง');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [audioRecordId, saveFile, updateRating, setError, setIsLoading]);
 
   const startRecording = useCallback(async () => {
     setLiked(false);
@@ -351,7 +382,7 @@ return (
           </Box>
         )}
 
-        {transcription && (
+{transcription && (
           <Fade in={Boolean(transcription)}>
             <Box sx={{ mt: 3, width: '100%' }}>
               <Box sx={{ bgcolor: 'black', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center', mb:3 }}>
@@ -364,12 +395,20 @@ return (
               </Typography>
               <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2, alignItems: 'center' }}>
                 <IconButton
-                  onClick={toggleLike}
+                  onClick={() => handleRating('like')}
                   sx={{
                     animation: isLikeAnimating ? `${pulse} 0.3s ease-in-out` : 'none',
                   }}
                 >
-                  {liked ? <ThumbUpAltIcon sx={{ fontSize: '1.5rem', color: '#1976d2' }} /> : <ThumbUpOffAltIcon sx={{ fontSize: '1.5rem' }} />}
+                  {rating === 'like' ? <ThumbUpAltIcon sx={{ fontSize: '1.5rem', color: '#1976d2' }} /> : <ThumbUpOffAltIcon sx={{ fontSize: '1.5rem' }} />}
+                </IconButton>
+                <IconButton
+                  onClick={() => handleRating('dislike')}
+                  sx={{
+                    animation: isDislikeAnimating ? `${pulse} 0.3s ease-in-out` : 'none',
+                  }}
+                >
+                  {rating === 'dislike' ? <ThumbDownAltIcon sx={{ fontSize: '1.5rem', color: '#d32f2f' }} /> : <ThumbDownOffAltIcon sx={{ fontSize: '1.5rem' }} />}
                 </IconButton>
               </Box>
             </Box>
