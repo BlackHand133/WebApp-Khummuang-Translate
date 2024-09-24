@@ -21,7 +21,6 @@ export const ApiProvider = ({ children }) => {
     setLoading(true);
     setError(null);
 
-    // Mapping language to API expected values
     const apiLanguage = language === 'ไทย' ? 'th' : language === 'คำเมือง' ? 'km' : language;
 
     if (file.size > MAX_FILE_SIZE) {
@@ -39,7 +38,12 @@ export const ApiProvider = ({ children }) => {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       setLoading(false);
-      return response.data.transcription;
+      return {
+        transcription: response.data.transcription,
+        recordId: response.data.record_id,
+        hashedId: response.data.hashed_id,
+        status: response.data.status
+      };
     } catch (err) {
       setError(err.response?.data?.error || err.response?.data?.details || 'An error occurred during transcription');
       setLoading(false);
@@ -79,7 +83,11 @@ export const ApiProvider = ({ children }) => {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       setLoading(false);
-      return response.data.transcription;
+      return {
+        transcription: response.data.transcription,
+        recordId: response.data.record_id,
+        hashedId: response.data.hashed_id
+      };
     } catch (err) {
       setError(err.response?.data?.error || err.response?.data?.details || 'An error occurred during microphone transcription');
       setLoading(false);
@@ -101,7 +109,6 @@ export const ApiProvider = ({ children }) => {
     setError(null);
   
     try {
-      // ตรวจสอบว่า formData มี 'source' หรือไม่ ถ้าไม่มีให้เพิ่มค่าเริ่มต้นเป็น 'UPLOAD'
       if (!formData.has('source')) {
         formData.append('source', 'UPLOAD');
       }
@@ -110,7 +117,12 @@ export const ApiProvider = ({ children }) => {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       setLoading(false);
-      return response.data;
+      return {
+        recordId: response.data.record_id,
+        hashedId: response.data.hashed_id,
+        status: response.data.status,
+        message: response.data.message
+      };
     } catch (err) {
       setError(err.response?.data?.error || 'An error occurred while recording audio');
       setLoading(false);
@@ -118,18 +130,22 @@ export const ApiProvider = ({ children }) => {
     }
   };
 
-  const updateRating = async (audioRecordId, rating) => {
+  const updateRating = async (identifier, rating) => {
     setLoading(true);
     setError(null);
   
     try {
+      console.log('Sending update rating request:', { identifier, rating });
       const response = await api.post('/update_audio_rating', {
-        audio_record_id: audioRecordId,
-        rating: rating
+        identifier,
+        rating
       });
+      console.log('Update rating response:', response.data);
       setLoading(false);
       return response.data;
     } catch (err) {
+      console.error('Error updating rating:', err);
+      console.error('Error response:', err.response);
       setError(err.response?.data?.error || 'An error occurred while updating rating');
       setLoading(false);
       throw err;

@@ -24,8 +24,6 @@ const SpeechMic = forwardRef(({
   setTranscriptionStatus,
   translation,
   setTranslation,
-  liked,
-  setLiked,
   isLoading,
   setIsLoading,
   error,
@@ -39,6 +37,7 @@ const SpeechMic = forwardRef(({
   const [isDislikeAnimating, setIsDislikeAnimating] = useState(false);
   const [rating, setRating] = useState('unknown');
   const [audioRecordId, setAudioRecordId] = useState(null);
+  const [audioHashedId, setAudioHashedId] = useState(null);
 
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
@@ -104,8 +103,9 @@ const SpeechMic = forwardRef(({
 
       const result = await recordAudio(formData);
       console.log('File saved successfully:', result);
+      setAudioRecordId(result.recordId);
+      setAudioHashedId(result.hashedId);
       setHasSaved(true);
-      setAudioRecordId(result.record_id);
     } catch (error) {
       console.error('Error saving file:', error);
       setError('เกิดข้อผิดพลาดในการบันทึกไฟล์');
@@ -115,13 +115,16 @@ const SpeechMic = forwardRef(({
   }, [audioUrl, transcription, userId, language, recordAudio, setError, setIsLoading, hasSaved]);
 
   const handleRating = useCallback(async (newRating) => {
-    if (!audioRecordId) {
-      await saveFile();
+    if (!audioHashedId) {
+      console.error('No audio record hashed ID available');
+      setError('ไม่สามารถอัปเดตเรตติ้งได้ เนื่องจากไม่มี ID ของบันทึกเสียง');
+      return;
     }
     
     setIsLoading(true);
     try {
-      await updateRating(audioRecordId, newRating);
+      console.log('Updating rating for audio record:', audioHashedId);
+      await updateRating(audioHashedId, newRating);
       setRating(newRating);
       if (newRating === 'like') {
         setIsLikeAnimating(true);
@@ -136,16 +139,18 @@ const SpeechMic = forwardRef(({
     } finally {
       setIsLoading(false);
     }
-  }, [audioRecordId, saveFile, updateRating, setError, setIsLoading]);
+  }, [audioHashedId, updateRating, setError, setIsLoading]);
 
   const startRecording = useCallback(async () => {
-    setLiked(false);
+    setRating('unknown');
     setError('');
     setTranscription('');
     setTranslation('');
     setTranscriptionStatus('');
     setHasSaved(false);
     setIsRecording(true);
+    setAudioRecordId(null);
+    setAudioHashedId(null);
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -171,26 +176,28 @@ const SpeechMic = forwardRef(({
       };
 
       mediaRecorder.onstop = async () => {
-      const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-      onAudioRecorded(audioBlob);
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        onAudioRecorded(audioBlob);
 
-      setIsLoading(true);
-      try {
-        const formData = new FormData();
-        formData.append('audio_file', audioBlob, 'recording.webm');
-        formData.append('language', language);
+        setIsLoading(true);
+        try {
+          const formData = new FormData();
+          formData.append('audio_file', audioBlob, 'recording.webm');
+          formData.append('language', language);
 
-        const transcriptionText = await transcribeMic(formData);
-        setTranscription(transcriptionText);
-        setTranscriptionStatus('ถอดเสียงเสร็จสิ้น');
-        await translateText(transcriptionText);
-      } catch (error) {
-        console.error('Error transcribing audio:', error);
-        setError('เกิดข้อผิดพลาดในการถอดเสียง');
-      } finally {
-        setIsLoading(false);
-      }
-    };
+          const result = await transcribeMic(formData);
+          setTranscription(result.transcription);
+          setAudioRecordId(result.recordId);
+          setAudioHashedId(result.hashedId);
+          setTranscriptionStatus('ถอดเสียงเสร็จสิ้น');
+          await translateText(result.transcription);
+        } catch (error) {
+          console.error('Error transcribing audio:', error);
+          setError('เกิดข้อผิดพลาดในการถอดเสียง');
+        } finally {
+          setIsLoading(false);
+        }
+      };
 
       mediaRecorder.start();
       setTranscriptionStatus('กำลังบันทึกเสียง...');
@@ -207,71 +214,62 @@ const SpeechMic = forwardRef(({
     setIsRecording(false);
   }, []);
 
-  const toggleLike = useCallback(async () => {
-    if (!liked && !hasSaved) {
-      await saveFile();
-    }
-    setLiked(prev => !prev);
-    setIsLikeAnimating(true);
-    setTimeout(() => setIsLikeAnimating(false), 300);
-  }, [liked, hasSaved, saveFile, setLiked]);
-
   const pulse = keyframes`
-  0% { transform: scale(1); }
-  50% { transform: scale(1.1); }
-  100% { transform: scale(1); }
-`;
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+  `;
 
-const ripple = keyframes`
-  0% { transform: scale(0.8); opacity: 1; }
-  100% { transform: scale(2.4); opacity: 0; }
-`;
+  const ripple = keyframes`
+    0% { transform: scale(0.8); opacity: 1; }
+    100% { transform: scale(2.4); opacity: 0; }
+  `;
 
-const LanguageSwitch = () => (
-  <Box sx={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap', my: '1em' }}>
-    <Button 
-      sx={{ 
-        borderRadius: '20px', 
-        padding: '8px 15px', 
-        border: '2px solid #e0e0e0', 
-        minWidth: '80px', 
-        bgcolor: 'ButtonShadow',
-        color: 'black',
-        transition: 'background-color 0.3s', 
-        '&:hover': {
-          bgcolor: '#CBC3E3'
-        }
-      }}
-      onClick={toggleLanguage}
-    >
-      <Typography sx={{ fontFamily: '"Mitr", sans-serif', fontWeight: 400, fontSize: '0.8rem' }}>{language}</Typography>
-    </Button>
-    <IconButton sx={{ color: '#4a90e2' }} onClick={toggleLanguage}>
-      <SwapHorizIcon />
-    </IconButton>
-    <Button 
-      sx={{ 
-        borderRadius: '20px', 
-        padding: '8px 15px', 
-        border: '1px solid #e0e0e0', 
-        minWidth: '80px', 
-        bgcolor: 'ButtonShadow',
-        color: 'black',
-        transition: 'background-color 0.3s', 
-        '&:hover': {
-          bgcolor: '#CBC3E3'
-        }
-      }}
-      onClick={toggleLanguage}
-    >
-      <Typography sx={{ fontFamily: '"Mitr", sans-serif', fontWeight: 400, fontSize: '0.8rem' }}>{language === 'คำเมือง' ? 'ไทย' : 'คำเมือง'}</Typography>
-    </Button>
-  </Box>
-);
+  const LanguageSwitch = () => (
+    <Box sx={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap', my: '1em' }}>
+      <Button 
+        sx={{ 
+          borderRadius: '20px', 
+          padding: '8px 15px', 
+          border: '2px solid #e0e0e0', 
+          minWidth: '80px', 
+          bgcolor: 'ButtonShadow',
+          color: 'black',
+          transition: 'background-color 0.3s', 
+          '&:hover': {
+            bgcolor: '#CBC3E3'
+          }
+        }}
+        onClick={toggleLanguage}
+      >
+        <Typography sx={{ fontFamily: '"Mitr", sans-serif', fontWeight: 400, fontSize: '0.8rem' }}>{language}</Typography>
+      </Button>
+      <IconButton sx={{ color: '#4a90e2' }} onClick={toggleLanguage}>
+        <SwapHorizIcon />
+      </IconButton>
+      <Button 
+        sx={{ 
+          borderRadius: '20px', 
+          padding: '8px 15px', 
+          border: '1px solid #e0e0e0', 
+          minWidth: '80px', 
+          bgcolor: 'ButtonShadow',
+          color: 'black',
+          transition: 'background-color 0.3s', 
+          '&:hover': {
+            bgcolor: '#CBC3E3'
+          }
+        }}
+        onClick={toggleLanguage}
+      >
+        <Typography sx={{ fontFamily: '"Mitr", sans-serif', fontWeight: 400, fontSize: '0.8rem' }}>{language === 'คำเมือง' ? 'ไทย' : 'คำเมือง'}</Typography>
+      </Button>
+    </Box>
+  );
 
 return (
   <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', mt: 2 }}>
-    <Paper elevation={3} sx={{ p: 3, width: '100%', maxWidth: 600, bgcolor: '#f5f5f5', borderRadius: '16px' }}>
+    <Box elevation={3} sx={{ p: 3, width: '100%', maxWidth: 600, bgcolor: '#f5f5f5', borderRadius: '16px' }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h6" sx={{ fontFamily: '"Chakra Petch", sans-serif', color: '#333' }}>
           บันทึกเสียง
@@ -414,7 +412,7 @@ return (
             </Box>
           </Fade>
         )}
-      </Paper>
+      </Box>
     </Box>
   );
 });

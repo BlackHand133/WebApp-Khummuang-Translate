@@ -47,7 +47,7 @@ const TextTranslation = ({
 
   return (
     <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      <Paper elevation={isMobile ? 1 : 3} sx={{ width: '100%', borderRadius: isMobile ? '4px' : '8px' }}>
+      <Box elevation={isMobile ? 1 : 3} sx={{ width: '100%', borderRadius: isMobile ? '4px' : '8px' }}>
         <Box sx={{ p: 2 }}> {/* ย้าย padding มาที่นี่ */}
           {loading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
@@ -66,7 +66,7 @@ const TextTranslation = ({
             </Typography>
           )}
         </Box>
-      </Paper>
+      </Box>
     </Box>
   );
 };

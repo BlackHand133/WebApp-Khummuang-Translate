@@ -1,14 +1,13 @@
 from flask import Blueprint, jsonify, request, current_app
 from werkzeug.utils import secure_filename
 import os
-from models import db, AudioRecord,SourceEnum, RatingEnum
+from models import db, AudioRecord, SourceEnum, RatingEnum
 from datetime import datetime
 import tempfile
 from flask_cors import CORS
 from ModelASR.modelWav import AudioTranscriber, AudioTranscriberMic, convert_to_wav, process_and_save_audio, convert_and_save_audio_file
 from ModelASR.Translator import Translator
-from uuid import uuid4
-from audio_utils import save_audio_record, update_audio_rating, cleanup_expired_records
+from audio_utils import save_audio_record, update_audio_rating, cleanup_expired_records, get_audio_records
 import librosa
 
 service_bp = Blueprint('service', __name__)
@@ -58,7 +57,7 @@ def transcribe():
                 # บันทึกข้อมูลเสียง
                 with open(wav_file_path, 'rb') as audio_content:
                     duration = librosa.get_duration(filename=wav_file_path)
-                    record_id = save_audio_record(
+                    record_id, hashed_id, status = save_audio_record(
                         user_id=user_id,
                         audio_url=wav_file_path,
                         transcription=transcript,
@@ -70,8 +69,11 @@ def transcribe():
 
                 return jsonify({
                     'transcription': transcript,
-                    'record_id': record_id
+                    'record_id': record_id,
+                    'hashed_id': hashed_id,
+                    'status': status
                 })
+
         except Exception as e:
             current_app.logger.error(f"Transcription error: {str(e)}")
             return jsonify({'error': 'Transcription failed', 'details': str(e)}), 500
@@ -137,7 +139,7 @@ def transcribe_mic():
         # บันทึกข้อมูลเสียง
         with open(wav_file_path, 'rb') as audio_content:
             duration = librosa.get_duration(filename=wav_file_path)
-            record_id = save_audio_record(
+            record_id, hashed_id, status = save_audio_record(
                 user_id=user_id,
                 audio_url=wav_file_path,
                 transcription=transcript,
@@ -149,7 +151,8 @@ def transcribe_mic():
 
         return jsonify({
             'transcription': transcript,
-            'record_id': record_id
+            'record_id': record_id,
+            'hashed_id': hashed_id
         })
     except Exception as e:
         current_app.logger.error(f"Microphone transcription error: {str(e)}")
@@ -195,7 +198,7 @@ def record_audio():
         # บันทึกข้อมูลเสียง
         with open(file_path, 'rb') as audio_content:
             duration = librosa.get_duration(filename=file_path)
-            record_id = save_audio_record(
+            record_id, hashed_id, status = save_audio_record(
                 user_id=user_id,
                 audio_url=f"/uploads/audio/{os.path.basename(file_path)}",
                 transcription=transcription,
@@ -205,7 +208,62 @@ def record_audio():
                 source=SourceEnum[source.upper()]
             )
 
-        return jsonify({"message": "Audio record saved successfully", "record_id": record_id}), 201
+        print(f"Audio record saved with ID: {record_id}, Hashed ID: {hashed_id}")
+        return jsonify({
+            "message": "Audio record saved successfully", 
+            "record_id": record_id,
+            "hashed_id": hashed_id,
+            "status": status
+        }), 201
     except Exception as e:
         current_app.logger.error(f"Error in record_audio: {str(e)}")
         return jsonify({"error": str(e)}), 500
+    
+@service_bp.route('/get_audio_records', methods=['GET'])
+def fetch_audio_records():
+    try:
+        user_id = request.args.get('user_id')
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 10, type=int)
+
+        if not user_id:
+            return jsonify({"error": "Missing user_id"}), 400
+
+        records, message = get_audio_records(user_id, page, per_page)
+
+        if records:
+            return jsonify({"data": records, "message": message}), 200
+        else:
+            return jsonify({"error": message}), 400
+
+    except Exception as e:
+        current_app.logger.error(f"Error in fetch_audio_records: {str(e)}")
+        return jsonify({"error": "An error occurred while fetching audio records"}), 500
+    
+@service_bp.route('/update_audio_rating', methods=['POST'])
+def update_rating():
+    try:
+        data = request.json
+        print("Received data:", data)
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+
+        identifier = data.get('identifier')  # This can be either id or hashed_id
+        rating = data.get('rating')
+
+        print(f"identifier: {identifier}, rating: {rating}")
+
+        if not identifier or not rating:
+            return jsonify({"error": "Missing identifier or rating"}), 400
+
+        success, message = update_audio_rating(identifier, rating)
+
+        if success:
+            return jsonify({"message": message}), 200
+        else:
+            return jsonify({"error": message}), 400
+
+    except Exception as e:
+        current_app.logger.error(f"Error in update_rating: {str(e)}")
+        return jsonify({"error": "An error occurred while updating the rating"}), 500
+        

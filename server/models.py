@@ -6,9 +6,10 @@ from flask_wtf import FlaskForm
 from wtforms import DateField, SelectField, StringField, PasswordField
 from wtforms.validators import DataRequired, Length
 from flask_bcrypt import Bcrypt
-from datetime import datetime,timedelta
+from datetime import datetime, timedelta
 import enum
 from audio_utils import calculate_expiration_date
+import hashlib
 
 class RatingEnum(enum.Enum):
     UNKNOWN = 'unknown'
@@ -24,7 +25,6 @@ bcrypt = Bcrypt()
 
 def get_uuid():
     return uuid4().hex
-
 
 class User(UserMixin, db.Model):
     __tablename__ = 'user'
@@ -69,7 +69,9 @@ class User(UserMixin, db.Model):
 
 class AudioRecord(db.Model):
     __tablename__ = 'audio_record'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    hashed_id = db.Column(db.String(8), unique=True, index=True, nullable=False)
+    audio_hash = db.Column(db.String(64), unique=True, index=True, nullable=False)
     user_id = db.Column(db.String(32), db.ForeignKey('user.user_id'), nullable=False)
     audio_url = db.Column(db.String(200))
     transcription = db.Column(db.Text)
@@ -79,21 +81,40 @@ class AudioRecord(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     expiration_date = db.Column(db.DateTime)
     rating = db.Column(db.Enum(RatingEnum), default=RatingEnum.UNKNOWN)
-    audio_hash = db.Column(db.String(64), unique=True)
-    source = db.Column(db.Enum(SourceEnum), nullable=False)  # New field for source
+    source = db.Column(db.Enum(SourceEnum), nullable=False)
 
     user = db.relationship('User', backref=db.backref('audio_records', lazy=True))
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        if not self.hashed_id:
+            self.hashed_id = self.generate_hashed_id()
         self.set_expiration_date()
 
     def set_expiration_date(self):
         self.expiration_date = calculate_expiration_date(self.source, self.rating)
 
+    def generate_hashed_id(self):
+        if self.id is None:
+            # If id is not set yet, use a temporary unique identifier
+            temp_id = uuid4().hex
+        else:
+            temp_id = str(self.id)
+        return hashlib.sha256(temp_id.encode()).hexdigest()[:8]
+
+    @classmethod
+    def create(cls, **kwargs):
+        record = cls(**kwargs)
+        db.session.add(record)
+        db.session.flush()  # This will assign an ID to the record
+        if not record.hashed_id:
+            record.hashed_id = record.generate_hashed_id()
+        return record
+
     def to_dict(self):
         return {
             'id': self.id,
+            'hashed_id': self.hashed_id,
             'user_id': self.user_id,
             'audio_url': self.audio_url,
             'transcription': self.transcription,
@@ -106,7 +127,7 @@ class AudioRecord(db.Model):
             'audio_hash': self.audio_hash,
             'source': self.source.value
         }
-    
+
 class SysAdmin(db.Model):
     __tablename__ = 'admin'
     admin_id = db.Column(db.Integer, primary_key=True)
@@ -151,6 +172,7 @@ class Profile(db.Model):
 
     def __repr__(self):
         return f'<Profile {self.firstname} {self.lastname}>'
+
     def to_dict(self):
         return {
             'firstname': self.firstname,

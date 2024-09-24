@@ -1,16 +1,56 @@
-.Logo{
-    margin-left: 0em;
-    width: 200px;
+/* Logo Styles */
+.Logo {
+    width: 150px;
     margin-bottom: 20px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
 }
+
+/* Form Container */
 .form {
     margin-bottom: 20px;
-    margin-right: 0em; 
+    width: 100%; /* Adjust width to fit container */
 }
-form{
-    margin-top: 3em;
-    margin-left: 3em;
+
+/* Form Styles */
+form {
+    margin: 2em auto; /* Center the form */
+    padding: 0 1em;
+    max-width: 400px; /* Restrict the form width */
 }
-body{
-    background-color: gray;
+
+/* Background Color */
+body {
+    background-color: #f0f0f0; /* Light gray for a cleaner look */
+}
+
+/* Responsive Design */
+@media (max-width: 600px) {
+    .Logo {
+        width: 100px; /* Smaller logo on mobile */
+    }
+
+    form {
+        margin: 1em auto; /* Reduce margins on mobile */
+        padding: 0 1em;
+    }
+
+    .form {
+        margin-bottom: 15px;
+    }
+}
+
+@media (min-width: 601px) and (max-width: 1024px) {
+    .Logo {
+        width: 120px; /* Adjust logo size for tablet screens */
+    }
+
+    form {
+        max-width: 350px; /* Slightly narrower form for tablets */
+    }
+
+    .form {
+        margin-bottom: 18px;
+    }
 }

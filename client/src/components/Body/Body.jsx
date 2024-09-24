@@ -381,7 +381,7 @@ const Body = ({username}) => {
             flexDirection: 'column', 
             height: '100%',
             minHeight:'100px', 
-            bgcolor: '#EFEFEF',
+            bgcolor: 'white',
             mb: { xs: 1, lg: 0 },
             boxShadow: isMobile ? 'none' : 3
           }} elevation={isMobile ? 0 : 3}>
@@ -394,12 +394,11 @@ const Body = ({username}) => {
                       toggleLanguage={handleTextLanguageToggle}
                     />
                   )}
-                  <Paper 
+                  <Box 
                     elevation={isMobile ? 0 : 3}
                     sx={{ 
                       p: isMobile ? 2 : 3, 
-                      backgroundColor: '#f5f5f5',
-                      border: isMobile ? 'none' : '1px solid #e0e0e0',
+                      backgroundColor: 'white',
                       borderRadius: isMobile ? 0 : '8px'
                     }}
                   >
@@ -480,7 +479,7 @@ const Body = ({username}) => {
                         </Typography>
                       </Alert>
                     )}
-                  </Paper>
+                  </Box>
                 </Box>
               )}
   
@@ -571,7 +570,7 @@ const Body = ({username}) => {
             <Paper sx={{ 
               flex: 1,  
               borderRadius: '8px', 
-              backgroundColor: '#f5f5f5', 
+              backgroundColor: 'white', 
               height: '100%',
               minWidth: { xs: '100%', lg: '300px' },
               maxWidth: { lg: '500px' }
