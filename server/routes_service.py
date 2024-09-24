@@ -5,9 +5,9 @@ from models import db, AudioRecord, SourceEnum, RatingEnum
 from datetime import datetime
 import tempfile
 from flask_cors import CORS
-from ModelASR.modelWav import AudioTranscriber, AudioTranscriberMic, convert_to_wav, process_and_save_audio, convert_and_save_audio_file
+from ModelASR.modelWav import AudioTranscriber, AudioTranscriberMic, convert_to_wav
 from ModelASR.Translator import Translator
-from audio_utils import save_audio_record, update_audio_rating, cleanup_expired_records, get_audio_records
+from audio_utils import save_audio_record, update_audio_rating, cleanup_expired_records, get_audio_records, create_temp_file
 import librosa
 
 service_bp = Blueprint('service', __name__)
@@ -47,67 +47,39 @@ def transcribe():
 
     if file and allowed_file(file.filename):
         try:
-            with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-                file.save(temp_file.name)
-                wav_file_path = convert_to_wav(temp_file.name)
-                
-                transcriber = AudioTranscriber()
-                transcript = transcriber.transcribe_audio(wav_file_path, language)
+            temp_file_path = create_temp_file(file)
+            wav_file_path = convert_to_wav(temp_file_path)
+            
+            transcriber = AudioTranscriber()
+            transcript = transcriber.transcribe_audio(wav_file_path, language)
 
-                # บันทึกข้อมูลเสียง
-                with open(wav_file_path, 'rb') as audio_content:
-                    duration = librosa.get_duration(filename=wav_file_path)
-                    record_id, hashed_id, status = save_audio_record(
-                        user_id=user_id,
-                        audio_url=wav_file_path,
-                        transcription=transcript,
-                        duration=int(duration),
-                        language=language,
-                        audio_content=audio_content.read(),
-                        source=SourceEnum.UPLOAD
-                    )
+            # บันทึกข้อมูลเสียง
+            duration = librosa.get_duration(filename=wav_file_path)
+            with open(wav_file_path, 'rb') as audio_file:
+                record_id, hashed_id, status = save_audio_record(
+                    user_id=user_id,
+                    audio_file=audio_file,
+                    transcription=transcript,
+                    duration=int(duration),
+                    language=language,
+                    source=SourceEnum.UPLOAD
+                )
 
-                return jsonify({
-                    'transcription': transcript,
-                    'record_id': record_id,
-                    'hashed_id': hashed_id,
-                    'status': status
-                })
+            return jsonify({
+                'transcription': transcript,
+                'record_id': record_id,
+                'hashed_id': hashed_id,
+                'status': status
+            })
 
         except Exception as e:
             current_app.logger.error(f"Transcription error: {str(e)}")
             return jsonify({'error': 'Transcription failed', 'details': str(e)}), 500
         finally:
-            if os.path.exists(temp_file.name):
-                os.remove(temp_file.name)
+            if os.path.exists(temp_file_path):
+                os.remove(temp_file_path)
             if os.path.exists(wav_file_path):
                 os.remove(wav_file_path)
-
-@service_bp.route('/translate', methods=['POST'])
-def translate():
-    data = request.get_json()
-    if not data:
-        return jsonify({'error': 'Invalid JSON'}), 400
-
-    text = data.get('text')
-    source_lang = data.get('source_lang', 'th')  # เปลี่ยนค่าเริ่มต้นเป็น 'th'
-    target_lang = data.get('target_lang', 'km')  # เปลี่ยนค่าเริ่มต้นเป็น 'km'
-
-    if not text:
-        return jsonify({'error': 'No text provided'}), 400
-
-    try:
-        if source_lang == 'th' and target_lang == 'km':
-            translation = thai_translator.translate_sentence(text)
-        elif source_lang == 'km' and target_lang == 'th':
-            translation = km_translator.translate_sentence(text)
-        else:
-            return jsonify({'error': 'Unsupported language pair'}), 400
-
-        return jsonify({'translation': translation})
-    except Exception as e:
-        current_app.logger.error(f"Translation error: {str(e)}")
-        return jsonify({'error': 'Translation failed', 'details': str(e)}), 500
 
 @service_bp.route('/transcribe_Mic', methods=['POST'])
 def transcribe_mic():
@@ -127,27 +99,24 @@ def transcribe_mic():
         return jsonify({'error': 'No selected file'}), 400
 
     try:
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.webm') as temp_file:
-            audio_file.save(temp_file.name)
-            temp_file_path = temp_file.name
-
+        temp_file_path = create_temp_file(audio_file)
         wav_file_path = convert_to_wav(temp_file_path)
 
         transcriber = AudioTranscriberMic()
         transcript = transcriber.transcribe_audio_from_microphone(wav_file_path, language)
 
         # บันทึกข้อมูลเสียง
-        with open(wav_file_path, 'rb') as audio_content:
-            duration = librosa.get_duration(filename=wav_file_path)
-            record_id, hashed_id, status = save_audio_record(
-                user_id=user_id,
-                audio_url=wav_file_path,
-                transcription=transcript,
-                duration=int(duration),
-                language=language,
-                audio_content=audio_content.read(),
-                source=SourceEnum.MICROPHONE
-            )
+        duration = librosa.get_duration(filename=wav_file_path)
+        record_id, hashed_id, status = save_audio_record(
+            user_id=user_id,
+            audio_file=wav_file_path,  # ส่ง file path แทน file object
+            transcription=transcript,
+            duration=int(duration),
+            language=language,
+            source=SourceEnum.MICROPHONE
+        )
+        
+        print(f"Audio record saved. ID: {record_id}, Hashed ID: {hashed_id}, Status: {status}")
 
         return jsonify({
             'transcription': transcript,
@@ -163,62 +132,32 @@ def transcribe_mic():
         if os.path.exists(wav_file_path):
             os.remove(wav_file_path)
 
-@service_bp.route('/test', methods=['GET'])
-def test():
-    return jsonify({'message': 'Service is running'})
+@service_bp.route('/translate', methods=['POST'])
+def translate():
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'Invalid JSON'}), 400
 
-# เพิ่ม error handler สำหรับ 404 และ 500 errors
-@service_bp.errorhandler(404)
-def not_found_error(error):
-    return jsonify({'error': 'Not found'}), 404
+    text = data.get('text')
+    source_lang = data.get('source_lang', 'th')
+    target_lang = data.get('target_lang', 'km')
 
-@service_bp.errorhandler(500)
-def internal_error(error):
-    current_app.logger.error(f"Internal server error: {str(error)}")
-    return jsonify({'error': 'Internal server error'}), 500
+    if not text:
+        return jsonify({'error': 'No text provided'}), 400
 
-@service_bp.route('/record_audio', methods=['POST'])
-def record_audio():
     try:
-        if 'audio_file' not in request.files:
-            return jsonify({"error": "No audio file provided"}), 400
-        
-        audio_file = request.files['audio_file']
-        user_id = request.form.get('user_id', 'guest')
-        language = request.form.get('language')
-        transcription = request.form.get('transcription')
-        source = request.form.get('source', 'UPLOAD')
+        if source_lang == 'th' and target_lang == 'km':
+            translation = thai_translator.translate_sentence(text)
+        elif source_lang == 'km' and target_lang == 'th':
+            translation = km_translator.translate_sentence(text)
+        else:
+            return jsonify({'error': 'Unsupported language pair'}), 400
 
-        if not audio_file or not language or not transcription:
-            return jsonify({"error": "Missing required data"}), 400
-
-        # แปลงและบันทึกไฟล์เสียง
-        file_path = convert_and_save_audio_file(audio_file, 'u' if user_id != 'guest' else 'g', AudioRecord.query.count() + 1)
-
-        # บันทึกข้อมูลเสียง
-        with open(file_path, 'rb') as audio_content:
-            duration = librosa.get_duration(filename=file_path)
-            record_id, hashed_id, status = save_audio_record(
-                user_id=user_id,
-                audio_url=f"/uploads/audio/{os.path.basename(file_path)}",
-                transcription=transcription,
-                duration=int(duration),
-                language=language,
-                audio_content=audio_content.read(),
-                source=SourceEnum[source.upper()]
-            )
-
-        print(f"Audio record saved with ID: {record_id}, Hashed ID: {hashed_id}")
-        return jsonify({
-            "message": "Audio record saved successfully", 
-            "record_id": record_id,
-            "hashed_id": hashed_id,
-            "status": status
-        }), 201
+        return jsonify({'translation': translation})
     except Exception as e:
-        current_app.logger.error(f"Error in record_audio: {str(e)}")
-        return jsonify({"error": str(e)}), 500
-    
+        current_app.logger.error(f"Translation error: {str(e)}")
+        return jsonify({'error': 'Translation failed', 'details': str(e)}), 500
+
 @service_bp.route('/get_audio_records', methods=['GET'])
 def fetch_audio_records():
     try:
@@ -248,7 +187,7 @@ def update_rating():
         if not data:
             return jsonify({"error": "No data provided"}), 400
 
-        identifier = data.get('identifier')  # This can be either id or hashed_id
+        identifier = data.get('identifier')
         rating = data.get('rating')
 
         print(f"identifier: {identifier}, rating: {rating}")
@@ -266,4 +205,21 @@ def update_rating():
     except Exception as e:
         current_app.logger.error(f"Error in update_rating: {str(e)}")
         return jsonify({"error": "An error occurred while updating the rating"}), 500
-        
+
+@service_bp.route('/cleanup_expired_records', methods=['POST'])
+def cleanup_records():
+    try:
+        count, message = cleanup_expired_records()
+        return jsonify({"message": f"{count} {message}"}), 200
+    except Exception as e:
+        current_app.logger.error(f"Error in cleanup_records: {str(e)}")
+        return jsonify({"error": "An error occurred while cleaning up expired records"}), 500
+
+@service_bp.errorhandler(404)
+def not_found_error(error):
+    return jsonify({'error': 'Not found'}), 404
+
+@service_bp.errorhandler(500)
+def internal_error(error):
+    current_app.logger.error(f"Internal server error: {str(error)}")
+    return jsonify({'error': 'Internal server error'}), 500
