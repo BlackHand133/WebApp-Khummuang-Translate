@@ -321,180 +321,208 @@ const Body = ({ username }) => {
        setVoiceLanguage, handleTranscriptionChange, handleTranscriptionLoadingChange, handleTranscriptionErrorChange, 
        handleFileUpload, handleRatingChange, getFileKey]);
 
-  return (
-    <Container 
-      maxWidth={isMobile ? false : "xl"} 
-      disableGutters={isMobile} 
-      sx={{ 
-        display: 'flex', 
-        flexDirection: { xs: 'column', md: 'row' },
-        minHeight: 'calc(100vh - 64px)',
-        backgroundColor: '#ffffff', 
-        p: isMobile ? 0 : { xs: 1, md: 2 },
-        mt: isMobile ? 0 : '10px'
-      }}
-    >
-      {!isMobile && (
-        <Box sx={{ 
-          width: { xs: '100%', md: '300px' }, 
-          mb: { xs: 2, md: 0 },
-          mr: { xs: 0, md: 2 },
-          flexShrink: 0, 
-          position: { md: 'sticky' },
-          top: { md: '100px' },
-          alignSelf: { md: 'flex-start' },
-          maxHeight: { md: 'calc(100vh - 70px)' },
-          overflowY: { md: 'auto' },
-          mt: { xs: 0, md: '-60px' }
-        }}>
-          <Sidebar 
-            onOptionChange={handleOptionChange} 
-            onFileUpload={handleFileUpload} 
-            onInputToggle={handleInputToggle}
-            onStartRecording={handleStartRecording}
-            onStopRecording={handleStopRecording} 
-            onTextLanguageChange={handleTextLanguageChange}
-            onVoiceLanguageChange={handleVoiceLanguageChange}
-            selectedOption={selectedOption}
-            activeInput={activeInput}
-          />
-        </Box>
-      )}
-  
-      <Box sx={{ 
-        flexGrow: 1, 
-        display: 'flex', 
-        flexDirection: 'column',
-        gap: isMobile ? 1 : 2
-      }}>
-        {isMobile && (
-          <MobileMenu 
-            onOptionChange={handleOptionChange} 
-            onInputToggle={handleInputToggle} 
-            onStartRecording={handleStartRecording} 
-            onStopRecording={handleStopRecording} 
-            selectedOption={selectedOption}
-            activeInput={activeInput}
-          />
-        )}
-  
-        <Box sx={{ 
-          display: 'flex', 
-          flexDirection: { xs: 'column', lg: 'row' }, 
-          gap: isMobile ? 1 : 2,
-          flexGrow: 1
-        }}>
-          <Paper sx={{ 
-            flex: 1, 
-            p: isMobile ? 1 : 2, 
-            borderRadius: isMobile ? 0 : '8px', 
+       return (
+        <Container 
+          maxWidth={isMobile ? false : "xl"} 
+          disableGutters={isMobile} 
+          sx={{ 
             display: 'flex', 
-            flexDirection: 'column', 
-            height: '100%',
-            minHeight:'100px', 
-            bgcolor: 'white',
-            mb: { xs: 1, lg: 0 },
-            boxShadow: isMobile ? 'none' : 3
-          }} elevation={isMobile ? 0 : 3}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-              {selectedOption === 'text' && (
-                <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                  {isMobile && (
-                    <LanguageSwitch 
-                      language={Textlanguage} 
-                      toggleLanguage={handleTextLanguageToggle}
-                    />
-                  )}
-                  <Box 
-                    elevation={isMobile ? 0 : 3}
-                    sx={{ 
-                      p: isMobile ? 2 : 3, 
-                      backgroundColor: 'white',
-                      borderRadius: isMobile ? 0 : '8px'
-                    }}
-                  >
-                    <Typography 
-                      variant="h6" 
-                      sx={{ 
-                        mb: 2, 
-                        display: 'flex', 
-                        alignItems: 'center',
-                        color: '#333',
-                        fontFamily: '"Chakra Petch", sans-serif',
-                        fontSize: isMobile ? '1rem' : '1.25rem'
-                      }}
-                    >
-                      <TranslateIcon sx={{ mr: 1, fontSize: isMobile ? '1.2rem' : '1.5rem' }} />
-                      แปลข้อความ
-                    </Typography>
-                    <TextField
-                      label="ป้อนข้อความ"
-                      multiline
-                      variant="outlined"
-                      value={inputText}
-                      onChange={handleTextChange}
-                      fullWidth
-                      sx={{
-                        backgroundColor: '#ffffff',
-                        '& .MuiOutlinedInput-root': {
-                          '& fieldset': {
-                            borderColor: '#bdbdbd',
-                          },
-                          '&:hover fieldset': {
-                            borderColor: '#9e9e9e',
-                          },
-                          '&.Mui-focused fieldset': {
-                            borderColor: '#1976d2',
-                          },
-                        },
-                        '& .MuiInputLabel-root': {
-                          fontFamily: '"Chakra Petch", sans-serif',
-                          fontSize: isMobile ? '0.9rem' : '1.2rem',
-                          fontWeight: 500,
-                          color: '#1976d2',
-                        },
-                        '& .MuiInputBase-input': {
-                          fontFamily: '"Chakra Petch", sans-serif',
-                          fontSize: isMobile ? '0.9rem' : '1.1rem',
-                        },
-                      }}
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <CreateIcon color="action" sx={{ fontSize: isMobile ? '1.2rem' : '1.5rem' }} />
-                          </InputAdornment>
-                        ),
-                      }}
-                      minRows={isMobile ? 3 : 5}
-                      maxRows={isMobile ? 5 : 10}
-                    />
-                    {!isMobile && (
-                      <Alert 
-                        severity="info" 
-                        icon={<InfoIcon />}
+            flexDirection: { xs: 'column', md: 'row' },
+            minHeight: 'calc(100vh - 64px)',
+            backgroundColor: '#ffffff', 
+            p: isMobile ? 0 : { xs: 1, md: 2 },
+            mt: isMobile ? 0 : '10px'
+          }}
+        >
+          {!isMobile && (
+            <Box sx={{ 
+              width: { xs: '100%', md: '300px' }, 
+              mb: { xs: 2, md: 0 },
+              mr: { xs: 0, md: 2 },
+              flexShrink: 0, 
+              position: { md: 'sticky' },
+              top: { md: '100px' },
+              alignSelf: { md: 'flex-start' },
+              maxHeight: { md: 'calc(100vh - 70px)' },
+              overflowY: { md: 'auto' },
+              mt: { xs: 0, md: '-60px' }
+            }}>
+              <Sidebar 
+                onOptionChange={handleOptionChange} 
+                onFileUpload={handleFileUpload} 
+                onInputToggle={handleInputToggle}
+                onStartRecording={handleStartRecording}
+                onStopRecording={handleStopRecording} 
+                onTextLanguageChange={handleTextLanguageChange}
+                onVoiceLanguageChange={handleVoiceLanguageChange}
+                selectedOption={selectedOption}
+                activeInput={activeInput}
+              />
+            </Box>
+          )}
+      
+          <Box sx={{ 
+            flexGrow: 1, 
+            display: 'flex', 
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            gap: isMobile ? 0.5 : 2
+          }}>
+            {isMobile && (
+              <MobileMenu 
+                onOptionChange={handleOptionChange} 
+                onInputToggle={handleInputToggle} 
+                onStartRecording={handleStartRecording} 
+                onStopRecording={handleStopRecording} 
+                selectedOption={selectedOption}
+                activeInput={activeInput}
+              />
+            )}
+      
+            <Box sx={{ 
+              display: 'flex', 
+              flexDirection: { xs: 'column', lg: 'row' }, 
+              gap: isMobile ? 0.5 : 2,
+              flexGrow: 1
+            }}>
+              <Paper sx={{ 
+                flex: 1, 
+                p: isMobile ? 0.5 : 2, 
+                borderRadius: isMobile ? 0 : '8px', 
+                display: 'flex', 
+                flexDirection: 'column', 
+                height: '100%',
+                minHeight: isMobile ? 'auto' : '100px', 
+                bgcolor: 'white',
+                mb: { xs: 0.5, lg: 0 },
+                boxShadow: isMobile ? 'none' : 3
+              }} elevation={isMobile ? 0 : 3}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+
+                  {selectedOption === 'text' && (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                      {isMobile && (
+                        <LanguageSwitch 
+                          language={Textlanguage} 
+                          toggleLanguage={handleTextLanguageToggle}
+                        />
+                      )}
+                      <Box 
+                        elevation={isMobile ? 0 : 3}
                         sx={{ 
-                          mt: 2, 
-                          fontFamily: '"Chakra Petch", sans-serif',
-                          '& .MuiAlert-icon': {
-                            color: '#1976d2',
-                          },
+                          p: isMobile ? 2 : 3, 
+                          backgroundColor: 'white',
+                          borderRadius: isMobile ? 0 : '8px'
                         }}
                       >
-                        <Typography variant="body2" sx={{ fontWeight: 500, fontSize: isMobile ? '0.8rem' : '1rem' }}>
-                          คำเตือน: นี่เป็นเพียง prototype
+                        <Typography 
+                          variant="h6" 
+                          sx={{ 
+                            mb: 2, 
+                            display: 'flex', 
+                            alignItems: 'center',
+                            color: '#333',
+                            fontFamily: '"Chakra Petch", sans-serif',
+                            fontSize: isMobile ? '1rem' : '1.25rem'
+                          }}
+                        >
+                          <TranslateIcon sx={{ mr: 1, fontSize: isMobile ? '1.2rem' : '1.5rem' }} />
+                          แปลข้อความ
                         </Typography>
-                        <Typography variant="body2" sx={{ fontSize: isMobile ? '0.8rem' : '1rem' }}>
-                          - สามารถแปลได้เพียงคำเท่านั้น<br />
-                          - ไม่สามารถแปลได้ทุกคำ<br />
-                          - ผลการแปลอาจไม่สมบูรณ์หรือไม่ถูกต้องทั้งหมด
-                        </Typography>
-                      </Alert>
-                    )}
-                  </Box>
-                </Box>
-              )}
-  
-  {selectedOption !== 'text' && (
+                        <TextField
+                          label="ป้อนข้อความ"
+                          multiline
+                          variant="outlined"
+                          value={inputText}
+                          onChange={handleTextChange}
+                          fullWidth
+                          sx={{
+                            backgroundColor: '#ffffff',
+                            '& .MuiOutlinedInput-root': {
+                              '& fieldset': {
+                                borderColor: '#bdbdbd',
+                              },
+                              '&:hover fieldset': {
+                                borderColor: '#9e9e9e',
+                              },
+                              '&.Mui-focused fieldset': {
+                                borderColor: '#1976d2',
+                              },
+                            },
+                            '& .MuiInputLabel-root': {
+                              fontFamily: '"Chakra Petch", sans-serif',
+                              fontSize: isMobile ? '0.9rem' : '1.2rem',
+                              fontWeight: 500,
+                              color: '#1976d2',
+                            },
+                            '& .MuiInputBase-input': {
+                              fontFamily: '"Chakra Petch", sans-serif',
+                              fontSize: isMobile ? '0.9rem' : '1.1rem',
+                            },
+                          }}
+                          InputProps={{
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                <CreateIcon color="action" sx={{ fontSize: isMobile ? '1.2rem' : '1.5rem' }} />
+                              </InputAdornment>
+                            ),
+                          }}
+                          minRows={isMobile ? 3 : 5}
+                          maxRows={isMobile ? 5 : 10}
+                        />
+                        {!isMobile && (
+                          <Alert 
+                            severity="info" 
+                            icon={<InfoIcon />}
+                            sx={{ 
+                              mt: 2, 
+                              fontFamily: '"Chakra Petch", sans-serif',
+                              '& .MuiAlert-icon': {
+                                color: '#1976d2',
+                              },
+                            }}
+                          >
+                            <Typography variant="body2" sx={{ fontWeight: 500, fontSize: isMobile ? '0.8rem' : '1rem' }}>
+                              คำเตือน: นี่เป็นเพียง prototype
+                            </Typography>
+                            <Typography variant="body2" sx={{ fontSize: isMobile ? '0.8rem' : '1rem' }}>
+                              - สามารถแปลได้เพียงคำเท่านั้น<br />
+                              - ไม่สามารถแปลได้ทุกคำ<br />
+                              - ผลการแปลอาจไม่สมบูรณ์หรือไม่ถูกต้องทั้งหมด
+                            </Typography>
+                          </Alert>
+                        )}
+                      </Box>
+                      
+                      {isMobile && (
+                        <Box sx={{ mt: 2, p: 2, backgroundColor: '#f5f5f5' }}>
+                          <Typography variant="subtitle1" sx={{ fontFamily: '"Chakra Petch", sans-serif', color: 'black', fontSize: '0.9rem', mb: 1 }}>
+                            ผลการแปล
+                          </Typography>
+                          <TextTranslation 
+                            textToTranslate={inputText} 
+                            onTranslation={handleTranslationText} 
+                            onClearTranslation={clearTranslation} 
+                            language={Textlanguage}
+                            isMobile={isMobile}
+                            translatedText={translatedText}
+                            inputText={inputText}
+                            setInputText={setInputText}
+                          />
+                          {memoizedTranslation && (
+                            <Paper elevation={1} sx={{ mt: 1, p: 1, borderRadius: '4px', width: '100%' }}>
+                              <Typography variant="body2" sx={{ fontFamily: '"Chakra Petch", sans-serif', fontWeight: '500', fontSize: '0.9rem' }}>
+                                {memoizedTranslation} 
+                              </Typography>
+                            </Paper>
+                          )}
+                        </Box>
+                      )}
+                    </Box>
+                  )}
+
+                  
+{selectedOption !== 'text' && (
   <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
     {activeInput === 'upload' && (
       <Box sx={{ width: '100%', mb: isMobile ? 1 : 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -584,91 +612,89 @@ const Body = ({ username }) => {
     )}
   </Box>
 )}
+      
+                  {isMobile && selectedOption !== 'text' && (
+  <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    {activeInput === 'upload' && (
+      <Box sx={{ width: '100%', mb: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        
+        {/* แสดงผลการแปลสำหรับ Transcription */}
+        {isMobile && translations.upload && (
+          <Paper elevation={1} sx={{ mt: 2, p: 2, borderRadius: '4px', width: '100%', backgroundColor: '#f5f5f5' }}>
+            <Typography variant="subtitle1" sx={{ mb: 1, fontFamily: '"Chakra Petch", sans-serif', fontSize: '0.9rem', fontWeight: 'bold' }}>
+              ผลการแปล
+            </Typography>
+            <Typography variant="body2" sx={{ fontFamily: '"Chakra Petch", sans-serif', fontWeight: '500', fontSize: '0.9rem' }}>
+              {translations.upload}
+            </Typography>
+          </Paper>
+        )}
+      </Box>
+    )}
+    {activeInput === 'microphone' && (
+      <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+        
+        {/* แสดงผลการแปลสำหรับ SpeechMic */}
+        {isMobile && translations.microphone && (
+          <Paper elevation={1} sx={{ mt: 2, p: 2, borderRadius: '4px', width: '100%', backgroundColor: '#f5f5f5' }}>
+            <Typography variant="subtitle1" sx={{ mb: 1, fontFamily: '"Chakra Petch", sans-serif', fontSize: '0.9rem', fontWeight: 'bold' }}>
+              ผลการแปล
+            </Typography>
+            <Typography variant="body2" sx={{ fontFamily: '"Chakra Petch", sans-serif', fontWeight: '500', fontSize: '0.9rem' }}>
+              {translations.microphone}
+            </Typography>
+          </Paper>
+        )}
+      </Box>
+    )}
+  </Box>
+)}
+                </Box>
+              </Paper>
+      
+              {!isMobile && (
+                <Paper sx={{ 
+                  flex: 1,  
+                  borderRadius: '8px', 
+                  backgroundColor: 'white', 
+                  height: '100%',
+                  minWidth: { xs: '100%', lg: '300px' },
+                  maxWidth: { lg: '500px' }
+                }} elevation={3}>
+                  <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <Box sx={{ bgcolor: 'black', p: 1, borderRadius: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+                      <Typography variant="h6" sx={{ fontFamily: '"Chakra Petch", sans-serif', color: 'white' }}>
+                        ผลการแปล
+                      </Typography>
+                    </Box>
+                    {selectedOption === 'text' && (
+                      <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <TextTranslation 
+                          textToTranslate={debouncedInputText} 
+                          onTranslation={handleTranslationText} 
+                          onClearTranslation={clearTranslation} 
+                          language={Textlanguage}
+                          isMobile={isMobile}
+                    translatedText={translatedText}
+                    inputText={inputText}
+                    setInputText={setInputText}
+                  />
+                </Box>
+              )}
+              {memoizedTranslation && (
+                <Paper elevation={3} sx={{ mt: 2, p: 2, borderRadius: '8px', width: '100%' }}>
+                  <Typography variant="body1" sx={{ mt: 1, fontFamily: '"Chakra Petch", sans-serif', fontWeight: '500' }}>
+                    {memoizedTranslation}
+                  </Typography>
+                </Paper>
+              )}
             </Box>
           </Paper>
-  
-          {!isMobile && (
-            <Paper sx={{ 
-              flex: 1,  
-              borderRadius: '8px', 
-              backgroundColor: 'white', 
-              height: '100%',
-              minWidth: { xs: '100%', lg: '300px' },
-              maxWidth: { lg: '500px' }
-            }} elevation={3}>
-              <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <Box sx={{ bgcolor: 'black', p: 1, borderRadius: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
-                  <Typography variant="h6" sx={{ fontFamily: '"Chakra Petch", sans-serif', color: 'white' }}>
-                    ผลการแปล
-                  </Typography>
-                </Box>
-                {selectedOption === 'text' && (
-                  <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <TextTranslation 
-                      textToTranslate={debouncedInputText} 
-                      onTranslation={handleTranslationText} 
-                      onClearTranslation={clearTranslation} 
-                      language={Textlanguage}
-                      isMobile={isMobile}
-                      translatedText={translatedText}
-                      inputText={inputText}
-                      setInputText={setInputText}
-                    />
-                  </Box>
-                )}
-                {memoizedTranslation && (
-                  <Paper elevation={3} sx={{ mt: 2, p: 2, borderRadius: '8px', width: '100%' }}>
-                    <Typography variant="body1" sx={{ mt: 1, fontFamily: '"Chakra Petch", sans-serif', fontWeight: '500' }}>
-                      {memoizedTranslation}
-                    </Typography>
-                  </Paper>
-                )}
-              </Box>
-            </Paper>
-          )}
-        </Box>
-  
-        {isMobile && (
-          <Paper sx={{ 
-            p: 1, 
-            borderRadius: 0, 
-            backgroundColor: '#f5f5f5', 
-            width: '100%',
-            boxShadow: 'none'
-          }} elevation={0}>
-            <Box sx={{ p: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <Box sx={{ bgcolor: 'black', p: 1, borderRadius: '4px', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', mb: 1 }}>
-                <Typography variant="subtitle1" sx={{ fontFamily: '"Chakra Petch", sans-serif', color: 'white', fontSize: '0.9rem' }}>
-                  ผลการแปล
-                </Typography>
-              </Box>
-              {selectedOption === 'text' && (
-                <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <TextTranslation 
-                  textToTranslate={inputText} 
-                  onTranslation={handleTranslationText} 
-                  onClearTranslation={clearTranslation} 
-                  language={Textlanguage}
-                  isMobile={isMobile}
-                  translatedText={translatedText}
-                  inputText={inputText}
-                  setInputText={setInputText}
-                />
-              </Box>
-            )}
-            {memoizedTranslation && (
-              <Paper elevation={1} sx={{ mt: 1, p: 1, borderRadius: '4px', width: '100%' }}>
-                <Typography variant="body2" sx={{ fontFamily: '"Chakra Petch", sans-serif', fontWeight: '500', fontSize: '0.9rem' }}>
-                  {memoizedTranslation}
-                </Typography>
-              </Paper>
-            )}
-          </Box>
-        </Paper>
-      )}
+        )}
+      </Box>
     </Box>
   </Container>
-  );
+);
 };
 
 export default React.memo(Body);
