@@ -494,90 +494,96 @@ const Body = ({ username }) => {
                 </Box>
               )}
   
-              {selectedOption !== 'text' && (
-                <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                  {activeInput === 'upload' && (
-                    <Box sx={{ width: '100%', mb: isMobile ? 1 : 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                      <Paper 
-                        sx={{ 
-                          p: 1, 
-                          width: '100%', 
-                          display: 'flex', 
-                          flexDirection: 'column', 
-                          alignItems: 'center',
-                          border: isDragging ? '2px dashed #1976d2' : '2px dashed #ccc',
-                          backgroundColor: isDragging ? '#e3f2fd' : '#f5f5f5',
-                          transition: 'all 0.3s ease'
-                        }}
-                        onDragEnter={handleDragEnter}
-                        onDragOver={handleDragOver}
-                        onDragLeave={handleDragLeave}
-                        onDrop={handleDrop}
-                      >
-                        <Typography variant="h6" sx={{ fontFamily: '"Chakra Petch", sans-serif', fontSize: isMobile ? '1rem' : '1.25rem' }}>
-                          ไฟล์เสียงที่อัปโหลด
-                        </Typography>
-                        {!fileUrl ? (
-                          <Box sx={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            height: '150px',
-                            width: '100%',
-                            backgroundColor: '#f5f5f5',
-                            borderRadius: 1,
-                            opacity: 0.6,
-                            textAlign: 'center',
-                          }}>
-                            <CloudUploadIcon sx={{ fontSize: 50, color: isDragging ? '#1976d2' : '#757575', mb: 2 }} />
-                            <Typography variant="body1" sx={{ color: isDragging ? '#1976d2' : '#757575' }}>
-                              {isDragging ? 'วางไฟล์เสียงที่นี่' : 'ลากและวางไฟล์เสียงที่นี่'}
-                            </Typography>
-                          </Box>
-                        ) : (
-                          <>
-                            <audio controls src={fileUrl} style={{ width: '100%', marginTop: '10px' }} />
-                            <Typography variant="body2" sx={{ mt: 1, color: '#757575', textAlign: 'center', fontSize: isMobile ? '0.8rem' : '1rem' }}>{file.name}</Typography>
-                          </>
-                        )}
-                        {!fileUrl && (
-                          <Alert severity="info" sx={{ mt: 2, width: '100%' }}>
-                            กรุณากดปุ่มอัปโหลดไฟล์ที่แถบด้านซ้ายเพื่อเริ่มการถอดความ
-                          </Alert>
-                        )}
-                      </Paper>
-                      
-                      {fileUrl && <Box sx={{ width: '100%', mt: 2 }}>
-                            <Transcription {...transcriptionProps} />
-                          </Box>}
-                    </Box>
-                  )}
-                  {activeInput === 'microphone' && (
-                    <SpeechMic
-                      ref={speechMicRef}
-                      onTranslation={handleTranslationMic}
-                      language={Voicelanguage}
-                      setLanguage={handleVoiceLanguageChange}
-                      transcription={transcriptionState.text}
-                      setTranscription={handleTranscriptionChange}
-                      audioUrl={transcriptionState.audioUrl}
-                      onAudioRecorded={handleAudioRecorded}
-                      transcriptionStatus={transcriptionState.status}
-                      setTranscriptionStatus={(status) => setTranscriptionState(prev => ({ ...prev, status }))}
-                      translation={translations.microphone}
-                      setTranslation={(newTranslation) => setTranslations(prev => ({ ...prev, microphone: newTranslation }))}
-                      isLoading={transcriptionState.isLoading}
-                      setIsLoading={handleTranscriptionLoadingChange}
-                      error={transcriptionState.error}
-                      setError={handleTranscriptionErrorChange}
-                      isMobile={isMobile}
-                      rating={rating}
-                      onRatingChange={handleRatingChange}
-                    />
-                  )}
-                </Box>
-              )}
+  {selectedOption !== 'text' && (
+  <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    {activeInput === 'upload' && (
+      <Box sx={{ width: '100%', mb: isMobile ? 1 : 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        {isMobile ? (
+          // แสดง Transcription component สำหรับมือถือ
+          <Transcription
+            {...transcriptionProps}
+            isMobile={true}
+          />
+        ) : (
+          // แสดงส่วนลากและวางไฟล์สำหรับเดสก์ท็อป
+          <Paper 
+            sx={{ 
+              p: 2, 
+              width: '100%', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              alignItems: 'center',
+              border: isDragging ? '2px dashed #1976d2' : '2px dashed #ccc',
+              backgroundColor: isDragging ? '#e3f2fd' : '#f5f5f5',
+              transition: 'all 0.3s ease'
+            }}
+            onDragEnter={handleDragEnter}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            <Typography variant="h6" sx={{ fontFamily: '"Chakra Petch", sans-serif', fontSize: '1.25rem' }}>
+              ไฟล์เสียงที่อัปโหลด
+            </Typography>
+            {!fileUrl ? (
+              <Box sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '150px',
+                width: '100%',
+                backgroundColor: '#f5f5f5',
+                borderRadius: 1,
+                opacity: 0.6,
+                textAlign: 'center',
+              }}>
+                <CloudUploadIcon sx={{ fontSize: 50, color: isDragging ? '#1976d2' : '#757575', mb: 2 }} />
+                <Typography variant="body1" sx={{ color: isDragging ? '#1976d2' : '#757575' }}>
+                  {isDragging ? 'วางไฟล์เสียงที่นี่' : 'ลากและวางไฟล์เสียงที่นี่'}
+                </Typography>
+              </Box>
+            ) : (
+              <>
+                <audio controls src={fileUrl} style={{ width: '100%', marginTop: '10px' }} />
+                <Typography variant="body2" sx={{ mt: 1, color: '#757575', textAlign: 'center' }}>{file.name}</Typography>
+              </>
+            )}
+          </Paper>
+        )}
+        
+        {!isMobile && fileUrl && (
+          <Box sx={{ width: '100%', mt: 2 }}>
+            <Transcription {...transcriptionProps} />
+          </Box>
+        )}
+      </Box>
+    )}
+    {activeInput === 'microphone' && (
+      <SpeechMic
+        ref={speechMicRef}
+        onTranslation={handleTranslationMic}
+        language={Voicelanguage}
+        setLanguage={handleVoiceLanguageChange}
+        transcription={transcriptionState.text}
+        setTranscription={handleTranscriptionChange}
+        audioUrl={transcriptionState.audioUrl}
+        onAudioRecorded={handleAudioRecorded}
+        transcriptionStatus={transcriptionState.status}
+        setTranscriptionStatus={(status) => setTranscriptionState(prev => ({ ...prev, status }))}
+        translation={translations.microphone}
+        setTranslation={(newTranslation) => setTranslations(prev => ({ ...prev, microphone: newTranslation }))}
+        isLoading={transcriptionState.isLoading}
+        setIsLoading={handleTranscriptionLoadingChange}
+        error={transcriptionState.error}
+        setError={handleTranscriptionErrorChange}
+        isMobile={isMobile}
+        rating={rating}
+        onRatingChange={handleRatingChange}
+      />
+    )}
+  </Box>
+)}
             </Box>
           </Paper>
   

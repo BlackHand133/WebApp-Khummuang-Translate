@@ -222,60 +222,42 @@ const Transcription = ({
   ), [language, toggleLanguage, isLoading]);
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', minHeight: '500px' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', minHeight: '500px' }}>
       {isMobile && (
         <>
           {LanguageSwitch}
-          <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center', mb: 1 }}>
-            <Paper
-              elevation={3}
+          <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center', mb: 2 }}>
+            <Button
+              variant="contained"
+              component="label"
+              startIcon={<CloudUploadIcon />}
               sx={{
                 width: '100%',
-                maxWidth: '300px',
-                height: '120px',
-                borderRadius: '20px',
-                overflow: 'hidden',
-                position: 'relative',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease',
+                height: '50px',
+                borderRadius: '25px',
+                fontFamily: '"Chakra Petch", sans-serif',
+                fontSize: '1rem',
+                textTransform: 'none',
+                backgroundColor: theme.palette.primary.main,
                 '&:hover': {
-                  transform: 'translateY(-5px)',
-                  boxShadow: '0 10px 20px rgba(0, 0, 0, 0.2)',
+                  backgroundColor: theme.palette.primary.dark,
                 },
               }}
             >
-              <Button
-                component="label"
-                sx={{
-                  width: '100%',
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: theme.palette.primary.main,
-                  color: 'white',
-                  '&:hover': {
-                    backgroundColor: theme.palette.primary.dark,
-                  },
-                }}
-              >
-                <CloudUploadIcon sx={{ fontSize: '3rem', mb: 1 }} />
-                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                  อัปโหลดไฟล์เสียง
-                </Typography>
-                <Typography variant="caption" sx={{ mt: 0.5 }}>
-                  แตะเพื่อเลือกไฟล์
-                </Typography>
-                <input
-                  type="file"
-                  hidden
-                  accept="audio/*"
-                  onChange={handleFileUpload}
-                />
-              </Button>
-            </Paper>
+              อัปโหลดไฟล์เสียง
+              <input
+                type="file"
+                hidden
+                accept="audio/*"
+                onChange={handleFileUpload}
+              />
+            </Button>
           </Box>
+          {file && (
+            <Typography variant="body2" sx={{ mb: 1, textAlign: 'center', fontFamily: '"Chakra Petch", sans-serif' }}>
+              ไฟล์ที่เลือก: {file.name}
+            </Typography>
+          )}
         </>
       )}
 
