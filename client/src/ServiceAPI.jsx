@@ -17,22 +17,23 @@ export const ApiProvider = ({ children }) => {
     timeout: 30000, // 30 seconds
   });
 
-  const transcribe = async (file, language) => {
+  const transcribe = async (file, language, userId = 'guest') => {
     setLoading(true);
     setError(null);
-
+  
     const apiLanguage = language === 'ไทย' ? 'th' : language === 'คำเมือง' ? 'km' : language;
-
+  
     if (file.size > MAX_FILE_SIZE) {
       setError('File size exceeds the maximum limit of 10 MB');
       setLoading(false);
       throw new Error('File size exceeds limit');
     }
-
+  
     const formData = new FormData();
     formData.append('file', file);
     formData.append('language', apiLanguage);
-
+    formData.append('user_id', userId);
+  
     try {
       const response = await api.post('/transcribe', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },

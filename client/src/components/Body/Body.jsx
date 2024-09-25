@@ -13,7 +13,7 @@ import MobileMenu from '../MobileMenu/MobileMenu';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 
-const Body = ({username}) => {
+const Body = ({ username }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [selectedOption, setSelectedOption] = useState('text');
@@ -31,24 +31,20 @@ const Body = ({username}) => {
   const [translatedText, setTranslatedText] = useState('');
   const [debouncedInputText, setDebouncedInputText] = useState('');
   const [isDragging, setIsDragging] = useState(false);
+  const [rating, setRating] = useState('unknown');
 
-  // Lifted state from SpeechMic
-  const [transcription, setTranscription] = useState('');
-  const [audioBlob, setAudioBlob] = useState(null);
-  const [audioUrl, setAudioUrl] = useState('');
-  const audioUrlRef = useRef(null);
-  const [transcriptionStatus, setTranscriptionStatus] = useState('');
-  const [liked, setLiked] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [transcriptionState, setTranscriptionState] = useState({
+    text: '',
+    isLoading: false,
+    error: '',
+    status: '',
+    audioUrl: '',
+    audioBlob: null,
+    liked: false
+  });
 
   const speechMicRef = useRef();
-
-  const [transcriptionText, setTranscriptionText] = useState('');
-  const [transcriptionLiked, setTranscriptionLiked] = useState(false);
-  const [transcriptionIsLoading, setTranscriptionIsLoading] = useState(false);
-  const [transcriptionError, setTranscriptionError] = useState('');
-
+  const audioUrlRef = useRef(null);
   const [transcribedFiles, setTranscribedFiles] = useState({});
 
   const debouncedSetDebouncedInputText = useCallback(
@@ -56,24 +52,28 @@ const Body = ({username}) => {
     []
   );
 
-  const handleDragEnter = (e) => {
+  const handleRatingChange = useCallback((newRating) => {
+    setRating(newRating);
+  }, []);
+
+  const handleDragEnter = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(true);
-  };
+  }, []);
 
-  const handleDragLeave = (e) => {
+  const handleDragLeave = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
-  };
+  }, []);
 
-  const handleDragOver = (e) => {
+  const handleDragOver = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
-  };
+  }, []);
 
-  const handleDrop = (e) => {
+  const handleDrop = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
@@ -81,8 +81,7 @@ const Body = ({username}) => {
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       handleFileUpload(e.dataTransfer.files[0]);
     }
-  };
-  
+  }, []);
 
   useEffect(() => {
     const handleBeforeUnload = () => {
@@ -95,13 +94,15 @@ const Body = ({username}) => {
       setTranslations({ text: '', upload: '', microphone: '' });
       setTextLanguage('คำเมือง');
       setVoiceLanguage('คำเมือง');
-      // Clear SpeechMic state
-      setTranscription('');
-      setAudioUrl('');
-      setTranscriptionStatus('');
-      setLiked(false);
-      setIsLoading(false);
-      setError('');
+      setTranscriptionState({
+        text: '',
+        isLoading: false,
+        error: '',
+        status: '',
+        audioUrl: '',
+        audioBlob: null,
+        liked: false
+      });
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
@@ -118,12 +119,12 @@ const Body = ({username}) => {
   }, []);
 
   useEffect(() => {
-    if (audioBlob) {
+    if (transcriptionState.audioBlob) {
       if (audioUrlRef.current) {
         URL.revokeObjectURL(audioUrlRef.current);
       }
-      const url = URL.createObjectURL(audioBlob);
-      setAudioUrl(url);
+      const url = URL.createObjectURL(transcriptionState.audioBlob);
+      setTranscriptionState(prev => ({ ...prev, audioUrl: url }));
       audioUrlRef.current = url;
     }
     return () => {
@@ -131,26 +132,21 @@ const Body = ({username}) => {
         URL.revokeObjectURL(audioUrlRef.current);
       }
     };
-  }, [audioBlob]);
+  }, [transcriptionState.audioBlob]);
 
   const handleAudioRecorded = useCallback((blob) => {
-    setAudioBlob(blob);
+    setTranscriptionState(prev => ({ ...prev, audioBlob: blob }));
   }, []);
 
   const handleTextLanguageToggle = useCallback(() => {
-    const newLanguage = Textlanguage === 'คำเมือง' ? 'ไทย' : 'คำเมือง';
-    setTextLanguage(newLanguage);
-    
-    // สลับข้อความ
-    const tempText = inputText;
+    setTextLanguage(prev => prev === 'คำเมือง' ? 'ไทย' : 'คำเมือง');
     setInputText(translatedText);
-    setTranslatedText(tempText);
-  }, [Textlanguage, inputText, translatedText]);
+    setTranslatedText(inputText);
+  }, [inputText, translatedText]);
 
   const handleComponentSwitch = useCallback(() => {
-    // This function is called when switching between SpeechMic and Transcription
     if (audioUrlRef.current) {
-      setAudioUrl(audioUrlRef.current);
+      setTranscriptionState(prev => ({ ...prev, audioUrl: audioUrlRef.current }));
     }
   }, []);
 
@@ -166,7 +162,6 @@ const Body = ({username}) => {
 
   const handleTextLanguageChange = useCallback((newLanguage) => {
     setTextLanguage(newLanguage);
-    // Don't swap text here, let TextTranslation handle it
   }, []);
   
   const handleVoiceLanguageChange = useCallback((newLanguage) => {
@@ -181,8 +176,7 @@ const Body = ({username}) => {
 
   const handleFileUpload = useCallback((uploadedFile) => {
     setFile(uploadedFile);
-    setLiked(false);  // รีเซ็ตสถานะ liked เมื่อมีการอัปโหลดไฟล์ใหม่
-    setTranscriptionLiked(false);
+    setRating('unknown');
   }, []);
   
   const handleInputToggle = useCallback((input) => {
@@ -209,28 +203,23 @@ const Body = ({username}) => {
   }, []);
 
   const handleTranscriptionChange = useCallback((newTranscription, fileKey) => {
-    setTranscriptionText(newTranscription);
+    setTranscriptionState(prev => ({ ...prev, text: newTranscription }));
     if (fileKey) {
-      setTransribedFiles(prev => ({...prev, [fileKey]: newTranscription}));
+      setTranscribedFiles(prev => ({...prev, [fileKey]: newTranscription}));
     }
   }, []);
 
-  const handleTranscriptionLikeToggle = useCallback(() => {
-    setTranscriptionLiked(prev => !prev);
-  }, []);
-
   const handleTranscriptionLoadingChange = useCallback((isLoading) => {
-    setTranscriptionIsLoading(isLoading);
+    setTranscriptionState(prev => ({ ...prev, isLoading }));
   }, []);
 
   const handleTranscriptionErrorChange = useCallback((error) => {
-    setTranscriptionError(error);
+    setTranscriptionState(prev => ({ ...prev, error }));
   }, []);
 
   const getFileKey = useCallback((file) => {
     return file ? `${file.name}_${file.lastModified}` : null;
   }, []);
-
 
   const clearTranslation = useCallback(() => {
     if (selectedOption === 'text') {
@@ -241,7 +230,6 @@ const Body = ({username}) => {
       setFileUrl(null);
       setTranslations(prev => ({ ...prev, upload: '' }));
     } else {
-      // For microphone, we only clear the translation but keep the transcription
       setTranslations(prev => ({ ...prev, microphone: '' }));
     }
   }, [selectedOption, activeInput]);
@@ -268,7 +256,7 @@ const Body = ({username}) => {
     }
   }, []);
 
-  const LanguageSwitch = ({ language, toggleLanguage }) => (
+  const LanguageSwitch = useMemo(() => ({ language, toggleLanguage }) => (
     <Box sx={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap', my: '1em' }}>
       <Button 
         sx={{ 
@@ -308,7 +296,30 @@ const Body = ({username}) => {
         <Typography sx={{ fontFamily: '"Mitr", sans-serif', fontWeight: 400, fontSize: '0.8rem' }}>{language === 'คำเมือง' ? 'ไทย' : 'คำเมือง'}</Typography>
       </Button>
     </Box>
-  );
+  ), []);
+
+  const transcriptionProps = useMemo(() => ({
+    file,
+    onTranslation: handleTranslationUpload,
+    language: Voicelanguage,
+    setLanguage: setVoiceLanguage,
+    username,
+    transcription: transcriptionState.text,
+    setTranscription: handleTranscriptionChange,
+    isLoading: transcriptionState.isLoading,
+    setIsLoading: handleTranscriptionLoadingChange,
+    error: transcriptionState.error,
+    setError: handleTranscriptionErrorChange,
+    transcribedFiles,
+    setTranscribedFiles,
+    getFileKey,
+    isMobile,
+    onFileUpload: handleFileUpload,
+    rating,
+    onRatingChange: handleRatingChange
+  }), [file, Voicelanguage, username, transcriptionState, transcribedFiles, isMobile, rating, handleTranslationUpload, 
+       setVoiceLanguage, handleTranscriptionChange, handleTranscriptionLoadingChange, handleTranscriptionErrorChange, 
+       handleFileUpload, handleRatingChange, getFileKey]);
 
   return (
     <Container 
@@ -536,6 +547,10 @@ const Body = ({username}) => {
                           </Alert>
                         )}
                       </Paper>
+                      
+                      {fileUrl && <Box sx={{ width: '100%', mt: 2 }}>
+                            <Transcription {...transcriptionProps} />
+                          </Box>}
                     </Box>
                   )}
                   {activeInput === 'microphone' && (
@@ -544,21 +559,21 @@ const Body = ({username}) => {
                       onTranslation={handleTranslationMic}
                       language={Voicelanguage}
                       setLanguage={handleVoiceLanguageChange}
-                      transcription={transcription}
-                      setTranscription={setTranscription}
-                      audioUrl={audioUrl}
+                      transcription={transcriptionState.text}
+                      setTranscription={handleTranscriptionChange}
+                      audioUrl={transcriptionState.audioUrl}
                       onAudioRecorded={handleAudioRecorded}
-                      transcriptionStatus={transcriptionStatus}
-                      setTranscriptionStatus={setTranscriptionStatus}
+                      transcriptionStatus={transcriptionState.status}
+                      setTranscriptionStatus={(status) => setTranscriptionState(prev => ({ ...prev, status }))}
                       translation={translations.microphone}
                       setTranslation={(newTranslation) => setTranslations(prev => ({ ...prev, microphone: newTranslation }))}
-                      liked={liked}
-                      setLiked={setLiked}
-                      isLoading={isLoading}
-                      setIsLoading={setIsLoading}
-                      error={error}
-                      setError={setError}
+                      isLoading={transcriptionState.isLoading}
+                      setIsLoading={handleTranscriptionLoadingChange}
+                      error={transcriptionState.error}
+                      setError={handleTranscriptionErrorChange}
                       isMobile={isMobile}
+                      rating={rating}
+                      onRatingChange={handleRatingChange}
                     />
                   )}
                 </Box>
@@ -647,7 +662,7 @@ const Body = ({username}) => {
       )}
     </Box>
   </Container>
-);
+  );
 };
 
-export default Body;
+export default React.memo(Body);

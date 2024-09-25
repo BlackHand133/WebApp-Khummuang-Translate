@@ -28,14 +28,15 @@ const SpeechMic = forwardRef(({
   setIsLoading,
   error,
   setError,
-  isMobile
+  isMobile,
+  rating,
+  onRatingChange,
 }, ref) => {
   const { userId } = useUser();
   const { transcribeMic, translate, recordAudio, updateRating } = useApi();
   const [isRecording, setIsRecording] = useState(false);
   const [isLikeAnimating, setIsLikeAnimating] = useState(false);
   const [isDislikeAnimating, setIsDislikeAnimating] = useState(false);
-  const [rating, setRating] = useState('unknown');
   const [audioRecordId, setAudioRecordId] = useState(null);
   const [audioHashedId, setAudioHashedId] = useState(null);
 
@@ -125,7 +126,7 @@ const SpeechMic = forwardRef(({
     try {
       console.log('Updating rating for audio record:', audioHashedId);
       await updateRating(audioHashedId, newRating);
-      setRating(newRating);
+      onRatingChange(newRating);  // ใช้ onRatingChange แทน setRating
       if (newRating === 'like') {
         setIsLikeAnimating(true);
         setTimeout(() => setIsLikeAnimating(false), 300);
@@ -139,10 +140,10 @@ const SpeechMic = forwardRef(({
     } finally {
       setIsLoading(false);
     }
-  }, [audioHashedId, updateRating, setError, setIsLoading]);
+  }, [audioHashedId, updateRating, setError, setIsLoading, onRatingChange]);
 
   const startRecording = useCallback(async () => {
-    setRating('unknown');
+    onRatingChange('unknown');
     setError('');
     setTranscription('');
     setTranslation('');
