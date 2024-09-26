@@ -12,7 +12,7 @@ from models import db, User
 import os
 
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins":  ["http://localhost:5173"], "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"], "allow_headers": ["Content-Type", "Authorization"]}}, supports_credentials=True)
+CORS(app, resources={r"/api/*": {"origins": "*", "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"], "allow_headers": ["Content-Type", "Authorization"]}}, supports_credentials=True)
 app.config.from_object(Config)
 bcrypt = Bcrypt(app)
 db.init_app(app)
@@ -50,4 +50,4 @@ def load_user(user_id):
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
-    socketio.run(app, debug=True, port=8080)
+    socketio.run(app,host="0.0.0.0", debug=True, port=8080)

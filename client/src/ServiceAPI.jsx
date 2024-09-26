@@ -8,8 +8,8 @@ export const useApi = () => useContext(ApiContext);
 export const ApiProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
-  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+  const hostname = window.location.hostname;
+  const API_BASE_URL = import.meta.env.VITE_API_URL || `http://${hostname}:8080/api`;
   const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 
   const api = axios.create({

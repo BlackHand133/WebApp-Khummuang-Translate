@@ -48,7 +48,7 @@ const TextTranslation = ({
   return (
     <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       <Box elevation={isMobile ? 1 : 3} sx={{ width: '100%', borderRadius: isMobile ? '4px' : '8px' }}>
-        <Box sx={{ p: 2 }}> {/* ย้าย padding มาที่นี่ */}
+        <Box sx={{ }}> {/* ย้าย padding มาที่นี่ */}
           {loading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
               <CircularProgress size={24} sx={{ mr: 1 }} />
@@ -61,7 +61,7 @@ const TextTranslation = ({
               เกิดข้อผิดพลาด: {error}
             </Typography>
           ) : (
-            <Typography variant="body1" sx={{ fontFamily: '"Chakra Petch", sans-serif', fontWeight: '500', fontSize: isMobile ? '0.9rem' : '1rem' }}>
+            <Typography variant="body2" sx={{ fontFamily: '"Chakra Petch", sans-serif', fontWeight: '500', fontSize: isMobile ? '0.9rem' : '1rem' }}>
               {translatedText || 'รอการแปล...'}
             </Typography>
           )}

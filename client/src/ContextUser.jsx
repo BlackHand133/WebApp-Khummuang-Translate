@@ -11,8 +11,8 @@ export const UserProvider = ({ children }) => {
   const [profile, setProfile] = useState(null);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
-
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+  const hostname = window.location.hostname;
+  const API_URL = import.meta.env.VITE_API_URL || `http://${hostname}:8080`;
 
   const initializeAuth = useCallback(() => {
     const storedUsername = localStorage.getItem('username');

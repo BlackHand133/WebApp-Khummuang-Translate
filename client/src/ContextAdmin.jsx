@@ -2,8 +2,9 @@ import React, { createContext, useState, useEffect, useMemo, useCallback, useCon
 import axios from 'axios';
 
 export const AdminContext = createContext();
+const hostname = window.location.hostname;
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || `http://${hostname}:8080/api`;
 
 export const AdminProvider = ({ children }) => {
   const [admin, setAdmin] = useState(null);
