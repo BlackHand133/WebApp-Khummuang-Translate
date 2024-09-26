@@ -62,7 +62,7 @@ const TextTranslation = ({
             </Typography>
           ) : (
             <Typography variant="body2" sx={{ fontFamily: '"Chakra Petch", sans-serif', fontWeight: '500', fontSize: isMobile ? '0.9rem' : '1rem' }}>
-              {translatedText || 'รอการแปล...'}
+              {translatedText}
             </Typography>
           )}
         </Box>

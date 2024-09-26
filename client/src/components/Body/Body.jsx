@@ -43,6 +43,16 @@ const Body = ({ username }) => {
     liked: false
   });
 
+  const [speechMicState, setSpeechMicState] = useState({
+    text: '',
+    isLoading: false,
+    error: '',
+    status: '',
+    audioUrl: '',
+    audioBlob: null,
+    liked: false
+  });
+
   const speechMicRef = useRef();
   const audioUrlRef = useRef(null);
   const [transcribedFiles, setTranscribedFiles] = useState({});
@@ -207,6 +217,10 @@ const Body = ({ username }) => {
     if (fileKey) {
       setTranscribedFiles(prev => ({...prev, [fileKey]: newTranscription}));
     }
+  }, []);
+
+  const handleSpeechMicChange = useCallback((newTranscription) => {
+    setSpeechMicState(prev => ({ ...prev, text: newTranscription }));
   }, []);
 
   const handleTranscriptionLoadingChange = useCallback((isLoading) => {
@@ -515,6 +529,7 @@ const Body = ({ username }) => {
                       {activeInput === 'upload' && (
                         <Box sx={{ width: '100%', mb: isMobile ? 1 : 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                           {isMobile ? (
+                            
                             <Transcription
                               {...transcriptionProps}
                               isMobile={true}
@@ -576,14 +591,13 @@ const Body = ({ username }) => {
                       )}
                       {activeInput === 'microphone' && (
                         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                          
                           <SpeechMic
                             ref={speechMicRef}
                             onTranslation={handleTranslationMic}
                             language={Voicelanguage}
                             setLanguage={handleVoiceLanguageChange}
-                            transcription={transcriptionState.text}
-                            setTranscription={handleTranscriptionChange}
+                            transcription={speechMicState.text}
+                            setTranscription={handleSpeechMicChange}
                             audioUrl={transcriptionState.audioUrl}
                             onAudioRecorded={handleAudioRecorded}
                             transcriptionStatus={transcriptionState.status}
@@ -654,7 +668,7 @@ const Body = ({ username }) => {
         </Typography>
 
       </Box>
-      {selectedOption === 'text' ? (
+      {selectedOption === 'text' &&(
         <Box sx={{ width: '100%' }}>
           <TextTranslation 
             textToTranslate={debouncedInputText} 
@@ -667,7 +681,14 @@ const Body = ({ username }) => {
             setInputText={setInputText}
           />
         </Box>
-      ) : (
+      )}
+      {memoizedTranslation ? (
+        <Paper elevation={3} sx={{ mt: 2, p: 2, borderRadius: '8px', width: '100%' }}>
+          <Typography variant="body1" sx={{ fontFamily: '"Chakra Petch", sans-serif', fontWeight: '500' }}>
+            {memoizedTranslation}
+          </Typography>
+        </Paper>
+      ): (
         <Typography variant="body1" sx={{ 
           fontFamily: '"Chakra Petch", sans-serif', 
           fontWeight: '500', 
@@ -676,13 +697,6 @@ const Body = ({ username }) => {
         }}>
           รอการแปล...
         </Typography>
-      )}
-      {memoizedTranslation && (
-        <Paper elevation={3} sx={{ mt: 2, p: 2, borderRadius: '8px', width: '100%' }}>
-          <Typography variant="body1" sx={{ fontFamily: '"Chakra Petch", sans-serif', fontWeight: '500' }}>
-            {memoizedTranslation}
-          </Typography>
-        </Paper>
       )}
     </Box>
   </Paper>
