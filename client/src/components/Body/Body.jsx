@@ -1,4 +1,10 @@
-import React, { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import React, {
+  useState,
+  useRef,
+  useCallback,
+  useEffect,
+  useMemo,
+} from "react";
 import { debounce } from "lodash";
 import {
   Box,
@@ -6,6 +12,7 @@ import {
   Typography,
   TextField,
   InputAdornment,
+  Alert,
   Container,
   useTheme,
   useMediaQuery,
@@ -15,6 +22,7 @@ import {
   Divider
 } from "@mui/material";
 import CreateIcon from "@mui/icons-material/Create";
+import AudioFileIcon from "@mui/icons-material/AudioFile";
 import TranslateIcon from "@mui/icons-material/Translate";
 import InfoIcon from "@mui/icons-material/Info";
 import Sidebar from "../Sidebar/Sidebar";
@@ -23,12 +31,15 @@ import TextTranslation from "../TextTranslation/TextTranslation";
 import SpeechMic from "../FileSpeech/SpeechMic";
 import MobileMenu from "../MobileMenu/MobileMenu";
 import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import GuideModal from "../FileSpeech/GuideModal";
 
 const Body = ({ username }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const [selectedOption, setSelectedOption] = useState("text");
   const [file, setFile] = useState(null);
+  const [fileUrl, setFileUrl] = useState(null);
   const [activeInput, setActiveInput] = useState("microphone");
   const [inputText, setInputText] = useState("");
   const [translations, setTranslations] = useState({
@@ -44,15 +55,13 @@ const Body = ({ username }) => {
   const [rating, setRating] = useState("unknown");
 
   const [transcriptionState, setTranscriptionState] = useState({
-    file: null,
-    transcription: '',
-    translatedTranscription: '',
-    audioUrl: null,
-    audioHashedId: null,
+    text: "",
     isLoading: false,
-    error: '',
-    transcriptionStatus: '',
-    hasSaved: false
+    error: "",
+    status: "",
+    audioUrl: "",
+    audioBlob: null,
+    liked: false,
   });
 
   const [speechMicState, setSpeechMicState] = useState({
@@ -66,10 +75,8 @@ const Body = ({ username }) => {
   });
 
   const speechMicRef = useRef();
+  const audioUrlRef = useRef(null);
   const [transcribedFiles, setTranscribedFiles] = useState({});
-
-  const [persistentAudioUrl, setPersistentAudioUrl] = useState(null);
-  const [persistentTranscription, setPersistentTranscription] = useState('');
 
   const debouncedSetDebouncedInputText = useCallback(
     debounce((text) => setDebouncedInputText(text), 300),
@@ -107,11 +114,85 @@ const Body = ({ username }) => {
     }
   }, []);
 
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      // Clear all state here
+      setSelectedOption("text");
+      setFile(null);
+      setFileUrl(null);
+      setActiveInput("microphone");
+      setInputText("");
+      setTranslations({ text: "", upload: "", microphone: "" });
+      setTextLanguage("คำเมือง");
+      setVoiceLanguage("คำเมือง");
+      setTranscriptionState({
+        text: "",
+        isLoading: false,
+        error: "",
+        status: "",
+        audioUrl: "",
+        audioBlob: null,
+        liked: false,
+      });
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      if (fileUrl) {
+        URL.revokeObjectURL(fileUrl);
+      }
+      if (audioUrlRef.current) {
+        URL.revokeObjectURL(audioUrlRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (transcriptionState.audioBlob) {
+      if (audioUrlRef.current) {
+        URL.revokeObjectURL(audioUrlRef.current);
+      }
+      const url = URL.createObjectURL(transcriptionState.audioBlob);
+      setTranscriptionState((prev) => ({ ...prev, audioUrl: url }));
+      audioUrlRef.current = url;
+    }
+    return () => {
+      if (audioUrlRef.current) {
+        URL.revokeObjectURL(audioUrlRef.current);
+      }
+    };
+  }, [transcriptionState.audioBlob]);
+
+  const handleAudioRecorded = useCallback((blob) => {
+    setTranscriptionState((prev) => ({ ...prev, audioBlob: blob }));
+  }, []);
+
   const handleTextLanguageToggle = useCallback(() => {
     setTextLanguage((prev) => (prev === "คำเมือง" ? "ไทย" : "คำเมือง"));
     setInputText(translatedText);
     setTranslatedText(inputText);
   }, [inputText, translatedText]);
+
+  const handleComponentSwitch = useCallback(() => {
+    if (audioUrlRef.current) {
+      setTranscriptionState((prev) => ({
+        ...prev,
+        audioUrl: audioUrlRef.current,
+      }));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (file) {
+      const newFileUrl = URL.createObjectURL(file);
+      setFileUrl(newFileUrl);
+      return () => {
+        URL.revokeObjectURL(newFileUrl);
+      };
+    }
+  }, [file]);
 
   const handleTextLanguageChange = useCallback((newLanguage) => {
     setTextLanguage(newLanguage);
@@ -125,8 +206,9 @@ const Body = ({ username }) => {
     (option) => {
       setSelectedOption(option);
       setActiveInput(option === "upload" ? "upload" : "microphone");
+      handleComponentSwitch();
     },
-    []
+    [handleComponentSwitch]
   );
 
   const handleFileUpload = useCallback((uploadedFile) => {
@@ -137,8 +219,9 @@ const Body = ({ username }) => {
   const handleInputToggle = useCallback(
     (input) => {
       setActiveInput(input);
+      handleComponentSwitch();
     },
-    []
+    [handleComponentSwitch]
   );
 
   const handleTextChange = useCallback((event) => {
@@ -159,17 +242,11 @@ const Body = ({ username }) => {
     setTranslatedText(translation);
   }, []);
 
-  const handleTranscriptionChange = useCallback((newTranscription) => {
-    setTranscriptionState(prev => ({ ...prev, transcription: newTranscription }));
-  }, []);
-
-  const handleTranscriptionFileChange = useCallback((newFile) => {
-    setTranscriptionState(prev => ({ ...prev, file: newFile, audioUrl: newFile ? URL.createObjectURL(newFile) : null }));
-  }, []);
-
-  const handleTranscriptionAudioRecorded = useCallback((blob) => {
-    const url = URL.createObjectURL(blob);
-    setTranscriptionState(prev => ({ ...prev, audioUrl: url }));
+  const handleTranscriptionChange = useCallback((newTranscription, fileKey) => {
+    setTranscriptionState((prev) => ({ ...prev, text: newTranscription }));
+    if (fileKey) {
+      setTranscribedFiles((prev) => ({ ...prev, [fileKey]: newTranscription }));
+    }
   }, []);
 
   const handleSpeechMicChange = useCallback((newTranscription) => {
@@ -194,6 +271,7 @@ const Body = ({ username }) => {
       setTranslations((prev) => ({ ...prev, text: "" }));
     } else if (activeInput === "upload") {
       setFile(null);
+      setFileUrl(null);
       setTranslations((prev) => ({ ...prev, upload: "" }));
     } else {
       setTranslations((prev) => ({ ...prev, microphone: "" }));
@@ -222,104 +300,114 @@ const Body = ({ username }) => {
     }
   }, []);
 
-  const handleAudioRecorded = useCallback((blob) => {
-    const url = URL.createObjectURL(blob);
-    setPersistentAudioUrl(url);
-    setTranscriptionState((prev) => ({ ...prev, audioBlob: blob, audioUrl: url }));
-  }, []);
+  const LanguageSwitch = useMemo(
+    () =>
+      ({ language, toggleLanguage }) =>
+        (
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              gap: "10px",
+              flexWrap: "wrap",
+              my: "1em",
+            }}
+          >
+            <Button
+              sx={{
+                borderRadius: "20px",
+                padding: "8px 15px",
+                border: "2px solid #e0e0e0",
+                minWidth: "80px",
+                bgcolor: "ButtonShadow",
+                color: "black",
+                transition: "background-color 0.3s",
+                "&:hover": {
+                  bgcolor: "#CBC3E3",
+                },
+              }}
+              onClick={toggleLanguage}
+            >
+              <Typography
+                sx={{
+                  fontFamily: '"Mitr", sans-serif',
+                  fontWeight: 400,
+                  fontSize: "0.8rem",
+                }}
+              >
+                {language}
+              </Typography>
+            </Button>
+            <IconButton sx={{ color: "#4a90e2" }} onClick={toggleLanguage}>
+              <SwapHorizIcon />
+            </IconButton>
+            <Button
+              sx={{
+                borderRadius: "20px",
+                padding: "8px 15px",
+                border: "1px solid #e0e0e0",
+                minWidth: "80px",
+                bgcolor: "ButtonShadow",
+                color: "black",
+                transition: "background-color 0.3s",
+                "&:hover": {
+                  bgcolor: "#CBC3E3",
+                },
+              }}
+              onClick={toggleLanguage}
+            >
+              <Typography
+                sx={{
+                  fontFamily: '"Mitr", sans-serif',
+                  fontWeight: 400,
+                  fontSize: "0.8rem",
+                }}
+              >
+                {language === "คำเมือง" ? "ไทย" : "คำเมือง"}
+              </Typography>
+            </Button>
+          </Box>
+        ),
+    []
+  );
 
   const transcriptionProps = useMemo(
     () => ({
-      file: transcriptionState.file,
-      onFileChange: handleTranscriptionFileChange,
+      file,
       onTranslation: handleTranslationUpload,
       language: Voicelanguage,
       setLanguage: setVoiceLanguage,
       username,
-      transcription: transcriptionState.transcription,
+      transcription: transcriptionState.text,
       setTranscription: handleTranscriptionChange,
       isLoading: transcriptionState.isLoading,
-      setIsLoading: (isLoading) => setTranscriptionState(prev => ({ ...prev, isLoading })),
+      setIsLoading: handleTranscriptionLoadingChange,
       error: transcriptionState.error,
-      setError: (error) => setTranscriptionState(prev => ({ ...prev, error })),
-      audioUrl: transcriptionState.audioUrl,
-      onAudioRecorded: handleTranscriptionAudioRecorded,
-      transcriptionStatus: transcriptionState.transcriptionStatus,
-      setTranscriptionStatus: (status) => setTranscriptionState(prev => ({ ...prev, transcriptionStatus: status })),
-      translatedTranscription: transcriptionState.translatedTranscription,
-      setTranslatedTranscription: (translated) => setTranscriptionState(prev => ({ ...prev, translatedTranscription: translated })),
-      audioHashedId: transcriptionState.audioHashedId,
-      setAudioHashedId: (id) => setTranscriptionState(prev => ({ ...prev, audioHashedId: id })),
-      hasSaved: transcriptionState.hasSaved,
-      setHasSaved: (saved) => setTranscriptionState(prev => ({ ...prev, hasSaved: saved })),
+      setError: handleTranscriptionErrorChange,
+      transcribedFiles,
+      setTranscribedFiles,
+      getFileKey,
       isMobile,
+      onFileUpload: handleFileUpload,
       rating,
       onRatingChange: handleRatingChange,
-      isDragging,
-      handleDragEnter,
-      handleDragOver,
-      handleDragLeave,
-      handleDrop
     }),
     [
-      transcriptionState,
+      file,
       Voicelanguage,
       username,
+      transcriptionState,
+      transcribedFiles,
       isMobile,
       rating,
       handleTranslationUpload,
       setVoiceLanguage,
       handleTranscriptionChange,
-      handleTranscriptionFileChange,
-      handleTranscriptionAudioRecorded,
+      handleTranscriptionLoadingChange,
+      handleTranscriptionErrorChange,
+      handleFileUpload,
       handleRatingChange,
-      isDragging,
-      handleDragEnter,
-      handleDragOver,
-      handleDragLeave,
-      handleDrop
-    ]
-  );
-
-  const speechMicProps = useMemo(
-    () => ({
-      onTranslation: handleTranslationMic,
-      language: Voicelanguage,
-      setLanguage: setVoiceLanguage,
-      transcription: speechMicState.text,
-      setTranscription: handleSpeechMicChange,
-      audioUrl: speechMicState.audioUrl,
-      onAudioRecorded: (blob) => {
-        const url = URL.createObjectURL(blob);
-        setSpeechMicState((prev) => ({ ...prev, audioBlob: blob, audioUrl: url }));
-      },
-      transcriptionStatus: speechMicState.status,
-      setTranscriptionStatus: (status) =>
-        setSpeechMicState((prev) => ({ ...prev, status })),
-      translation: translations.microphone,
-      setTranslation: (newTranslation) =>
-        setTranslations((prev) => ({
-          ...prev,
-          microphone: newTranslation,
-        })),
-      isLoading: speechMicState.isLoading,
-      setIsLoading: (isLoading) => setSpeechMicState((prev) => ({ ...prev, isLoading })),
-      error: speechMicState.error,
-      setError: (error) => setSpeechMicState((prev) => ({ ...prev, error })),
-      isMobile,
-      rating,
-      onRatingChange: handleRatingChange,
-    }),
-    [
-      Voicelanguage,
-      speechMicState,
-      translations.microphone,
-      isMobile,
-      rating,
-      handleTranslationMic,
-      setVoiceLanguage,
-      handleSpeechMicChange,
-      handleRatingChange
+      getFileKey,
     ]
   );
 
@@ -428,45 +516,10 @@ const Body = ({ username }) => {
               {selectedOption === "text" && (
                 <Box sx={{ display: "flex", flexDirection: "column", flex: 1 }}>
                   {isMobile && (
-                    <Box sx={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap', my: '1em' }}>
-                      <Button 
-                        sx={{ 
-                          borderRadius: '20px', 
-                          padding: '8px 15px', 
-                          border: '2px solid #e0e0e0', 
-                          minWidth: '80px', 
-                          bgcolor: 'ButtonShadow',
-                          color: 'black',
-                          transition: 'background-color 0.3s', 
-                          '&:hover': {
-                            bgcolor: '#CBC3E3'
-                          }
-                        }}
-                        onClick={handleTextLanguageToggle}
-                      >
-                        <Typography sx={{ fontFamily: '"Mitr", sans-serif', fontWeight: 400, fontSize: '0.8rem' }}>{Textlanguage}</Typography>
-                      </Button>
-                      <IconButton sx={{ color: '#4a90e2' }} onClick={handleTextLanguageToggle}>
-                        <SwapHorizIcon />
-                      </IconButton>
-                      <Button 
-                        sx={{ 
-                          borderRadius: '20px', 
-                          padding: '8px 15px', 
-                          border: '1px solid #e0e0e0', 
-                          minWidth: '80px', 
-                          bgcolor: 'ButtonShadow',
-                          color: 'black',
-                          transition: 'background-color 0.3s', 
-                          '&:hover': {
-                            bgcolor: '#CBC3E3'
-                          }
-                        }}
-                        onClick={handleTextLanguageToggle}
-                      >
-                        <Typography sx={{ fontFamily: '"Mitr", sans-serif', fontWeight: 400, fontSize: '0.8rem' }}>{Textlanguage === 'คำเมือง' ? 'ไทย' : 'คำเมือง'}</Typography>
-                      </Button>
-                    </Box>
+                    <LanguageSwitch
+                      language={Textlanguage}
+                      toggleLanguage={handleTextLanguageToggle}
+                    />
                   )}
                   <Box
                     elevation={isMobile ? 0 : 3}
@@ -599,13 +652,150 @@ const Body = ({ username }) => {
                   }}
                 >
                   {activeInput === "upload" && (
-                    <Transcription {...transcriptionProps} />
+                    <Box
+                      sx={{
+                        width: "100%",
+                        mb: isMobile ? 1 : 2,
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                      }}
+                    >
+                      {isMobile ? (
+                        <Transcription
+                          {...transcriptionProps}
+                          isMobile={true}
+                        />
+                      ) : (
+                        <Paper
+                          sx={{
+                            p: 2,
+                            width: "100%",
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            border: isDragging
+                              ? "2px dashed #1976d2"
+                              : "2px dashed #ccc",
+                            backgroundColor: isDragging ? "#e3f2fd" : "#f5f5f5",
+                            transition: "all 0.3s ease",
+                          }}
+                          onDragEnter={handleDragEnter}
+                          onDragOver={handleDragOver}
+                          onDragLeave={handleDragLeave}
+                          onDrop={handleDrop}
+                        >
+                          <Typography
+                            variant="h6"
+                            sx={{
+                              fontFamily: '"Chakra Petch", sans-serif',
+                              fontSize: "1.25rem",
+                              display: "flex",
+                              alignItems: "center",
+                            }}
+                          >
+                            ไฟล์เสียงที่อัปโหลด
+                            <AlertIcon />
+                          </Typography>
+                          {!fileUrl ? (
+                            <Box
+                              sx={{
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                height: "150px",
+                                width: "100%",
+                                backgroundColor: "#f5f5f5",
+                                borderRadius: 1,
+                                opacity: 0.6,
+                                textAlign: "center",
+                              }}
+                            >
+                              <CloudUploadIcon
+                                sx={{
+                                  fontSize: 50,
+                                  color: isDragging ? "#1976d2" : "#757575",
+                                  mb: 2,
+                                }}
+                              />
+                              <Typography
+                                variant="body1"
+                                sx={{
+                                  color: isDragging ? "#1976d2" : "#757575",
+                                }}
+                              >
+                                {isDragging
+                                  ? "วางไฟล์เสียงที่นี่"
+                                  : "ลากและวางไฟล์เสียงที่นี่ หรืออัปโหลดจากปุ่มทางด้านซ้าย"}
+                              </Typography>
+                            </Box>
+                          ) : (
+                            <>
+                              <audio
+                                controls
+                                src={fileUrl}
+                                style={{ width: "100%", marginTop: "10px" }}
+                              />
+                              <Typography
+                                variant="body2"
+                                sx={{
+                                  mt: 1,
+                                  color: "#757575",
+                                  textAlign: "center",
+                                }}
+                              >
+                                {file.name}
+                              </Typography>
+                            </>
+                          )}
+                        </Paper>
+                      )}
+  
+                      {!isMobile && fileUrl && (
+                        <Box sx={{ width: "100%", mt: 2 }}>
+                          <Transcription {...transcriptionProps} />
+                        </Box>
+                      )}
+                    </Box>
                   )}
                   {activeInput === "microphone" && (
-                    <SpeechMic
-                      ref={speechMicRef}
-                      {...speechMicProps}
-                    />
+                    <Box
+                      sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "flex-start",
+                      }}
+                    >
+                      <SpeechMic
+                        ref={speechMicRef}
+                        onTranslation={handleTranslationMic}
+                        language={Voicelanguage}
+                        setLanguage={handleVoiceLanguageChange}
+                        transcription={speechMicState.text}
+                        setTranscription={handleSpeechMicChange}
+                        audioUrl={transcriptionState.audioUrl}
+                        onAudioRecorded={handleAudioRecorded}
+                        transcriptionStatus={transcriptionState.status}
+                        setTranscriptionStatus={(status) =>
+                          setTranscriptionState((prev) => ({ ...prev, status }))
+                        }
+                        translation={translations.microphone}
+                        setTranslation={(newTranslation) =>
+                          setTranslations((prev) => ({
+                            ...prev,
+                            microphone: newTranslation,
+                          }))
+                        }
+                        isLoading={transcriptionState.isLoading}
+                        setIsLoading={handleTranscriptionLoadingChange}
+                        error={transcriptionState.error}
+                        setError={handleTranscriptionErrorChange}
+                        isMobile={isMobile}
+                        rating={rating}
+                        onRatingChange={handleRatingChange}
+                      />
+                    </Box>
                   )}
                 </Box>
               )}
@@ -675,65 +865,65 @@ const Body = ({ username }) => {
               elevation={3}
             >
               <Box sx={{ p: 2, display: "flex", flexDirection: "column" }}>
-                <Box
+              <Box
+                sx={{
+                  bgcolor: "black",
+                  p: 1,
+                  borderRadius: "8px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  width: "100%",
+                  mb: 2,
+                }}
+              >
+                <Typography
+                  variant="h6"
                   sx={{
-                    bgcolor: "black",
-                    p: 1,
-                    borderRadius: "8px",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    width: "100%",
-                    mb: 2,
+                    fontFamily: '"Chakra Petch", sans-serif',
+                    color: "white",
                   }}
                 >
+                  ผลการแปล
+                </Typography>
+              </Box>
+              {selectedOption === "text" && (
+                <Box sx={{ width: "100%" }}>
+                  <TextTranslation
+                    textToTranslate={debouncedInputText}
+                    onTranslation={handleTranslationText}
+                    onClearTranslation={clearTranslation}
+                    language={Textlanguage}
+                    isMobile={isMobile}
+                    translatedText={translatedText}
+                    inputText={inputText}
+                    setInputText={setInputText}
+                  />
+                </Box>
+              )}
+              {memoizedTranslation && (
+                <Paper
+                  elevation={3}
+                  sx={{ mt: 2, p: 2, borderRadius: "8px", width: "100%" }}
+                >
                   <Typography
-                    variant="h6"
+                    variant="body1"
                     sx={{
                       fontFamily: '"Chakra Petch", sans-serif',
-                      color: "white",
+                      fontWeight: "500",
                     }}
                   >
-                    ผลการแปล
+                    {memoizedTranslation}
                   </Typography>
-                </Box>
-                {selectedOption === "text" && (
-                  <Box sx={{ width: "100%" }}>
-                    <TextTranslation
-                      textToTranslate={debouncedInputText}
-                      onTranslation={handleTranslationText}
-                      onClearTranslation={clearTranslation}
-                      language={Textlanguage}
-                      isMobile={isMobile}
-                      translatedText={translatedText}
-                      inputText={inputText}
-                      setInputText={setInputText}
-                    />
-                  </Box>
-                )}
-                {memoizedTranslation && (
-                  <Paper
-                    elevation={3}
-                    sx={{ mt: 2, p: 2, borderRadius: "8px", width: "100%" }}
-                  >
-                    <Typography
-                      variant="body1"
-                      sx={{
-                        fontFamily: '"Chakra Petch", sans-serif',
-                        fontWeight: "500",
-                      }}
-                    >
-                      {memoizedTranslation}
-                    </Typography>
-                  </Paper>
-                )}
-              </Box>
-            </Paper>
-          )}
-        </Box>
+                </Paper>
+              )}
+            </Box>
+          </Paper>
+        )}
       </Box>
-    </Container>
-  );
+    </Box>
+  </Container>
+);
 };
 
 export default React.memo(Body);
