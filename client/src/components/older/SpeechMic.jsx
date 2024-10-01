@@ -1,15 +1,16 @@
 import React, { useRef, forwardRef, useImperativeHandle, useCallback, useEffect, useState } from 'react';
-import { Typography, Box, IconButton, Chip, Alert, Button } from '@mui/material';
+import { Typography, Box, Paper, IconButton, CircularProgress, Fade, Chip, Alert, Button } from '@mui/material';
+import ThumbUpAltIcon from '@mui/icons-material/ThumbUpAlt';
+import ThumbUpOffAltIcon from '@mui/icons-material/ThumbUpOffAlt';
+import ThumbDownAltIcon from '@mui/icons-material/ThumbDownAlt';
+import ThumbDownOffAltIcon from '@mui/icons-material/ThumbDownOffAlt';
 import MicIcon from '@mui/icons-material/Mic';
+import VolumeUpIcon from '@mui/icons-material/VolumeUp';
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import InfoIcon from '@mui/icons-material/Info';
 import { useApi } from '../../ServiceAPI';
 import { useUser } from '../../ContextUser';
 import { keyframes } from '@emotion/react';
-import LanguageSwitch from '../shared/LanguageSwitch';
-import AudioPlayer from '../shared/AudioPlayer';
-import TranscriptionResult from '../shared/TranscriptionResult';
-import LoadingIndicator from '../shared/LoadingIndicator';
-import ErrorDisplay from '../shared/ErrorDisplay';
 
 const SpeechMic = forwardRef(({ 
   onTranslation, 
@@ -34,6 +35,8 @@ const SpeechMic = forwardRef(({
   const { userId } = useUser();
   const { transcribeMic, translate, recordAudio, updateRating } = useApi();
   const [isRecording, setIsRecording] = useState(false);
+  const [isLikeAnimating, setIsLikeAnimating] = useState(false);
+  const [isDislikeAnimating, setIsDislikeAnimating] = useState(false);
   const [audioRecordId, setAudioRecordId] = useState(null);
   const [audioHashedId, setAudioHashedId] = useState(null);
   const [isSupported, setIsSupported] = useState(true);
@@ -43,6 +46,7 @@ const SpeechMic = forwardRef(({
   const [hasSaved, setHasSaved] = useState(false);
 
   useEffect(() => {
+    // ตรวจสอบการรองรับ getUserMedia
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       setIsSupported(false);
     }
@@ -131,6 +135,13 @@ const SpeechMic = forwardRef(({
       console.log('Updating rating for audio record:', audioHashedId);
       await updateRating(audioHashedId, newRating);
       onRatingChange(newRating);
+      if (newRating === 'like') {
+        setIsLikeAnimating(true);
+        setTimeout(() => setIsLikeAnimating(false), 300);
+      } else if (newRating === 'dislike') {
+        setIsDislikeAnimating(true);
+        setTimeout(() => setIsDislikeAnimating(false), 300);
+      }
     } catch (error) {
       console.error('Error updating rating:', error);
       setError('เกิดข้อผิดพลาดในการอัปเดตเรตติ้ง');
@@ -238,6 +249,48 @@ const SpeechMic = forwardRef(({
     100% { transform: scale(2.4); opacity: 0; }
   `;
 
+  const LanguageSwitch = () => (
+    <Box sx={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap', my: '1em' }}>
+      <Button 
+        sx={{ 
+          borderRadius: '20px', 
+          padding: '8px 15px', 
+          border: '2px solid #e0e0e0', 
+          minWidth: '80px', 
+          bgcolor: 'ButtonShadow',
+          color: 'black',
+          transition: 'background-color 0.3s', 
+          '&:hover': {
+            bgcolor: '#CBC3E3'
+          }
+        }}
+        onClick={toggleLanguage}
+      >
+        <Typography sx={{ fontFamily: '"Mitr", sans-serif', fontWeight: 400, fontSize: '0.8rem' }}>{language}</Typography>
+      </Button>
+      <IconButton sx={{ color: '#4a90e2' }} onClick={toggleLanguage}>
+        <SwapHorizIcon />
+      </IconButton>
+      <Button 
+        sx={{ 
+          borderRadius: '20px', 
+          padding: '8px 15px', 
+          border: '1px solid #e0e0e0', 
+          minWidth: '80px', 
+          bgcolor: 'ButtonShadow',
+          color: 'black',
+          transition: 'background-color 0.3s', 
+          '&:hover': {
+            bgcolor: '#CBC3E3'
+          }
+        }}
+        onClick={toggleLanguage}
+      >
+        <Typography sx={{ fontFamily: '"Mitr", sans-serif', fontWeight: 400, fontSize: '0.8rem' }}>{language === 'คำเมือง' ? 'ไทย' : 'คำเมือง'}</Typography>
+      </Button>
+    </Box>
+  );
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', mt: 2 }}>
       <Box elevation={3} sx={{ p: 3, width: '100%', maxWidth: 600, bgcolor: '#f5f5f5', borderRadius: '16px' }}>
@@ -267,7 +320,7 @@ const SpeechMic = forwardRef(({
               )}
             </Box>
             
-            {isMobile && <LanguageSwitch language={language} toggleLanguage={toggleLanguage} />}
+            {isMobile && <LanguageSwitch />}
 
             {!isMobile && (
               <Alert
@@ -330,24 +383,64 @@ const SpeechMic = forwardRef(({
               </Box>
             )}
 
-            {isLoading && <LoadingIndicator />}
+            {isLoading && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
+                <CircularProgress size={24} />
+              </Box>
+            )}
             
-            {error && <ErrorDisplay error={error} />}
-
-            {transcriptionStatus && (
-              <Typography variant="body2" sx={{ mt: 2, textAlign: 'center', fontFamily: '"Chakra Petch", sans-serif', color: '#666' }}>
-                {transcriptionStatus}
+            {error && (
+              <Typography color="error" sx={{ mt: 2, textAlign: 'center', fontFamily: '"Chakra Petch", sans-serif' }}>
+                {error}
               </Typography>
             )}
 
-            {audioUrl && <AudioPlayer audioUrl={audioUrl} />}
+            {transcriptionStatus && (
+              <Fade in={Boolean(transcriptionStatus)}>
+                <Typography variant="body2" sx={{ mt: 2, textAlign: 'center', fontFamily: '"Chakra Petch", sans-serif', color: '#666' }}>
+                  {transcriptionStatus}
+                </Typography>
+              </Fade>
+            )}
+
+            {audioUrl && (
+              <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', width: '100%' }}>
+                <VolumeUpIcon sx={{ mr: 1, color: '#1976d2' }} />
+                <audio controls src={audioUrl} style={{ width: '100%' }} />
+              </Box>
+            )}
 
             {transcription && (
-              <TranscriptionResult
-                transcription={transcription}
-                rating={rating}
-                handleRating={handleRating}
-              />
+              <Fade in={Boolean(transcription)}>
+                <Box sx={{ mt: 3, width: '100%' }}>
+                  <Box sx={{ bgcolor: 'black', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 3 }}>
+                    <Typography variant="h6" sx={{ fontFamily: '"Chakra Petch", sans-serif', color: 'white' }} gutterBottom>
+                      ผลลัพธ์การถอดความ
+                    </Typography>
+                  </Box>
+                  <Typography variant="body1" sx={{ fontFamily: '"Chakra Petch", sans-serif', p: 2 }}>
+                    {transcription}
+                  </Typography>
+                  <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2, alignItems: 'center' }}>
+                    <IconButton
+                      onClick={() => handleRating('like')}
+                      sx={{
+                        animation: isLikeAnimating ? `${pulse} 0.3s ease-in-out` : 'none',
+                      }}
+                    >
+                      {rating === 'like' ? <ThumbUpAltIcon sx={{ fontSize: '1.5rem', color: '#1976d2' }} /> : <ThumbUpOffAltIcon sx={{ fontSize: '1.5rem' }} />}
+                    </IconButton>
+                    <IconButton
+                      onClick={() => handleRating('dislike')}
+                      sx={{
+                        animation: isDislikeAnimating ? `${pulse} 0.3s ease-in-out` : 'none',
+                      }}
+                    >
+                      {rating === 'dislike' ? <ThumbDownAltIcon sx={{ fontSize: '1.5rem', color: '#d32f2f' }} /> : <ThumbDownOffAltIcon sx={{ fontSize: '1.5rem' }} />}
+                    </IconButton>
+                  </Box>
+                </Box>
+              </Fade>
             )}
           </>
         )}
