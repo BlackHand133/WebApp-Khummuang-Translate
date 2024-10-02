@@ -38,7 +38,9 @@ const Transcription = ({
   isMobile,
   onFileUpload,
   rating,
-  onRatingChange
+  onRatingChange,
+  transcribedFilesCache,
+  onTranscriptionComplete,
 }) => {
   const { userId } = useUser();
   const { transcribe, translate, recordAudio, updateRating } = useApi();
@@ -101,9 +103,9 @@ const Transcription = ({
     console.log('handleTranscribe called', { file, fileKey });
     if (!file || !fileKey) return;
     
-    if (transcribedFilesRef.current[fileKey]) {
+    if (transcribedFilesCache[fileKey]) {
       console.log('Using cached transcription');
-      setTranscription(transcribedFilesRef.current[fileKey]);
+      setTranscription(transcribedFilesCache[fileKey]);
       return;
     }
     
@@ -113,9 +115,8 @@ const Transcription = ({
   
     try {
       const result = await transcribe(file, language, userId);
-      transcribedFilesRef.current[fileKey] = result.transcription;
       setTranscription(result.transcription);
-      setTranscribedFiles(prev => ({ ...prev, [fileKey]: result.transcription }));
+      onTranscriptionComplete(fileKey, result.transcription);
       setAudioHashedId(result.hashedId);
       await handleTranslate(result.transcription);
     } catch (err) {
@@ -124,7 +125,7 @@ const Transcription = ({
     } finally {
       setIsLoading(false);
     }
-  }, [file, fileKey, language, userId, transcribe, handleTranslate, setTranscription, setTranscribedFiles, setIsLoading, setError, onRatingChange]);
+  }, [file, fileKey, language, userId, transcribe, handleTranslate, setTranscription, setIsLoading, setError, onRatingChange, transcribedFilesCache, onTranscriptionComplete]);
 
   const saveFile = useCallback(async () => {
     if (!file || !transcription || hasSaved) return;
@@ -167,13 +168,14 @@ const Transcription = ({
   }, [language, setLanguage, transcription, handleTranslate, setError]);
 
   useEffect(() => {
-    console.log('fileKey changed:', fileKey);
-    if (file && fileKey && !transcribedFilesRef.current[fileKey]) {
-      handleTranscribe();
-    } else if (file && fileKey && transcribedFilesRef.current[fileKey]) {
-      setTranscription(transcribedFilesRef.current[fileKey]);
+    if (file && fileKey) {
+      if (transcribedFilesCache[fileKey]) {
+        setTranscription(transcribedFilesCache[fileKey]);
+      } else {
+        handleTranscribe();
+      }
     }
-  }, [file, fileKey, handleTranscribe, setTranscription]);
+  }, [file, fileKey, handleTranscribe, transcribedFilesCache]);
 
   const handleFileUpload = useCallback((uploadedFile) => {
     if (uploadedFile) {
