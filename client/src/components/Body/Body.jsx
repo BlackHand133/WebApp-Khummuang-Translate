@@ -296,12 +296,6 @@ const Body = ({ username }) => {
     }
   }, []);
 
-  const [transcribedFilesCache, setTranscribedFilesCache] = useState({});
-
-  const handleTranscriptionComplete = useCallback((fileKey, transcription) => {
-    setTranscribedFilesCache(prev => ({ ...prev, [fileKey]: transcription }));
-  }, []);
-
   const LanguageSwitch = useMemo(
     () =>
       ({ language, toggleLanguage }) =>
@@ -393,8 +387,6 @@ const Body = ({ username }) => {
       onFileUpload: handleFileUpload,
       rating,
       onRatingChange: handleRatingChange,
-      transcribedFilesCache,
-      onTranscriptionComplete: handleTranscriptionComplete,
     }),
     [
       file,
@@ -412,8 +404,6 @@ const Body = ({ username }) => {
       handleFileUpload,
       handleRatingChange,
       getFileKey,
-      transcribedFilesCache,
-      handleTranscriptionComplete,
     ]
   );
 

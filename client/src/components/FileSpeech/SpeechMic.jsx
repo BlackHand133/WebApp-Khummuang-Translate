@@ -1,5 +1,5 @@
 import React, { useRef, forwardRef, useImperativeHandle, useCallback, useEffect, useState } from 'react';
-import { Typography, Box, IconButton, Chip, Alert, Button } from '@mui/material';
+import { Typography, Box, IconButton, Chip, Alert, Button, useTheme } from '@mui/material';
 import MicIcon from '@mui/icons-material/Mic';
 import InfoIcon from '@mui/icons-material/Info';
 import { useApi } from '../../ServiceAPI';
@@ -10,6 +10,7 @@ import AudioPlayer from '../shared/AudioPlayer';
 import TranscriptionResult from '../shared/TranscriptionResult';
 import LoadingIndicator from '../shared/LoadingIndicator';
 import ErrorDisplay from '../shared/ErrorDisplay';
+import GuideModal from './GuideModal'; // เพิ่มการ import GuideModal
 
 const SpeechMic = forwardRef(({ 
   onTranslation, 
@@ -41,6 +42,17 @@ const SpeechMic = forwardRef(({
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const [hasSaved, setHasSaved] = useState(false);
+
+  // เพิ่ม state สำหรับควบคุม GuideModal
+  const [openGuide, setOpenGuide] = useState(false);
+  const handleOpenGuide = () => setOpenGuide(true);
+  const handleCloseGuide = () => setOpenGuide(false);
+
+  const theme = useTheme();
+
+  const supportedWords = [
+    "คำ1", "คำ2", "คำ3", // ... เพิ่มคำที่รองรับทั้งหมดที่นี่
+  ];
 
   useEffect(() => {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -238,55 +250,97 @@ const SpeechMic = forwardRef(({
     100% { transform: scale(2.4); opacity: 0; }
   `;
 
+  const DesktopRecordButton = () => (
+    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 2 }}>
+      <Box
+        sx={{
+          position: 'relative',
+          width: 120,
+          height: 120,
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
+      >
+        <Box
+          sx={{
+            position: 'absolute',
+            width: '100%',
+            height: '100%',
+            borderRadius: '50%',
+            animation: isRecording ? `${ripple} 1.5s infinite` : 'none',
+            backgroundColor: isRecording ? 'rgba(255, 0, 0, 0.3)' : 'transparent',
+          }}
+        />
+        <IconButton
+          onClick={isRecording ? stopRecording : requestMicrophonePermission}
+          sx={{
+            width: 100,
+            height: 100,
+            backgroundColor: isRecording ? 'red' : 'primary.main',
+            color: 'white',
+            transition: 'all 0.3s ease',
+            '&:hover': {
+              backgroundColor: isRecording ? 'darkred' : 'primary.dark',
+              transform: 'scale(1.05)',
+            },
+          }}
+        >
+          <MicIcon sx={{ fontSize: 48 }} />
+        </IconButton>
+      </Box>
+      <Typography variant="body2" sx={{ mt: 2, fontFamily: '"Chakra Petch", sans-serif', color: '#666' }}>
+        {isRecording ? 'คลิกเพื่อหยุดบันทึก' : 'คลิกเพื่อเริ่มบันทึก'}
+      </Typography>
+    </Box>
+  );
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', mt: 2 }}>
       <Box elevation={3} sx={{ p: 3, width: '100%', maxWidth: 600, bgcolor: '#f5f5f5', borderRadius: '16px' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Typography variant="h6" sx={{ fontFamily: '"Chakra Petch", sans-serif', color: '#333' }}>
+            บันทึกเสียง
+          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Chip
+              icon={<MicIcon />}
+              label={isRecording ? "กำลังบันทึก..." : "พร้อมบันทึก"}
+              color={isRecording ? "secondary" : "default"}
+              sx={{
+                animation: isRecording ? `${pulse} 1.5s ease-in-out infinite` : 'none',
+                '& .MuiChip-icon': {
+                  color: isRecording ? 'inherit' : '#757575',
+                },
+                mr: 2
+              }}
+            />
+            <IconButton 
+              onClick={handleOpenGuide}
+              sx={{ 
+                bgcolor: 'rgba(255, 255, 255, 0.8)',
+                '&:hover': { bgcolor: 'rgba(255, 255, 255, 1)' }
+              }}
+            >
+              <InfoIcon />
+            </IconButton>
+          </Box>
+        </Box>
+
         {!isSupported ? (
           <Alert severity="error">
             ขออภัย เบราว์เซอร์ของคุณไม่รองรับการบันทึกเสียง กรุณาใช้เบราว์เซอร์รุ่นใหม่หรือเปิดใช้งานฟีเจอร์นี้
           </Alert>
         ) : (
           <>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-              <Typography variant="h6" sx={{ fontFamily: '"Chakra Petch", sans-serif', color: '#333' }}>
-                บันทึกเสียง
-              </Typography>
-              
-              {!isMobile && (
-                <Chip
-                  icon={<MicIcon />}
-                  label={isRecording ? "กำลังบันทึก..." : "พร้อมบันทึก"}
-                  color={isRecording ? "secondary" : "default"}
-                  sx={{
-                    animation: isRecording ? `${pulse} 1.5s ease-in-out infinite` : 'none',
-                    '& .MuiChip-icon': {
-                      color: isRecording ? 'inherit' : '#757575',
-                    },
-                  }}
-                />
-              )}
-            </Box>
-            
-            {isMobile && <LanguageSwitch language={language} toggleLanguage={toggleLanguage} />}
-
-            {!isMobile && (
-              <Alert
-                severity="info" 
-                icon={<InfoIcon />}
-                sx={{ 
-                  mt: 2, 
-                  fontFamily: '"Chakra Petch", sans-serif',
-                  '& .MuiAlert-icon': {
-                    color: '#1976d2',
-                  },
-                }}
-              >
-                กดปุ่มไมโครโฟนแถบด้านซ้าย เพื่อเริ่มบันทึก
-              </Alert>
+            {isMobile && (
+              <Box sx={{ mb: 2 }}>
+                <LanguageSwitch language={language} toggleLanguage={toggleLanguage} />
+              </Box>
             )}
 
-            {isMobile && (
-              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mt: 2 }}>
+            {isMobile ? (
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 2 }}>
                 <Box
                   sx={{
                     position: 'relative',
@@ -328,6 +382,8 @@ const SpeechMic = forwardRef(({
                   {isRecording ? 'แตะเพื่อหยุดบันทึก' : 'แตะเพื่อเริ่มบันทึก'}
                 </Typography>
               </Box>
+            ) : (
+              <DesktopRecordButton />
             )}
 
             {isLoading && <LoadingIndicator />}
@@ -352,6 +408,13 @@ const SpeechMic = forwardRef(({
           </>
         )}
       </Box>
+      <GuideModal 
+        open={openGuide} 
+        onClose={handleCloseGuide}
+        supportedWords={supportedWords}
+        isMobile={isMobile}
+        theme={theme}
+      />
     </Box>
   );
 });

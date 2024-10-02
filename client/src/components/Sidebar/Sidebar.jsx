@@ -5,124 +5,20 @@ import {
 } from '@mui/material';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import MicIcon from '@mui/icons-material/Mic';
-import MicOffIcon from '@mui/icons-material/MicOff';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
-import AudiotrackIcon from '@mui/icons-material/Audiotrack';
 import styles from './Sidebar.module.css';
-
-const useAudioFeedback = () => {
-  const playSound = useCallback((soundName) => {
-    console.log(`Playing sound: ${soundName}`);
-    // Future implementation:
-    // const audio = new Audio(`/sounds/${soundName}.mp3`);
-    // audio.play();
-  }, []);
-
-  return { playSound };
-};
-
-const UploadButton = ({ onFileUpload }) => {
-  const [dragActive, setDragActive] = useState(false);
-  const theme = useTheme();
-
-  const handleDrag = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
-    }
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      onFileUpload(e.dataTransfer.files[0]);
-    }
-  };
-
-  const handleChange = (e) => {
-    e.preventDefault();
-    if (e.target.files && e.target.files[0]) {
-      onFileUpload(e.target.files[0]);
-    }
-  };
-
-  return (
-    <Paper
-      elevation={3}
-      sx={{
-        backgroundColor: theme.palette.background.paper,
-        borderRadius: '15px',
-        overflow: 'hidden',
-        transition: 'all 0.3s ease',
-        border: dragActive ? `2px dashed ${theme.palette.primary.main}` : '2px solid transparent',
-      }}
-    >
-      <Box
-        onDragEnter={handleDrag}
-        onDragLeave={handleDrag}
-        onDragOver={handleDrag}
-        onDrop={handleDrop}
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          padding: '20px',
-          cursor: 'pointer',
-          transition: 'all 0.3s ease',
-          backgroundColor: dragActive ? 'rgba(25, 118, 210, 0.08)' : 'transparent',
-        }}
-      >
-        <input
-          type="file"
-          id="file-upload"
-          onChange={handleChange}
-          accept="audio/*"
-          style={{ display: 'none' }}
-        />
-        <label htmlFor="file-upload" style={{ width: '100%', cursor: 'pointer' }}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <AudiotrackIcon sx={{ fontSize: 60, color: theme.palette.primary.main, mb: 2 }} />
-            <Typography variant="h6" align="center" gutterBottom>
-              อัปโหลดไฟล์เสียง
-            </Typography>
-            <Typography variant="body2" align="center" color="textSecondary">
-              ลากและวางไฟล์ที่นี่ หรือคลิกเพื่อเลือกไฟล์
-            </Typography>
-            <Button
-              variant="contained"
-              startIcon={<UploadFileIcon />}
-              sx={{ mt: 2 }}
-            >
-              เลือกไฟล์
-            </Button>
-          </Box>
-        </label>
-      </Box>
-    </Paper>
-  );
-};
 
 const Sidebar = ({ 
   onOptionChange, 
-  onFileUpload, 
   onInputToggle, 
-  onStartRecording, 
-  onStopRecording, 
   onTextLanguageChange, 
   onVoiceLanguageChange 
 }) => {
   const [selectedOption, setSelectedOption] = useState('text');
   const [activeInput, setActiveInput] = useState('microphone');
-  const [microphoneOn, setMicrophoneOn] = useState(false);
   const [textLanguage, setTextLanguage] = useState('คำเมือง');
   const [voiceLanguage, setVoiceLanguage] = useState('คำเมือง');
 
-  const { playSound } = useAudioFeedback();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -132,29 +28,12 @@ const Sidebar = ({
 
   const handleOptionChange = (option) => {
     setSelectedOption(option);
-    setActiveInput(option === 'upload' ? 'upload' : 'microphone');
     onOptionChange(option);
-    onInputToggle(option === 'upload' ? 'upload' : 'microphone');
   };
 
   const handleInputToggle = (input) => {
     setActiveInput(input);
     onInputToggle(input);
-  };
-
-  const handleMicrophoneToggle = () => {
-    setMicrophoneOn(!microphoneOn);
-    if (!microphoneOn) {
-      onStartRecording();
-      playSound('start_recording');
-    } else {
-      onStopRecording();
-      playSound('stop_recording');
-    }
-  };
-
-  const handleFileChange = (file) => {
-    onFileUpload(file);
   };
 
   const toggleTextLanguage = () => {
@@ -295,31 +174,6 @@ const Sidebar = ({
                 <MicIcon sx={{ fontSize: '2rem', mr: 2 }} />
                 <Typography>ไมโครโฟน</Typography>
               </Button>
-              {activeInput === 'microphone' && (
-                <Box sx={{ p: 2, display: 'flex', justifyContent: 'center' }}>
-                  <Button 
-                    onClick={handleMicrophoneToggle} 
-                    variant="contained" 
-                    color={microphoneOn ? "error" : "success"}
-                    sx={{ 
-                      borderRadius: '50px',
-                      padding: '15px 30px',
-                      fontSize: '1.2rem',
-                      fontWeight: 'bold',
-                      textTransform: 'none',
-                      boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-                      animation: microphoneOn ? `${styles.pulse} 2s infinite` : 'none',
-                      '&:hover': {
-                        transform: 'translateY(-2px)',
-                        boxShadow: '0 6px 8px rgba(0,0,0,0.15)',
-                      },
-                    }}
-                  >
-                    {microphoneOn ? "หยุดบันทึก" : "เริ่มบันทึก"}
-                    {microphoneOn ? <MicIcon sx={{ ml: 1 }} /> : <MicOffIcon sx={{ ml: 1 }} />}
-                  </Button>
-                </Box>
-              )}
             </Paper>
             <Paper elevation={3} sx={{ 
               backgroundColor: activeInput === 'upload' ? '#e3f2fd' : '#404040',
@@ -343,25 +197,6 @@ const Sidebar = ({
                 <UploadFileIcon sx={{ fontSize: '2rem', mr: 2 }} />
                 <Typography>ไฟล์เสียง</Typography>
               </Button>
-              {activeInput === 'upload' && (
-                <Box sx={{ p: 2 }}>
-                  <Button
-                    component="label"
-                    variant="contained"
-                    fullWidth
-                    startIcon={<UploadFileIcon />}
-                    sx={{ 
-                      borderRadius: '50px',
-                      padding: '10px',
-                      fontSize: '1rem',
-                      textTransform: 'none',
-                    }}
-                  >
-                    อัปโหลดไฟล์
-                    <input type="file" hidden accept="audio/*" onChange={(e) => handleFileChange(e.target.files[0])} />
-                  </Button>
-                </Box>
-              )}
             </Paper>
           </Box>
         </Collapse>
