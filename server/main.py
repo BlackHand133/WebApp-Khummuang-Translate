@@ -10,6 +10,7 @@ from flask_mail import Mail
 from config import Config
 from models import db, User
 import os
+from translation_socket import setup_translation_socket
 
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*", "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"], "allow_headers": ["Content-Type", "Authorization"]}}, supports_credentials=True)
@@ -26,6 +27,8 @@ principal = Principal(app)
 mail = Mail(app)
 
 os.makedirs(app.config['UPLOAD_FOLDERURL'], exist_ok=True)
+
+setup_translation_socket(socketio, app)
 
 # Import blueprints
 from routes_admin import admin_bp

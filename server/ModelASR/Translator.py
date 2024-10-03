@@ -1,76 +1,142 @@
 import os
-from pythainlp.tokenize import Tokenizer, word_tokenize
+from pythainlp.tokenize import word_tokenize
+from collections import defaultdict
+import logging
+from functools import lru_cache
+from collections import Counter
 
 class Translator:
-    def __init__(self, vocab_path=None, dictionary_path=None):
+    def __init__(self, vocab_path=None, dictionary_path=None, phrase_path=None, is_thai=False):
         self.custom_tokenizer = None
         self.word_translation = None
+        self.phrases = {}
+        self.is_thai = is_thai
         
         if vocab_path:
             self.vocab = self.load_vocabulary(vocab_path)
-            self.custom_tokenizer = self.get_custom_tokenizer(self.vocab)
         else:
             self.vocab = None
 
         if dictionary_path:
             self.word_translation = self.load_dictionary(dictionary_path)
-    
+        
+        if phrase_path:
+            self.phrases = self.load_phrases(phrase_path)
+
+        self.logger = self.setup_logger()
+        self.unknown_words = Counter()
+
+    def setup_logger(self):
+        logger = logging.getLogger('TranslatorLogger')
+        logger.setLevel(logging.INFO)
+        handler = logging.FileHandler('translator.log')
+        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+        return logger
+
     def load_vocabulary(self, file_path):
-        with open(file_path, 'r', encoding='utf-8') as f:
-            vocab = [line.strip() for line in f.readlines()]
-        return vocab
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                vocab = [line.strip() for line in f.readlines()]
+            return set(vocab)
+        except FileNotFoundError:
+            self.logger.error(f"ไม่พบไฟล์ vocabulary: {file_path}")
+            return set()
+        except Exception as e:
+            self.logger.error(f"เกิดข้อผิดพลาดในการโหลด vocabulary: {e}")
+            return set()
 
     def load_dictionary(self, file_path):
-        word_translation = {}
-        with open(file_path, 'r', encoding='utf-8') as file:
-            for line in file:
-                northern_word, thai_word = line.strip().split(',')
-                word_translation[northern_word.lower()] = thai_word
+        word_translation = defaultdict(lambda: None)
+        try:
+            with open(file_path, 'r', encoding='utf-8') as file:
+                for line in file:
+                    try:
+                        source_word, target_word = line.strip().split(',')
+                        word_translation[source_word.lower()] = target_word
+                    except ValueError:
+                        self.logger.warning(f"รูปแบบไม่ถูกต้องในบรรทัด: {line}")
+        except FileNotFoundError:
+            self.logger.error(f"ไม่พบไฟล์พจนานุกรม: {file_path}")
+        except Exception as e:
+            self.logger.error(f"เกิดข้อผิดพลาดในการโหลดพจนานุกรม: {e}")
         return word_translation
 
-    def get_custom_tokenizer(self, vocab):
-        custom_vocab = set(vocab)
-        custom_tokenizer = Tokenizer(custom_dict=custom_vocab, engine='newmm')
-        return custom_tokenizer
+    def load_phrases(self, file_path):
+        phrases = {}
+        if file_path:
+            try:
+                with open(file_path, 'r', encoding='utf-8') as file:
+                    for line in file:
+                        source, target = line.strip().split('\t')
+                        phrases[source.lower()] = target
+            except FileNotFoundError:
+                self.logger.error(f"ไม่พบไฟล์วลี: {file_path}")
+            except Exception as e:
+                self.logger.error(f"เกิดข้อผิดพลาดในการโหลดวลี: {e}")
+        return phrases
 
-    def km_tokenize(self, sentence):
-        if self.custom_tokenizer:
-            # Tokenize using custom tokenizer
-            tokenized_words = self.custom_tokenizer.word_tokenize(sentence)
+    def tokenize(self, sentence):
+        if self.is_thai:
+            return word_tokenize(sentence, engine='newmm')
         else:
-            # ใช้ตัวตัดคำใน PyThaiNLP สำหรับภาษาไทย
-            tokenized_words = word_tokenize(sentence, engine='newmm')
+            return sentence.split()  # Simple splitting for Kam Muang
 
-        # Join tokenized words back into a sentence
-        tokenized_sentence = " ".join(tokenized_words)
-        return tokenized_sentence
-
+    def handle_unknown_word(self, word):
+        self.unknown_words[word.lower()] += 1
+        return f"{word}"
+    
+    @lru_cache(maxsize=1000)
     def translate_sentence(self, sentence):
-        # ตัดคำในประโยค
-        tokenized_sentence = self.km_tokenize(sentence)
-
-        # แยกคำในประโยคที่ตัดแล้ว
-        words = tokenized_sentence.split()
-
+        # Translate phrases first
+        for phrase, translation in sorted(self.phrases.items(), key=lambda x: len(x[0]), reverse=True):
+            sentence = sentence.replace(phrase, translation)
+        
+        words = self.tokenize(sentence)
+        
         if self.word_translation:
-            # แปลแต่ละคำโดยใช้พจนานุกรม
-            translated_words = [self.word_translation.get(word.lower(), word) for word in words]
+            translated_words = [self.word_translation[word.lower()] or self.handle_unknown_word(word) for word in words]
         else:
-            # ถ้าไม่มีพจนานุกรม ให้คืนคำเดิม
             translated_words = words
-
-        # รวมคำที่แปลแล้วกลับเป็นประโยค
+        
         translated_sentence = ' '.join(translated_words)
-
+        self.logger.info(f"Translated: {sentence} -> {translated_sentence}")
         return translated_sentence
 
-# เส้นทางไปยังไฟล์ข้อมูล
-base_dir = os.path.dirname(os.path.abspath(__file__))
-# สำหรับภาษาไทย (ไม่ใช้ไฟล์ THcutting.txt)
-thai_dictionary_path = os.path.join(base_dir, 'data', 'THtoKM.txt')
-thai_translator = Translator(vocab_path=None, dictionary_path=thai_dictionary_path)
+    def get_unknown_word_report(self, top_n=10):
+        return self.unknown_words.most_common(top_n)
+    
+    def reset_unknown_word_counter(self):
+        self.unknown_words.clear()
 
-# สำหรับคำเมือง
+    def save_unknown_word_report(self, file_path):
+        with open(file_path, 'w', encoding='utf-8') as f:
+            for word, count in self.unknown_words.items():
+                f.write(f"{word},{count}\n")
+        self.logger.info(f"Unknown word report saved to {file_path}")
+
+    def translate_text(self, text):
+        sentences = text.split('.')
+        translated_sentences = [self.translate_sentence(sentence.strip()) for sentence in sentences if sentence.strip()]
+        return '. '.join(translated_sentences)
+
+    def clear_cache(self):
+        self.translate_sentence.cache_clear()
+
+# Usage
+base_dir = os.path.dirname(os.path.abspath(__file__))
+thai_dictionary_path = os.path.join(base_dir, 'data', 'THtoKM.txt')
+thai_phrase_path = os.path.join(base_dir, 'data', 'THtoKM_phrases.txt')
+thai_translator = Translator(dictionary_path=thai_dictionary_path, phrase_path=thai_phrase_path, is_thai=True)
+
 km_vocab_path = os.path.join(base_dir, 'data', 'KMcutting.txt')
 km_dictionary_path = os.path.join(base_dir, 'data', 'KMtoTH.txt')
-km_translator = Translator(vocab_path=km_vocab_path, dictionary_path=km_dictionary_path)
+km_phrase_path = os.path.join(base_dir, 'data', 'KMtoTH_phrases.txt')
+km_translator = Translator(vocab_path=km_vocab_path, dictionary_path=km_dictionary_path, phrase_path=km_phrase_path)
+
+# Example usage
+thai_text = "สวัสดีครับ เป็นอย่างไรบ้าง"
+km_translation = thai_translator.translate_text(thai_text)
+print(f"Thai: {thai_text}")
+print(f"Kam Muang: {km_translation}")

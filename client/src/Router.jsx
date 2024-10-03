@@ -124,12 +124,6 @@ const router = createBrowserRouter([
       {
         path: '/',
         element: <App />,
-        children: [
-          { index: true, element: <Navigate to="/text" replace /> },
-          { path: 'text', element: <Body selectedOption="text" /> },
-          { path: 'microphone', element: <Body selectedOption="voice" activeInput="microphone" /> },
-          { path: 'upload', element: <Body selectedOption="voice" activeInput="upload" /> },
-        ]
       },
       {
         path: 'forgot-password',

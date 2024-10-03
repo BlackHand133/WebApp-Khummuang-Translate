@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import io from 'socket.io-client';
 
 const ApiContext = createContext();
 
@@ -10,7 +11,36 @@ export const ApiProvider = ({ children }) => {
   const [error, setError] = useState(null);
   const hostname = window.location.hostname;
   const API_BASE_URL = import.meta.env.VITE_API_URL || `http://${hostname}:8080/api`;
+  const WS_BASE_URL = API_BASE_URL.replace(/^http/, 'ws').replace('/api', '');
   const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+
+  const socketRef = useRef(null);
+
+  useEffect(() => {
+    socketRef.current = io(WS_BASE_URL, {
+      transports: ['websocket', 'polling'],
+      path: '/socket.io'
+    });
+  
+    socketRef.current.on('connect', () => {
+      console.log('Connected to WebSocket');
+    });
+  
+    socketRef.current.on('connect_error', (error) => {
+      console.error('WebSocket connection error:', error);
+      setError('Failed to connect to WebSocket');
+    });
+  
+    socketRef.current.on('disconnect', () => {
+      console.log('Disconnected from WebSocket');
+    });
+  
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+    };
+  }, [WS_BASE_URL]);
 
   const api = axios.create({
     baseURL: API_BASE_URL,
@@ -73,6 +103,32 @@ export const ApiProvider = ({ children }) => {
       setLoading(false);
       throw err;
     }
+  };
+
+  const translateWs = (text, sourceLang, targetLang) => {
+    return new Promise((resolve, reject) => {
+      setLoading(true);
+      setError(null);
+
+      const apiSourceLang = sourceLang === 'ไทย' ? 'th' : sourceLang === 'คำเมือง' ? 'km' : sourceLang;
+      const apiTargetLang = targetLang === 'ไทย' ? 'th' : targetLang === 'คำเมือง' ? 'km' : targetLang;
+
+      socketRef.current.emit('translate', {
+        text,
+        source_lang: apiSourceLang,
+        target_lang: apiTargetLang
+      });
+
+      socketRef.current.once('translation_result', (data) => {
+        setLoading(false);
+        if (data.type === 'translation') {
+          resolve(data.text);
+        } else if (data.type === 'error') {
+          setError(data.message);
+          reject(new Error(data.message));
+        }
+      });
+    });
   };
 
   const transcribeMic = async (formData) => {
@@ -178,6 +234,8 @@ export const ApiProvider = ({ children }) => {
   const value = {
     transcribe,
     translate,
+    translateWs,
+    socketRef,
     transcribeMic,
     recordAudio,
     testConnection,

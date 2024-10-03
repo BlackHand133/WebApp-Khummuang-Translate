@@ -404,7 +404,7 @@ const Body = ({ username }) => {
       handleFileUpload,
       handleRatingChange,
       getFileKey,
-    ]
+          ]
   );
 
   const AlertIcon = () => (

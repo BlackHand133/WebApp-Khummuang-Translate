@@ -190,3 +190,25 @@ class TokenBlacklist(db.Model):
 
     def __repr__(self):
         return f'<TokenBlacklist {self.jti}>'
+    
+class TranslationLog(db.Model):
+    __tablename__ = 'translation_logs'
+    id = db.Column(db.Integer, primary_key=True)
+    original_text = db.Column(db.Text, nullable=False)
+    translated_text = db.Column(db.Text, nullable=False)
+    source_language = db.Column(db.String(10), nullable=False)
+    target_language = db.Column(db.String(10), nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<TranslationLog {self.id}>'
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'original_text': self.original_text,
+            'translated_text': self.translated_text,
+            'source_language': self.source_language,
+            'target_language': self.target_language,
+            'timestamp': self.timestamp.isoformat()
+        }

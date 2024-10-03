@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request, current_app
 from werkzeug.utils import secure_filename
 import os
-from models import db, AudioRecord, SourceEnum, RatingEnum
+from models import db, AudioRecord, SourceEnum, RatingEnum, TranslationLog
 from datetime import datetime
 import tempfile
 from flask_cors import CORS
@@ -147,16 +147,63 @@ def translate():
 
     try:
         if source_lang == 'th' and target_lang == 'km':
-            translation = thai_translator.translate_sentence(text)
+            translation = thai_translator.translate_text(text)
         elif source_lang == 'km' and target_lang == 'th':
-            translation = km_translator.translate_sentence(text)
+            translation = km_translator.translate_text(text)
         else:
             return jsonify({'error': 'Unsupported language pair'}), 400
 
-        return jsonify({'translation': translation})
+        # บันทึกลงฐานข้อมูล
+        log_entry = TranslationLog(
+            original_text=text,
+            translated_text=translation,
+            source_language=source_lang,
+            target_language=target_lang
+        )
+        db.session.add(log_entry)
+        db.session.commit()
+
+        response = {
+            'translation': translation,
+            'source_lang': source_lang,
+            'target_lang': target_lang
+        }
+
+        # Log successful translation
+        current_app.logger.info(f"Successful translation: {source_lang} to {target_lang}")
+
+        return jsonify(response)
     except Exception as e:
-        current_app.logger.error(f"Translation error: {str(e)}")
+        error_message = f"Translation error: {str(e)}"
+        current_app.logger.error(error_message)
         return jsonify({'error': 'Translation failed', 'details': str(e)}), 500
+
+@service_bp.route('/unknown_words_report', methods=['GET'])
+def unknown_words_report():
+    source_lang = request.args.get('source_lang', 'th')
+    if source_lang == 'th':
+        report = thai_translator.get_unknown_word_report()
+    elif source_lang == 'km':
+        report = km_translator.get_unknown_word_report()
+    else:
+        return jsonify({'error': 'Unsupported language'}), 400
+    
+    return jsonify({'unknown_words': report})
+
+@service_bp.route('/save_unknown_words_report', methods=['POST'])
+def save_unknown_words_report():
+    data = request.get_json()
+    source_lang = data.get('source_lang', 'th')
+    file_path = data.get('file_path', f'unknown_words_{source_lang}.csv')
+    
+    if source_lang == 'th':
+        thai_translator.save_unknown_word_report(file_path)
+    elif source_lang == 'km':
+        km_translator.save_unknown_word_report(file_path)
+    else:
+        return jsonify({'error': 'Unsupported language'}), 400
+    
+    return jsonify({'message': f'Report saved to {file_path}'})
 
 @service_bp.route('/get_audio_records', methods=['GET'])
 def fetch_audio_records():

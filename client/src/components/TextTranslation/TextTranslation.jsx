@@ -1,5 +1,5 @@
-import React, { useEffect, useCallback } from 'react';
-import { Box, Typography, Paper, CircularProgress } from '@mui/material';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Box, Typography, CircularProgress } from '@mui/material';
 import { useApi } from '../../ServiceAPI';
 
 const TextTranslation = ({ 
@@ -8,64 +8,98 @@ const TextTranslation = ({
   onClearTranslation, 
   language, 
   isMobile, 
-  translatedText,
-  inputText,
   setInputText
 }) => {
-  const { translate, loading, error } = useApi();
+  const { translateWs, loading, error, clearError } = useApi();
+  const [translatedText, setTranslatedText] = useState('');
+  const lastTranslationRef = useRef('');
+  const translationTimeoutRef = useRef(null);
 
-  const fetchTranslation = useCallback(async () => {
-    if (!textToTranslate) {
-      onClearTranslation();
+  const clearTranslation = useCallback(() => {
+    setTranslatedText('');
+    onClearTranslation();
+    lastTranslationRef.current = '';
+  }, [onClearTranslation]);
+
+  const fetchTranslation = useCallback(async (text) => {
+    if (!text.trim()) {
+      clearTranslation();
       return;
     }
 
     try {
+      clearError();
       const sourceLang = language;
       const targetLang = language === 'ไทย' ? 'คำเมือง' : 'ไทย';
-      const result = await translate(textToTranslate, sourceLang, targetLang);
+      const result = await translateWs(text, sourceLang, targetLang);
+      
+      setTranslatedText(result);
       onTranslation(result);
+      lastTranslationRef.current = text;
     } catch (err) {
       console.error('Translation failed:', err);
+      setTranslatedText('');
     }
-  }, [textToTranslate, language, translate, onTranslation, onClearTranslation]);
+  }, [translateWs, language, onTranslation, clearError, clearTranslation]);
 
   useEffect(() => {
-    fetchTranslation();
-  }, [fetchTranslation]);
+    if (translationTimeoutRef.current) {
+      clearTimeout(translationTimeoutRef.current);
+    }
+
+    if (!textToTranslate.trim()) {
+      clearTranslation();
+      return;
+    }
+
+    translationTimeoutRef.current = setTimeout(() => {
+      fetchTranslation(textToTranslate);
+    }, 300); // 300ms delay
+
+    return () => {
+      if (translationTimeoutRef.current) {
+        clearTimeout(translationTimeoutRef.current);
+      }
+    };
+  }, [textToTranslate, fetchTranslation, clearTranslation]);
 
   useEffect(() => {
     // Swap text when language changes
-    if (language === 'ไทย') {
-      setInputText(translatedText);
-      onTranslation(inputText);
-    } else {
-      setInputText(translatedText);
-      onTranslation(inputText);
-    }
-  }, [language]);
+    const newInputText = language === 'ไทย' ? translatedText : textToTranslate;
+    const newTranslatedText = language === 'ไทย' ? textToTranslate : translatedText;
+    
+    setInputText(newInputText);
+    setTranslatedText(newTranslatedText);
+    onTranslation(newTranslatedText);
+  }, [language, translatedText, textToTranslate, setInputText, onTranslation]);
 
   return (
     <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      <Box elevation={isMobile ? 1 : 3} sx={{ width: '100%', borderRadius: isMobile ? '4px' : '8px' }}>
-        <Box sx={{ }}> {/* ย้าย padding มาที่นี่ */}
-          {loading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-              <CircularProgress size={24} sx={{ mr: 1 }} />
-              <Typography variant="body1" sx={{ fontSize: isMobile ? '0.9rem' : '1rem' }}>
-                กำลังแปล...
-              </Typography>
-            </Box>
-          ) : error ? (
-            <Typography variant="body1" color="error" sx={{ fontSize: isMobile ? '0.9rem' : '1rem' }}>
-              เกิดข้อผิดพลาด: {error}
+      <Box sx={{ width: '100%', borderRadius: isMobile ? '4px' : '8px', padding: 2 }}>
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <CircularProgress size={24} sx={{ mr: 1 }} />
+            <Typography variant="body1" sx={{ fontSize: isMobile ? '0.9rem' : '1rem' }}>
+              กำลังแปล...
             </Typography>
-          ) : (
-            <Typography variant="body2" sx={{ fontFamily: '"Chakra Petch", sans-serif', fontWeight: '500', fontSize: isMobile ? '0.9rem' : '1rem' }}>
-              {translatedText}
-            </Typography>
-          )}
-        </Box>
+          </Box>
+        ) : error ? (
+          <Typography variant="body1" color="error" sx={{ fontSize: isMobile ? '0.9rem' : '1rem' }}>
+            เกิดข้อผิดพลาด: {error}
+          </Typography>
+        ) : (
+          <Typography 
+            variant="body2" 
+            sx={{ 
+              fontFamily: '"Chakra Petch", sans-serif', 
+              fontWeight: '500', 
+              fontSize: isMobile ? '0.9rem' : '1rem',
+              minHeight: '1.5em' // Ensure consistent height
+            }}
+          >
+            {translatedText || '\u00A0'} {/* Use non-breaking space to maintain height */}
+          </Typography>
+        )}
       </Box>
     </Box>
   );
