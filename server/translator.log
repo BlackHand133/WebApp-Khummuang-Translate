@@ -28,3 +28,693 @@
 2024-10-03 13:28:23,134 - INFO - Translated: w -> w
 2024-10-03 13:28:23,134 - INFO - Translated: w -> w
 2024-10-03 13:28:23,134 - INFO - Translated: w -> w
+2024-10-05 15:50:52,304 - INFO - Translated: xhv -> xhv
+2024-10-05 15:50:52,304 - INFO - Translated: xhv -> xhv
+2024-10-05 15:50:52,304 - INFO - Translated: xhv -> xhv
+2024-10-05 15:50:52,304 - INFO - Translated: xhv -> xhv
+2024-10-05 15:50:52,304 - INFO - Translated: xhv -> xhv
+2024-10-05 15:50:52,304 - INFO - Translated: xhv -> xhv
+2024-10-05 15:53:16,724 - INFO - Translated: import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Box, Typography, CircularProgress } from '@mui/material';
+import { useApi } from ' -> import React, { useState, useEffect, useCallback, useRef } from 'react'; import { Box, Typography, CircularProgress } from '@mui/material'; import { useApi } from '
+2024-10-05 15:53:16,724 - INFO - Translated: import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Box, Typography, CircularProgress } from '@mui/material';
+import { useApi } from ' -> import React, { useState, useEffect, useCallback, useRef } from 'react'; import { Box, Typography, CircularProgress } from '@mui/material'; import { useApi } from '
+2024-10-05 15:53:16,724 - INFO - Translated: import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Box, Typography, CircularProgress } from '@mui/material';
+import { useApi } from ' -> import React, { useState, useEffect, useCallback, useRef } from 'react'; import { Box, Typography, CircularProgress } from '@mui/material'; import { useApi } from '
+2024-10-05 15:53:16,724 - INFO - Translated: import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Box, Typography, CircularProgress } from '@mui/material';
+import { useApi } from ' -> import React, { useState, useEffect, useCallback, useRef } from 'react'; import { Box, Typography, CircularProgress } from '@mui/material'; import { useApi } from '
+2024-10-05 15:53:16,724 - INFO - Translated: import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Box, Typography, CircularProgress } from '@mui/material';
+import { useApi } from ' -> import React, { useState, useEffect, useCallback, useRef } from 'react'; import { Box, Typography, CircularProgress } from '@mui/material'; import { useApi } from '
+2024-10-05 15:53:16,724 - INFO - Translated: import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Box, Typography, CircularProgress } from '@mui/material';
+import { useApi } from ' -> import React, { useState, useEffect, useCallback, useRef } from 'react'; import { Box, Typography, CircularProgress } from '@mui/material'; import { useApi } from '
+2024-10-05 15:53:16,724 - INFO - Translated: / -> /
+2024-10-05 15:53:16,724 - INFO - Translated: / -> /
+2024-10-05 15:53:16,724 - INFO - Translated: / -> /
+2024-10-05 15:53:16,724 - INFO - Translated: / -> /
+2024-10-05 15:53:16,724 - INFO - Translated: / -> /
+2024-10-05 15:53:16,724 - INFO - Translated: / -> /
+2024-10-05 15:53:16,724 - INFO - Translated: /ServiceAPI';
+
+const TextTranslation = ({ 
+  textToTranslate, 
+  onTranslation, 
+  onClearTranslation, 
+  language, 
+  isMobile, 
+  setInputText
+}) => {
+  const { translateWs, loading, error, clearError, socketRef } = useApi();
+  const [translatedText, setTranslatedText] = useState('');
+  const lastTranslationRef = useRef('');
+  const translationTimeoutRef = useRef(null);
+  const isTypingRef = useRef(false);
+
+  const clearTranslation = useCallback(() => {
+    setTranslatedText('');
+    onClearTranslation();
+    lastTranslationRef -> /ServiceAPI'; const TextTranslation = ({ textToTranslate, onTranslation, onClearTranslation, language, isMobile, setInputText }) => { const { translateWs, loading, error, clearError, socketRef } = useApi(); const [translatedText, setTranslatedText] = useState(''); const lastTranslationRef = useRef(''); const translationTimeoutRef = useRef(null); const isTypingRef = useRef(false); const clearTranslation = useCallback(() => { setTranslatedText(''); onClearTranslation(); lastTranslationRef
+2024-10-05 15:53:16,724 - INFO - Translated: /ServiceAPI';
+
+const TextTranslation = ({ 
+  textToTranslate, 
+  onTranslation, 
+  onClearTranslation, 
+  language, 
+  isMobile, 
+  setInputText
+}) => {
+  const { translateWs, loading, error, clearError, socketRef } = useApi();
+  const [translatedText, setTranslatedText] = useState('');
+  const lastTranslationRef = useRef('');
+  const translationTimeoutRef = useRef(null);
+  const isTypingRef = useRef(false);
+
+  const clearTranslation = useCallback(() => {
+    setTranslatedText('');
+    onClearTranslation();
+    lastTranslationRef -> /ServiceAPI'; const TextTranslation = ({ textToTranslate, onTranslation, onClearTranslation, language, isMobile, setInputText }) => { const { translateWs, loading, error, clearError, socketRef } = useApi(); const [translatedText, setTranslatedText] = useState(''); const lastTranslationRef = useRef(''); const translationTimeoutRef = useRef(null); const isTypingRef = useRef(false); const clearTranslation = useCallback(() => { setTranslatedText(''); onClearTranslation(); lastTranslationRef
+2024-10-05 15:53:16,724 - INFO - Translated: /ServiceAPI';
+
+const TextTranslation = ({ 
+  textToTranslate, 
+  onTranslation, 
+  onClearTranslation, 
+  language, 
+  isMobile, 
+  setInputText
+}) => {
+  const { translateWs, loading, error, clearError, socketRef } = useApi();
+  const [translatedText, setTranslatedText] = useState('');
+  const lastTranslationRef = useRef('');
+  const translationTimeoutRef = useRef(null);
+  const isTypingRef = useRef(false);
+
+  const clearTranslation = useCallback(() => {
+    setTranslatedText('');
+    onClearTranslation();
+    lastTranslationRef -> /ServiceAPI'; const TextTranslation = ({ textToTranslate, onTranslation, onClearTranslation, language, isMobile, setInputText }) => { const { translateWs, loading, error, clearError, socketRef } = useApi(); const [translatedText, setTranslatedText] = useState(''); const lastTranslationRef = useRef(''); const translationTimeoutRef = useRef(null); const isTypingRef = useRef(false); const clearTranslation = useCallback(() => { setTranslatedText(''); onClearTranslation(); lastTranslationRef
+2024-10-05 15:53:16,724 - INFO - Translated: /ServiceAPI';
+
+const TextTranslation = ({ 
+  textToTranslate, 
+  onTranslation, 
+  onClearTranslation, 
+  language, 
+  isMobile, 
+  setInputText
+}) => {
+  const { translateWs, loading, error, clearError, socketRef } = useApi();
+  const [translatedText, setTranslatedText] = useState('');
+  const lastTranslationRef = useRef('');
+  const translationTimeoutRef = useRef(null);
+  const isTypingRef = useRef(false);
+
+  const clearTranslation = useCallback(() => {
+    setTranslatedText('');
+    onClearTranslation();
+    lastTranslationRef -> /ServiceAPI'; const TextTranslation = ({ textToTranslate, onTranslation, onClearTranslation, language, isMobile, setInputText }) => { const { translateWs, loading, error, clearError, socketRef } = useApi(); const [translatedText, setTranslatedText] = useState(''); const lastTranslationRef = useRef(''); const translationTimeoutRef = useRef(null); const isTypingRef = useRef(false); const clearTranslation = useCallback(() => { setTranslatedText(''); onClearTranslation(); lastTranslationRef
+2024-10-05 15:53:16,724 - INFO - Translated: /ServiceAPI';
+
+const TextTranslation = ({ 
+  textToTranslate, 
+  onTranslation, 
+  onClearTranslation, 
+  language, 
+  isMobile, 
+  setInputText
+}) => {
+  const { translateWs, loading, error, clearError, socketRef } = useApi();
+  const [translatedText, setTranslatedText] = useState('');
+  const lastTranslationRef = useRef('');
+  const translationTimeoutRef = useRef(null);
+  const isTypingRef = useRef(false);
+
+  const clearTranslation = useCallback(() => {
+    setTranslatedText('');
+    onClearTranslation();
+    lastTranslationRef -> /ServiceAPI'; const TextTranslation = ({ textToTranslate, onTranslation, onClearTranslation, language, isMobile, setInputText }) => { const { translateWs, loading, error, clearError, socketRef } = useApi(); const [translatedText, setTranslatedText] = useState(''); const lastTranslationRef = useRef(''); const translationTimeoutRef = useRef(null); const isTypingRef = useRef(false); const clearTranslation = useCallback(() => { setTranslatedText(''); onClearTranslation(); lastTranslationRef
+2024-10-05 15:53:16,724 - INFO - Translated: /ServiceAPI';
+
+const TextTranslation = ({ 
+  textToTranslate, 
+  onTranslation, 
+  onClearTranslation, 
+  language, 
+  isMobile, 
+  setInputText
+}) => {
+  const { translateWs, loading, error, clearError, socketRef } = useApi();
+  const [translatedText, setTranslatedText] = useState('');
+  const lastTranslationRef = useRef('');
+  const translationTimeoutRef = useRef(null);
+  const isTypingRef = useRef(false);
+
+  const clearTranslation = useCallback(() => {
+    setTranslatedText('');
+    onClearTranslation();
+    lastTranslationRef -> /ServiceAPI'; const TextTranslation = ({ textToTranslate, onTranslation, onClearTranslation, language, isMobile, setInputText }) => { const { translateWs, loading, error, clearError, socketRef } = useApi(); const [translatedText, setTranslatedText] = useState(''); const lastTranslationRef = useRef(''); const translationTimeoutRef = useRef(null); const isTypingRef = useRef(false); const clearTranslation = useCallback(() => { setTranslatedText(''); onClearTranslation(); lastTranslationRef
+2024-10-05 15:53:16,732 - INFO - Translated: current = '';
+  }, [onClearTranslation]);
+
+  const fetchTranslation = useCallback(async (text) => {
+    if (!text -> current = ''; }, [onClearTranslation]); const fetchTranslation = useCallback(async (text) => { if (!text
+2024-10-05 15:53:16,732 - INFO - Translated: current = '';
+  }, [onClearTranslation]);
+
+  const fetchTranslation = useCallback(async (text) => {
+    if (!text -> current = ''; }, [onClearTranslation]); const fetchTranslation = useCallback(async (text) => { if (!text
+2024-10-05 15:53:16,732 - INFO - Translated: current = '';
+  }, [onClearTranslation]);
+
+  const fetchTranslation = useCallback(async (text) => {
+    if (!text -> current = ''; }, [onClearTranslation]); const fetchTranslation = useCallback(async (text) => { if (!text
+2024-10-05 15:53:16,732 - INFO - Translated: current = '';
+  }, [onClearTranslation]);
+
+  const fetchTranslation = useCallback(async (text) => {
+    if (!text -> current = ''; }, [onClearTranslation]); const fetchTranslation = useCallback(async (text) => { if (!text
+2024-10-05 15:53:16,732 - INFO - Translated: current = '';
+  }, [onClearTranslation]);
+
+  const fetchTranslation = useCallback(async (text) => {
+    if (!text -> current = ''; }, [onClearTranslation]); const fetchTranslation = useCallback(async (text) => { if (!text
+2024-10-05 15:53:16,732 - INFO - Translated: current = '';
+  }, [onClearTranslation]);
+
+  const fetchTranslation = useCallback(async (text) => {
+    if (!text -> current = ''; }, [onClearTranslation]); const fetchTranslation = useCallback(async (text) => { if (!text
+2024-10-05 15:53:16,805 - INFO - Translated: current = text;
+    } catch (err) {
+      console -> current = text; } catch (err) { console
+2024-10-05 15:53:16,805 - INFO - Translated: current = text;
+    } catch (err) {
+      console -> current = text; } catch (err) { console
+2024-10-05 15:53:16,805 - INFO - Translated: current = text;
+    } catch (err) {
+      console -> current = text; } catch (err) { console
+2024-10-05 15:53:16,805 - INFO - Translated: current = text;
+    } catch (err) {
+      console -> current = text; } catch (err) { console
+2024-10-05 15:53:16,805 - INFO - Translated: current = text;
+    } catch (err) {
+      console -> current = text; } catch (err) { console
+2024-10-05 15:53:16,805 - INFO - Translated: current = text;
+    } catch (err) {
+      console -> current = text; } catch (err) { console
+2024-10-05 15:53:16,805 - INFO - Translated: error('Translation failed:', err);
+      setTranslatedText('');
+    }
+  }, [translateWs, language, onTranslation, clearError, clearTranslation]);
+
+  useEffect(() => {
+    const handleTranslationUpdate = (data) => {
+      if (data -> error('Translation failed:', err); setTranslatedText(''); } }, [translateWs, language, onTranslation, clearError, clearTranslation]); useEffect(() => { const handleTranslationUpdate = (data) => { if (data
+2024-10-05 15:53:16,805 - INFO - Translated: error('Translation failed:', err);
+      setTranslatedText('');
+    }
+  }, [translateWs, language, onTranslation, clearError, clearTranslation]);
+
+  useEffect(() => {
+    const handleTranslationUpdate = (data) => {
+      if (data -> error('Translation failed:', err); setTranslatedText(''); } }, [translateWs, language, onTranslation, clearError, clearTranslation]); useEffect(() => { const handleTranslationUpdate = (data) => { if (data
+2024-10-05 15:53:16,805 - INFO - Translated: error('Translation failed:', err);
+      setTranslatedText('');
+    }
+  }, [translateWs, language, onTranslation, clearError, clearTranslation]);
+
+  useEffect(() => {
+    const handleTranslationUpdate = (data) => {
+      if (data -> error('Translation failed:', err); setTranslatedText(''); } }, [translateWs, language, onTranslation, clearError, clearTranslation]); useEffect(() => { const handleTranslationUpdate = (data) => { if (data
+2024-10-05 15:53:16,805 - INFO - Translated: error('Translation failed:', err);
+      setTranslatedText('');
+    }
+  }, [translateWs, language, onTranslation, clearError, clearTranslation]);
+
+  useEffect(() => {
+    const handleTranslationUpdate = (data) => {
+      if (data -> error('Translation failed:', err); setTranslatedText(''); } }, [translateWs, language, onTranslation, clearError, clearTranslation]); useEffect(() => { const handleTranslationUpdate = (data) => { if (data
+2024-10-05 15:53:16,805 - INFO - Translated: error('Translation failed:', err);
+      setTranslatedText('');
+    }
+  }, [translateWs, language, onTranslation, clearError, clearTranslation]);
+
+  useEffect(() => {
+    const handleTranslationUpdate = (data) => {
+      if (data -> error('Translation failed:', err); setTranslatedText(''); } }, [translateWs, language, onTranslation, clearError, clearTranslation]); useEffect(() => { const handleTranslationUpdate = (data) => { if (data
+2024-10-05 15:53:16,805 - INFO - Translated: error('Translation failed:', err);
+      setTranslatedText('');
+    }
+  }, [translateWs, language, onTranslation, clearError, clearTranslation]);
+
+  useEffect(() => {
+    const handleTranslationUpdate = (data) => {
+      if (data -> error('Translation failed:', err); setTranslatedText(''); } }, [translateWs, language, onTranslation, clearError, clearTranslation]); useEffect(() => { const handleTranslationUpdate = (data) => { if (data
+2024-10-05 15:53:16,805 - INFO - Translated: type === 'translation') {
+        setTranslatedText(data -> type === 'translation') { setTranslatedText(data
+2024-10-05 15:53:16,805 - INFO - Translated: type === 'translation') {
+        setTranslatedText(data -> type === 'translation') { setTranslatedText(data
+2024-10-05 15:53:16,805 - INFO - Translated: type === 'translation') {
+        setTranslatedText(data -> type === 'translation') { setTranslatedText(data
+2024-10-05 15:53:16,805 - INFO - Translated: type === 'translation') {
+        setTranslatedText(data -> type === 'translation') { setTranslatedText(data
+2024-10-05 15:53:16,805 - INFO - Translated: type === 'translation') {
+        setTranslatedText(data -> type === 'translation') { setTranslatedText(data
+2024-10-05 15:53:16,805 - INFO - Translated: type === 'translation') {
+        setTranslatedText(data -> type === 'translation') { setTranslatedText(data
+2024-10-05 15:53:16,805 - INFO - Translated: text);
+        onTranslation(data -> text); onTranslation(data
+2024-10-05 15:53:16,805 - INFO - Translated: text);
+        onTranslation(data -> text); onTranslation(data
+2024-10-05 15:53:16,805 - INFO - Translated: text);
+        onTranslation(data -> text); onTranslation(data
+2024-10-05 15:53:16,805 - INFO - Translated: text);
+        onTranslation(data -> text); onTranslation(data
+2024-10-05 15:53:16,805 - INFO - Translated: text);
+        onTranslation(data -> text); onTranslation(data
+2024-10-05 15:53:16,805 - INFO - Translated: text);
+        onTranslation(data -> text); onTranslation(data
+2024-10-05 15:53:16,805 - INFO - Translated: text);
+      }
+    };
+
+    socketRef -> text); } }; socketRef
+2024-10-05 15:53:16,805 - INFO - Translated: text);
+      }
+    };
+
+    socketRef -> text); } }; socketRef
+2024-10-05 15:53:16,805 - INFO - Translated: text);
+      }
+    };
+
+    socketRef -> text); } }; socketRef
+2024-10-05 15:53:16,805 - INFO - Translated: text);
+      }
+    };
+
+    socketRef -> text); } }; socketRef
+2024-10-05 15:53:16,805 - INFO - Translated: text);
+      }
+    };
+
+    socketRef -> text); } }; socketRef
+2024-10-05 15:53:16,805 - INFO - Translated: text);
+      }
+    };
+
+    socketRef -> text); } }; socketRef
+2024-10-05 15:53:16,805 - INFO - Translated: current -> current
+2024-10-05 15:53:16,805 - INFO - Translated: current -> current
+2024-10-05 15:53:16,805 - INFO - Translated: current -> current
+2024-10-05 15:53:16,805 - INFO - Translated: current -> current
+2024-10-05 15:53:16,805 - INFO - Translated: current -> current
+2024-10-05 15:53:16,805 - INFO - Translated: current -> current
+2024-10-05 15:53:16,805 - INFO - Translated: on('translation_update', handleTranslationUpdate);
+
+    return () => {
+      socketRef -> on('translation_update', handleTranslationUpdate); return () => { socketRef
+2024-10-05 15:53:16,805 - INFO - Translated: on('translation_update', handleTranslationUpdate);
+
+    return () => {
+      socketRef -> on('translation_update', handleTranslationUpdate); return () => { socketRef
+2024-10-05 15:53:16,805 - INFO - Translated: on('translation_update', handleTranslationUpdate);
+
+    return () => {
+      socketRef -> on('translation_update', handleTranslationUpdate); return () => { socketRef
+2024-10-05 15:53:16,805 - INFO - Translated: on('translation_update', handleTranslationUpdate);
+
+    return () => {
+      socketRef -> on('translation_update', handleTranslationUpdate); return () => { socketRef
+2024-10-05 15:53:16,805 - INFO - Translated: on('translation_update', handleTranslationUpdate);
+
+    return () => {
+      socketRef -> on('translation_update', handleTranslationUpdate); return () => { socketRef
+2024-10-05 15:53:16,805 - INFO - Translated: on('translation_update', handleTranslationUpdate);
+
+    return () => {
+      socketRef -> on('translation_update', handleTranslationUpdate); return () => { socketRef
+2024-10-05 15:53:16,805 - INFO - Translated: off('translation_update', handleTranslationUpdate);
+    };
+  }, [socketRef, onTranslation]);
+
+  useEffect(() => {
+    if (translationTimeoutRef -> off('translation_update', handleTranslationUpdate); }; }, [socketRef, onTranslation]); useEffect(() => { if (translationTimeoutRef
+2024-10-05 15:53:16,805 - INFO - Translated: off('translation_update', handleTranslationUpdate);
+    };
+  }, [socketRef, onTranslation]);
+
+  useEffect(() => {
+    if (translationTimeoutRef -> off('translation_update', handleTranslationUpdate); }; }, [socketRef, onTranslation]); useEffect(() => { if (translationTimeoutRef
+2024-10-05 15:53:16,805 - INFO - Translated: off('translation_update', handleTranslationUpdate);
+    };
+  }, [socketRef, onTranslation]);
+
+  useEffect(() => {
+    if (translationTimeoutRef -> off('translation_update', handleTranslationUpdate); }; }, [socketRef, onTranslation]); useEffect(() => { if (translationTimeoutRef
+2024-10-05 15:53:16,805 - INFO - Translated: off('translation_update', handleTranslationUpdate);
+    };
+  }, [socketRef, onTranslation]);
+
+  useEffect(() => {
+    if (translationTimeoutRef -> off('translation_update', handleTranslationUpdate); }; }, [socketRef, onTranslation]); useEffect(() => { if (translationTimeoutRef
+2024-10-05 15:53:16,805 - INFO - Translated: off('translation_update', handleTranslationUpdate);
+    };
+  }, [socketRef, onTranslation]);
+
+  useEffect(() => {
+    if (translationTimeoutRef -> off('translation_update', handleTranslationUpdate); }; }, [socketRef, onTranslation]); useEffect(() => { if (translationTimeoutRef
+2024-10-05 15:53:16,805 - INFO - Translated: off('translation_update', handleTranslationUpdate);
+    };
+  }, [socketRef, onTranslation]);
+
+  useEffect(() => {
+    if (translationTimeoutRef -> off('translation_update', handleTranslationUpdate); }; }, [socketRef, onTranslation]); useEffect(() => { if (translationTimeoutRef
+2024-10-05 15:53:16,805 - INFO - Translated: current) {
+      clearTimeout(translationTimeoutRef -> current) { clearTimeout(translationTimeoutRef
+2024-10-05 15:53:16,805 - INFO - Translated: current) {
+      clearTimeout(translationTimeoutRef -> current) { clearTimeout(translationTimeoutRef
+2024-10-05 15:53:16,805 - INFO - Translated: current) {
+      clearTimeout(translationTimeoutRef -> current) { clearTimeout(translationTimeoutRef
+2024-10-05 15:53:16,805 - INFO - Translated: current) {
+      clearTimeout(translationTimeoutRef -> current) { clearTimeout(translationTimeoutRef
+2024-10-05 15:53:16,805 - INFO - Translated: current) {
+      clearTimeout(translationTimeoutRef -> current) { clearTimeout(translationTimeoutRef
+2024-10-05 15:53:16,805 - INFO - Translated: current) {
+      clearTimeout(translationTimeoutRef -> current) { clearTimeout(translationTimeoutRef
+2024-10-05 15:53:16,805 - INFO - Translated: current);
+    }
+
+    if (!textToTranslate -> current); } if (!textToTranslate
+2024-10-05 15:53:16,805 - INFO - Translated: current);
+    }
+
+    if (!textToTranslate -> current); } if (!textToTranslate
+2024-10-05 15:53:16,805 - INFO - Translated: current);
+    }
+
+    if (!textToTranslate -> current); } if (!textToTranslate
+2024-10-05 15:53:16,805 - INFO - Translated: current);
+    }
+
+    if (!textToTranslate -> current); } if (!textToTranslate
+2024-10-05 15:53:16,805 - INFO - Translated: current);
+    }
+
+    if (!textToTranslate -> current); } if (!textToTranslate
+2024-10-05 15:53:16,805 - INFO - Translated: current);
+    }
+
+    if (!textToTranslate -> current); } if (!textToTranslate
+2024-10-05 15:53:16,805 - INFO - Translated: trim()) {
+      clearTranslation();
+      return;
+    }
+
+    isTypingRef -> trim()) { clearTranslation(); return; } isTypingRef
+2024-10-05 15:53:16,805 - INFO - Translated: trim()) {
+      clearTranslation();
+      return;
+    }
+
+    isTypingRef -> trim()) { clearTranslation(); return; } isTypingRef
+2024-10-05 15:53:16,805 - INFO - Translated: trim()) {
+      clearTranslation();
+      return;
+    }
+
+    isTypingRef -> trim()) { clearTranslation(); return; } isTypingRef
+2024-10-05 15:53:16,805 - INFO - Translated: trim()) {
+      clearTranslation();
+      return;
+    }
+
+    isTypingRef -> trim()) { clearTranslation(); return; } isTypingRef
+2024-10-05 15:53:16,805 - INFO - Translated: trim()) {
+      clearTranslation();
+      return;
+    }
+
+    isTypingRef -> trim()) { clearTranslation(); return; } isTypingRef
+2024-10-05 15:53:16,805 - INFO - Translated: trim()) {
+      clearTranslation();
+      return;
+    }
+
+    isTypingRef -> trim()) { clearTranslation(); return; } isTypingRef
+2024-10-05 15:53:16,805 - INFO - Translated: current = true;
+
+    translationTimeoutRef -> current = true; translationTimeoutRef
+2024-10-05 15:53:16,805 - INFO - Translated: current = true;
+
+    translationTimeoutRef -> current = true; translationTimeoutRef
+2024-10-05 15:53:16,805 - INFO - Translated: current = true;
+
+    translationTimeoutRef -> current = true; translationTimeoutRef
+2024-10-05 15:53:16,805 - INFO - Translated: current = true;
+
+    translationTimeoutRef -> current = true; translationTimeoutRef
+2024-10-05 15:53:16,805 - INFO - Translated: current = true;
+
+    translationTimeoutRef -> current = true; translationTimeoutRef
+2024-10-05 15:53:16,805 - INFO - Translated: current = true;
+
+    translationTimeoutRef -> current = true; translationTimeoutRef
+2024-10-05 15:53:16,805 - INFO - Translated: current = setTimeout(() => {
+      isTypingRef -> current = setTimeout(() => { isTypingRef
+2024-10-05 15:53:16,805 - INFO - Translated: current = setTimeout(() => {
+      isTypingRef -> current = setTimeout(() => { isTypingRef
+2024-10-05 15:53:16,805 - INFO - Translated: current = setTimeout(() => {
+      isTypingRef -> current = setTimeout(() => { isTypingRef
+2024-10-05 15:53:16,805 - INFO - Translated: current = setTimeout(() => {
+      isTypingRef -> current = setTimeout(() => { isTypingRef
+2024-10-05 15:53:16,805 - INFO - Translated: current = setTimeout(() => {
+      isTypingRef -> current = setTimeout(() => { isTypingRef
+2024-10-05 15:53:16,805 - INFO - Translated: current = setTimeout(() => {
+      isTypingRef -> current = setTimeout(() => { isTypingRef
+2024-10-05 15:53:16,805 - INFO - Translated: current = false;
+      fetchTranslation(textToTranslate);
+    }, 300); // 300ms delay
+
+    return () => {
+      if (translationTimeoutRef -> current = false; fetchTranslation(textToTranslate); }, 300); // 300ms delay return () => { if (translationTimeoutRef
+2024-10-05 15:53:16,805 - INFO - Translated: current = false;
+      fetchTranslation(textToTranslate);
+    }, 300); // 300ms delay
+
+    return () => {
+      if (translationTimeoutRef -> current = false; fetchTranslation(textToTranslate); }, 300); // 300ms delay return () => { if (translationTimeoutRef
+2024-10-05 15:53:16,805 - INFO - Translated: current = false;
+      fetchTranslation(textToTranslate);
+    }, 300); // 300ms delay
+
+    return () => {
+      if (translationTimeoutRef -> current = false; fetchTranslation(textToTranslate); }, 300); // 300ms delay return () => { if (translationTimeoutRef
+2024-10-05 15:53:16,805 - INFO - Translated: current = false;
+      fetchTranslation(textToTranslate);
+    }, 300); // 300ms delay
+
+    return () => {
+      if (translationTimeoutRef -> current = false; fetchTranslation(textToTranslate); }, 300); // 300ms delay return () => { if (translationTimeoutRef
+2024-10-05 15:53:16,805 - INFO - Translated: current = false;
+      fetchTranslation(textToTranslate);
+    }, 300); // 300ms delay
+
+    return () => {
+      if (translationTimeoutRef -> current = false; fetchTranslation(textToTranslate); }, 300); // 300ms delay return () => { if (translationTimeoutRef
+2024-10-05 15:53:16,805 - INFO - Translated: current = false;
+      fetchTranslation(textToTranslate);
+    }, 300); // 300ms delay
+
+    return () => {
+      if (translationTimeoutRef -> current = false; fetchTranslation(textToTranslate); }, 300); // 300ms delay return () => { if (translationTimeoutRef
+2024-10-05 15:53:16,805 - INFO - Translated: current) {
+        clearTimeout(translationTimeoutRef -> current) { clearTimeout(translationTimeoutRef
+2024-10-05 15:53:16,805 - INFO - Translated: current) {
+        clearTimeout(translationTimeoutRef -> current) { clearTimeout(translationTimeoutRef
+2024-10-05 15:53:16,805 - INFO - Translated: current) {
+        clearTimeout(translationTimeoutRef -> current) { clearTimeout(translationTimeoutRef
+2024-10-05 15:53:16,805 - INFO - Translated: current) {
+        clearTimeout(translationTimeoutRef -> current) { clearTimeout(translationTimeoutRef
+2024-10-05 15:53:16,805 - INFO - Translated: current) {
+        clearTimeout(translationTimeoutRef -> current) { clearTimeout(translationTimeoutRef
+2024-10-05 15:53:16,805 - INFO - Translated: current) {
+        clearTimeout(translationTimeoutRef -> current) { clearTimeout(translationTimeoutRef
+2024-10-05 15:53:16,874 - INFO - Translated: current ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <CircularProgress size={24} sx={{ mr: 1 }} />
+            <Typography variant="body1" sx={{ fontSize: isMobile ? '0 -> current ? ( <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}> <CircularProgress size={24} sx={{ mr: 1 }} /> <Typography variant="body1" sx={{ fontSize: isMobile ? '0
+2024-10-05 15:53:16,874 - INFO - Translated: current ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <CircularProgress size={24} sx={{ mr: 1 }} />
+            <Typography variant="body1" sx={{ fontSize: isMobile ? '0 -> current ? ( <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}> <CircularProgress size={24} sx={{ mr: 1 }} /> <Typography variant="body1" sx={{ fontSize: isMobile ? '0
+2024-10-05 15:53:16,874 - INFO - Translated: current ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <CircularProgress size={24} sx={{ mr: 1 }} />
+            <Typography variant="body1" sx={{ fontSize: isMobile ? '0 -> current ? ( <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}> <CircularProgress size={24} sx={{ mr: 1 }} /> <Typography variant="body1" sx={{ fontSize: isMobile ? '0
+2024-10-05 15:53:16,874 - INFO - Translated: current ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <CircularProgress size={24} sx={{ mr: 1 }} />
+            <Typography variant="body1" sx={{ fontSize: isMobile ? '0 -> current ? ( <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}> <CircularProgress size={24} sx={{ mr: 1 }} /> <Typography variant="body1" sx={{ fontSize: isMobile ? '0
+2024-10-05 15:53:16,874 - INFO - Translated: current ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <CircularProgress size={24} sx={{ mr: 1 }} />
+            <Typography variant="body1" sx={{ fontSize: isMobile ? '0 -> current ? ( <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}> <CircularProgress size={24} sx={{ mr: 1 }} /> <Typography variant="body1" sx={{ fontSize: isMobile ? '0
+2024-10-05 15:53:16,874 - INFO - Translated: current ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <CircularProgress size={24} sx={{ mr: 1 }} />
+            <Typography variant="body1" sx={{ fontSize: isMobile ? '0 -> current ? ( <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}> <CircularProgress size={24} sx={{ mr: 1 }} /> <Typography variant="body1" sx={{ fontSize: isMobile ? '0
+2024-10-05 15:53:16,925 - INFO - Translated: </Typography>
+          </Box>
+        ) : error ? (
+          <Typography variant="body1" color="error" sx={{ fontSize: isMobile ? '0 -> </Typography> </Box> ) : error ? ( <Typography variant="body1" color="error" sx={{ fontSize: isMobile ? '0
+2024-10-05 15:53:16,925 - INFO - Translated: </Typography>
+          </Box>
+        ) : error ? (
+          <Typography variant="body1" color="error" sx={{ fontSize: isMobile ? '0 -> </Typography> </Box> ) : error ? ( <Typography variant="body1" color="error" sx={{ fontSize: isMobile ? '0
+2024-10-05 15:53:16,925 - INFO - Translated: </Typography>
+          </Box>
+        ) : error ? (
+          <Typography variant="body1" color="error" sx={{ fontSize: isMobile ? '0 -> </Typography> </Box> ) : error ? ( <Typography variant="body1" color="error" sx={{ fontSize: isMobile ? '0
+2024-10-05 15:53:16,925 - INFO - Translated: </Typography>
+          </Box>
+        ) : error ? (
+          <Typography variant="body1" color="error" sx={{ fontSize: isMobile ? '0 -> </Typography> </Box> ) : error ? ( <Typography variant="body1" color="error" sx={{ fontSize: isMobile ? '0
+2024-10-05 15:53:16,925 - INFO - Translated: </Typography>
+          </Box>
+        ) : error ? (
+          <Typography variant="body1" color="error" sx={{ fontSize: isMobile ? '0 -> </Typography> </Box> ) : error ? ( <Typography variant="body1" color="error" sx={{ fontSize: isMobile ? '0
+2024-10-05 15:53:16,925 - INFO - Translated: </Typography>
+          </Box>
+        ) : error ? (
+          <Typography variant="body1" color="error" sx={{ fontSize: isMobile ? '0 -> </Typography> </Box> ) : error ? ( <Typography variant="body1" color="error" sx={{ fontSize: isMobile ? '0
+2024-10-05 15:53:16,975 - INFO - Translated: 9rem' : '1rem',
+              minHeight: '1 -> 9rem' : '1rem', minHeight: '1
+2024-10-05 15:53:16,975 - INFO - Translated: 9rem' : '1rem',
+              minHeight: '1 -> 9rem' : '1rem', minHeight: '1
+2024-10-05 15:53:16,975 - INFO - Translated: 9rem' : '1rem',
+              minHeight: '1 -> 9rem' : '1rem', minHeight: '1
+2024-10-05 15:53:16,975 - INFO - Translated: 9rem' : '1rem',
+              minHeight: '1 -> 9rem' : '1rem', minHeight: '1
+2024-10-05 15:53:16,975 - INFO - Translated: 9rem' : '1rem',
+              minHeight: '1 -> 9rem' : '1rem', minHeight: '1
+2024-10-05 15:53:16,975 - INFO - Translated: 9rem' : '1rem',
+              minHeight: '1 -> 9rem' : '1rem', minHeight: '1
+2024-10-05 15:53:16,977 - INFO - Translated: 5em',
+              transition: 'opacity 0 -> 5em', transition: 'opacity 0
+2024-10-05 15:53:16,977 - INFO - Translated: 5em',
+              transition: 'opacity 0 -> 5em', transition: 'opacity 0
+2024-10-05 15:53:16,977 - INFO - Translated: 5em',
+              transition: 'opacity 0 -> 5em', transition: 'opacity 0
+2024-10-05 15:53:16,977 - INFO - Translated: 5em',
+              transition: 'opacity 0 -> 5em', transition: 'opacity 0
+2024-10-05 15:53:16,977 - INFO - Translated: 5em',
+              transition: 'opacity 0 -> 5em', transition: 'opacity 0
+2024-10-05 15:53:16,977 - INFO - Translated: 5em',
+              transition: 'opacity 0 -> 5em', transition: 'opacity 0
+2024-10-05 15:53:16,977 - INFO - Translated: 3s ease-in-out',
+              opacity: isTypingRef -> 3s ease-in-out', opacity: isTypingRef
+2024-10-05 15:53:16,977 - INFO - Translated: 3s ease-in-out',
+              opacity: isTypingRef -> 3s ease-in-out', opacity: isTypingRef
+2024-10-05 15:53:16,977 - INFO - Translated: 3s ease-in-out',
+              opacity: isTypingRef -> 3s ease-in-out', opacity: isTypingRef
+2024-10-05 15:53:16,977 - INFO - Translated: 3s ease-in-out',
+              opacity: isTypingRef -> 3s ease-in-out', opacity: isTypingRef
+2024-10-05 15:53:16,977 - INFO - Translated: 3s ease-in-out',
+              opacity: isTypingRef -> 3s ease-in-out', opacity: isTypingRef
+2024-10-05 15:53:16,977 - INFO - Translated: 3s ease-in-out',
+              opacity: isTypingRef -> 3s ease-in-out', opacity: isTypingRef
+2024-10-05 15:53:16,978 - INFO - Translated: current ? 0 -> current ? 0
+2024-10-05 15:53:16,978 - INFO - Translated: current ? 0 -> current ? 0
+2024-10-05 15:53:16,978 - INFO - Translated: current ? 0 -> current ? 0
+2024-10-05 15:53:16,978 - INFO - Translated: current ? 0 -> current ? 0
+2024-10-05 15:53:16,978 - INFO - Translated: current ? 0 -> current ? 0
+2024-10-05 15:53:16,978 - INFO - Translated: current ? 0 -> current ? 0
+2024-10-05 15:53:16,978 - INFO - Translated: 7 : 1
+            }}
+          >
+            {translatedText || '\u00A0'}
+          </Typography>
+        )}
+      </Box>
+    </Box>
+  );
+};
+
+export default TextTranslation; -> 7 : 1 }} > {translatedText || '\u00A0'} </Typography> )} </Box> </Box> ); }; export default TextTranslation;
+2024-10-05 15:53:16,978 - INFO - Translated: 7 : 1
+            }}
+          >
+            {translatedText || '\u00A0'}
+          </Typography>
+        )}
+      </Box>
+    </Box>
+  );
+};
+
+export default TextTranslation; -> 7 : 1 }} > {translatedText || '\u00A0'} </Typography> )} </Box> </Box> ); }; export default TextTranslation;
+2024-10-05 15:53:16,978 - INFO - Translated: 7 : 1
+            }}
+          >
+            {translatedText || '\u00A0'}
+          </Typography>
+        )}
+      </Box>
+    </Box>
+  );
+};
+
+export default TextTranslation; -> 7 : 1 }} > {translatedText || '\u00A0'} </Typography> )} </Box> </Box> ); }; export default TextTranslation;
+2024-10-05 15:53:16,978 - INFO - Translated: 7 : 1
+            }}
+          >
+            {translatedText || '\u00A0'}
+          </Typography>
+        )}
+      </Box>
+    </Box>
+  );
+};
+
+export default TextTranslation; -> 7 : 1 }} > {translatedText || '\u00A0'} </Typography> )} </Box> </Box> ); }; export default TextTranslation;
+2024-10-05 15:53:16,978 - INFO - Translated: 7 : 1
+            }}
+          >
+            {translatedText || '\u00A0'}
+          </Typography>
+        )}
+      </Box>
+    </Box>
+  );
+};
+
+export default TextTranslation; -> 7 : 1 }} > {translatedText || '\u00A0'} </Typography> )} </Box> </Box> ); }; export default TextTranslation;
+2024-10-05 15:53:16,978 - INFO - Translated: 7 : 1
+            }}
+          >
+            {translatedText || '\u00A0'}
+          </Typography>
+        )}
+      </Box>
+    </Box>
+  );
+};
+
+export default TextTranslation; -> 7 : 1 }} > {translatedText || '\u00A0'} </Typography> )} </Box> </Box> ); }; export default TextTranslation;
+2024-10-05 17:00:52,738 - INFO - Translated: xhv -> xhv
+2024-10-05 17:00:52,738 - INFO - Translated: xhv -> xhv
+2024-10-05 17:00:52,738 - INFO - Translated: xhv -> xhv
+2024-10-05 17:00:52,738 - INFO - Translated: xhv -> xhv
+2024-10-05 17:00:52,738 - INFO - Translated: xhv -> xhv
+2024-10-05 17:00:52,738 - INFO - Translated: xhv -> xhv
+2024-10-05 17:04:45,725 - INFO - Translated: xhv -> xhv
+2024-10-05 17:04:45,725 - INFO - Translated: xhv -> xhv
+2024-10-05 17:04:45,725 - INFO - Translated: xhv -> xhv
+2024-10-05 17:04:45,725 - INFO - Translated: xhv -> xhv
+2024-10-05 17:04:45,725 - INFO - Translated: xhv -> xhv
+2024-10-05 17:04:45,725 - INFO - Translated: xhv -> xhv

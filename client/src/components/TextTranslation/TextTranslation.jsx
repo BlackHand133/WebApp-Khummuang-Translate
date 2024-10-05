@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Box, Typography, CircularProgress } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import { useApi } from '../../ServiceAPI';
 
 const TextTranslation = ({ 
@@ -10,37 +10,52 @@ const TextTranslation = ({
   isMobile, 
   setInputText
 }) => {
-  const { translateWs, loading, error, clearError } = useApi();
+  const { translateWs, error, clearError, socketRef } = useApi();
   const [translatedText, setTranslatedText] = useState('');
-  const lastTranslationRef = useRef('');
+  const [isTranslating, setIsTranslating] = useState(false);
   const translationTimeoutRef = useRef(null);
+  const previousLanguageRef = useRef(language);
 
   const clearTranslation = useCallback(() => {
     setTranslatedText('');
     onClearTranslation();
-    lastTranslationRef.current = '';
   }, [onClearTranslation]);
 
-  const fetchTranslation = useCallback(async (text) => {
+  const fetchTranslation = useCallback(async (text, sourceLang, targetLang) => {
     if (!text.trim()) {
       clearTranslation();
       return;
     }
 
+    setIsTranslating(true);
     try {
       clearError();
-      const sourceLang = language;
-      const targetLang = language === 'ไทย' ? 'คำเมือง' : 'ไทย';
       const result = await translateWs(text, sourceLang, targetLang);
-      
       setTranslatedText(result);
       onTranslation(result);
-      lastTranslationRef.current = text;
     } catch (err) {
       console.error('Translation failed:', err);
       setTranslatedText('');
+    } finally {
+      setIsTranslating(false);
     }
-  }, [translateWs, language, onTranslation, clearError, clearTranslation]);
+  }, [translateWs, onTranslation, clearError, clearTranslation]);
+
+  useEffect(() => {
+    const handleTranslationUpdate = (data) => {
+      if (data.type === 'translation') {
+        setTranslatedText(data.text);
+        onTranslation(data.text);
+        setIsTranslating(false);
+      }
+    };
+
+    socketRef.current.on('translation_update', handleTranslationUpdate);
+
+    return () => {
+      socketRef.current.off('translation_update', handleTranslationUpdate);
+    };
+  }, [socketRef, onTranslation]);
 
   useEffect(() => {
     if (translationTimeoutRef.current) {
@@ -52,38 +67,41 @@ const TextTranslation = ({
       return;
     }
 
+    setIsTranslating(true);
+
     translationTimeoutRef.current = setTimeout(() => {
-      fetchTranslation(textToTranslate);
-    }, 300); // 300ms delay
+      const sourceLang = language;
+      const targetLang = language === 'ไทย' ? 'คำเมือง' : 'ไทย';
+      fetchTranslation(textToTranslate, sourceLang, targetLang);
+    }, 300);
 
     return () => {
       if (translationTimeoutRef.current) {
         clearTimeout(translationTimeoutRef.current);
       }
     };
-  }, [textToTranslate, fetchTranslation, clearTranslation]);
+  }, [textToTranslate, language, fetchTranslation, clearTranslation]);
 
   useEffect(() => {
-    // Swap text when language changes
-    const newInputText = language === 'ไทย' ? translatedText : textToTranslate;
-    const newTranslatedText = language === 'ไทย' ? textToTranslate : translatedText;
-    
-    setInputText(newInputText);
-    setTranslatedText(newTranslatedText);
-    onTranslation(newTranslatedText);
-  }, [language, translatedText, textToTranslate, setInputText, onTranslation]);
+    if (previousLanguageRef.current !== language) {
+      const newInputText = translatedText;
+      const newTranslatedText = textToTranslate;
+      
+      setInputText(newInputText);
+      setTranslatedText(newTranslatedText);
+      onTranslation(newTranslatedText);
+
+      const sourceLang = language;
+      const targetLang = language === 'ไทย' ? 'คำเมือง' : 'ไทย';
+      fetchTranslation(newInputText, sourceLang, targetLang);
+    }
+    previousLanguageRef.current = language;
+  }, [language, translatedText, textToTranslate, setInputText, onTranslation, fetchTranslation]);
 
   return (
     <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       <Box sx={{ width: '100%', borderRadius: isMobile ? '4px' : '8px', padding: 2 }}>
-        {loading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-            <CircularProgress size={24} sx={{ mr: 1 }} />
-            <Typography variant="body1" sx={{ fontSize: isMobile ? '0.9rem' : '1rem' }}>
-              กำลังแปล...
-            </Typography>
-          </Box>
-        ) : error ? (
+        {error ? (
           <Typography variant="body1" color="error" sx={{ fontSize: isMobile ? '0.9rem' : '1rem' }}>
             เกิดข้อผิดพลาด: {error}
           </Typography>
@@ -92,12 +110,14 @@ const TextTranslation = ({
             variant="body2" 
             sx={{ 
               fontFamily: '"Chakra Petch", sans-serif', 
-              fontWeight: '500', 
+              fontWeight: '500',
               fontSize: isMobile ? '0.9rem' : '1rem',
-              minHeight: '1.5em' // Ensure consistent height
+              minHeight: '1.5em',
+              color: isTranslating ? 'rgba(0, 0, 0, 0.6)' : 'rgba(0, 0, 0, 0.87)',
+              transition: 'color 0.3s ease-in-out'
             }}
           >
-            {translatedText || '\u00A0'} {/* Use non-breaking space to maintain height */}
+            {translatedText || (isTranslating ? 'กำลังแปล...' : 'คำแปลจะปรากฏที่นี่')}
           </Typography>
         )}
       </Box>
