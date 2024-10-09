@@ -1,7 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from uuid import uuid4
-from sqlalchemy import Date, Enum, DateTime
+from sqlalchemy import Date, Enum, DateTime, event
 from flask_wtf import FlaskForm
 from wtforms import DateField, SelectField, StringField, PasswordField
 from wtforms.validators import DataRequired, Length
@@ -76,14 +76,11 @@ class AudioRecord(db.Model):
     audio_url = db.Column(db.String(200))
     transcription = db.Column(db.Text)
     time = db.Column(db.String(20), nullable=False)
-    duration = db.Column(db.Integer)  # Duration in seconds
-    language = db.Column(db.String(10))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     expiration_date = db.Column(db.DateTime)
-    rating = db.Column(db.Enum(RatingEnum), default=RatingEnum.UNKNOWN)
-    source = db.Column(db.Enum(SourceEnum), nullable=False)
 
     user = db.relationship('User', backref=db.backref('audio_records', lazy=True))
+    analytics = db.relationship('AudioAnalytics', back_populates='audio_record', uselist=False, cascade='all, delete-orphan')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -92,11 +89,10 @@ class AudioRecord(db.Model):
         self.set_expiration_date()
 
     def set_expiration_date(self):
-        self.expiration_date = calculate_expiration_date(self.source, self.rating)
+        self.expiration_date = datetime.utcnow() + timedelta(days=30)  # Example: 30 days
 
     def generate_hashed_id(self):
         if self.id is None:
-            # If id is not set yet, use a temporary unique identifier
             temp_id = uuid4().hex
         else:
             temp_id = str(self.id)
@@ -106,7 +102,7 @@ class AudioRecord(db.Model):
     def create(cls, **kwargs):
         record = cls(**kwargs)
         db.session.add(record)
-        db.session.flush()  # This will assign an ID to the record
+        db.session.flush()
         if not record.hashed_id:
             record.hashed_id = record.generate_hashed_id()
         return record
@@ -119,15 +115,66 @@ class AudioRecord(db.Model):
             'audio_url': self.audio_url,
             'transcription': self.transcription,
             'time': self.time,
-            'duration': self.duration,
-            'language': self.language,
             'created_at': self.created_at.isoformat(),
             'expiration_date': self.expiration_date.isoformat(),
-            'rating': self.rating.value,
-            'audio_hash': self.audio_hash,
-            'source': self.source.value
+            'audio_hash': self.audio_hash
         }
 
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
+
+class AudioAnalytics(db.Model):
+    __tablename__ = 'audio_analytics'
+    id = db.Column(db.Integer, primary_key=True)
+    audio_record_id = db.Column(db.Integer, db.ForeignKey('audio_record.id', ondelete='CASCADE'), nullable=False)
+    user_id = db.Column(db.String(32), db.ForeignKey('user.user_id'), nullable=False)
+    rating = db.Column(db.Enum(RatingEnum), default=RatingEnum.UNKNOWN)
+    language = db.Column(db.String(10))
+    duration = db.Column(db.Integer)
+    source = db.Column(db.Enum(SourceEnum), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship('User', backref=db.backref('audio_analytics', lazy=True))
+    audio_record = db.relationship('AudioRecord', back_populates='analytics')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'audio_record_id': self.audio_record_id,
+            'user_id': self.user_id,
+            'rating': self.rating.value,
+            'language': self.language,
+            'duration': self.duration,
+            'source': self.source.value,
+            'created_at': self.created_at.isoformat()
+        }
+
+    def delete(self):
+        if self.audio_record:
+            db.session.delete(self.audio_record)
+        db.session.delete(self)
+        db.session.commit()
+
+@event.listens_for(AudioAnalytics, 'before_delete')
+def delete_audio_record(mapper, connection, target):
+    if target.audio_record:
+        connection.execute(AudioRecord.__table__.delete().where(AudioRecord.id == target.audio_record_id))
+
+def safe_delete_audio_record(audio_record_id):
+    audio_record = AudioRecord.query.get(audio_record_id)
+    if audio_record:
+        audio_record.delete()
+        return True
+    return False
+
+def safe_delete_audio_analytics(audio_analytics_id):
+    audio_analytics = AudioAnalytics.query.get(audio_analytics_id)
+    if audio_analytics:
+        audio_analytics.delete()
+        return True
+    return False
+    
 class SysAdmin(db.Model):
     __tablename__ = 'admin'
     admin_id = db.Column(db.Integer, primary_key=True)
