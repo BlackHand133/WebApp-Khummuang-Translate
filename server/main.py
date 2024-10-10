@@ -36,6 +36,7 @@ from routes_user import user_bp, jwt as user_jwt
 from routes_service import service_bp
 from routes_auth import auth_bp
 from admin_service import admin_user_bp
+from admin_analytics import admin_analytics_bp
 
 # Register blueprints
 app.register_blueprint(admin_bp, url_prefix='/api/admin')
@@ -43,6 +44,7 @@ app.register_blueprint(user_bp, url_prefix='/api')
 app.register_blueprint(service_bp, url_prefix='/api')
 app.register_blueprint(auth_bp, url_prefix='/api/auth')
 app.register_blueprint(admin_user_bp, url_prefix='/api/admin')
+app.register_blueprint(admin_analytics_bp, url_prefix='/api/admin/analytics')
 
 user_jwt.init_app(app)
 

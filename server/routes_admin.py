@@ -79,3 +79,28 @@ def admin_logout():
     response = jsonify({'message': 'Logout successful'})
     unset_jwt_cookies(response)
     return response
+
+@admin_bp.route('/create_admin', methods=['POST'])
+def create_admin():
+    data = request.get_json()
+    admin_name = data.get('admin_name')
+    email = data.get('email')
+    password = data.get('password')
+
+    if not all([admin_name, email, password]):
+        return jsonify({'error': 'กรุณากรอกข้อมูลที่จำเป็น (admin_name, email, password)'}), 400
+
+    # ตรวจสอบว่า admin_name หรือ email มีอยู่แล้วหรือไม่
+    if SysAdmin.query.filter((SysAdmin.admin_name == admin_name) | (SysAdmin.email == email)).first():
+        return jsonify({'error': 'Admin name or email already exists'}), 400
+
+    new_admin = SysAdmin(admin_name=admin_name, email=email)
+    new_admin.set_password(password)
+
+    db.session.add(new_admin)
+    db.session.commit()
+
+    return jsonify({
+        'message': 'Admin created successfully',
+        'admin': new_admin.to_dict()
+    }), 201

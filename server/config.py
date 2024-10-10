@@ -30,7 +30,7 @@ class Config:
     REMEMBER_COOKIE_SECURE = True
     REMEMBER_COOKIE_HTTPONLY = True
 
-    JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=15)  # ตั้งค่าอายุของ access token
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=60)  # ตั้งค่าอายุของ access token
     JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
     JWT_BLACKLIST_ENABLED = True
     JWT_BLACKLIST_TOKEN_CHECKS = ['access', 'refresh']

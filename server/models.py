@@ -1,7 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from uuid import uuid4
-from sqlalchemy import Date, Enum, DateTime, event
+from sqlalchemy import Date, Enum, DateTime, event, func
 from flask_wtf import FlaskForm
 from wtforms import DateField, SelectField, StringField, PasswordField
 from wtforms.validators import DataRequired, Length
@@ -40,6 +40,10 @@ class User(UserMixin, db.Model):
     reset_token = db.Column(db.String(100), nullable=True)
     reset_token_expires = db.Column(db.DateTime, nullable=True)
 
+    profile = db.relationship('Profile', back_populates='user', uselist=False, cascade='all, delete-orphan')
+    audio_records = db.relationship('AudioRecord', back_populates='user', lazy='dynamic',
+                                    primaryjoin="and_(User.user_id==AudioRecord.user_id, AudioRecord.user_id!='guest')")
+
     def to_dict(self, include_audio=False):
         user_dict = {
             'user_id': self.user_id,
@@ -64,22 +68,20 @@ class User(UserMixin, db.Model):
 
     def check_password(self, password):
         return bcrypt.check_password_hash(self.password, password)
-    
-    profile = db.relationship('Profile', back_populates='user', uselist=False, cascade='all, delete-orphan')
 
 class AudioRecord(db.Model):
     __tablename__ = 'audio_record'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     hashed_id = db.Column(db.String(8), unique=True, index=True, nullable=False)
     audio_hash = db.Column(db.String(64), unique=True, index=True, nullable=False)
-    user_id = db.Column(db.String(32), db.ForeignKey('user.user_id'), nullable=False)
+    user_id = db.Column(db.String(32), db.ForeignKey('user.user_id', ondelete='SET NULL'), nullable=True)
     audio_url = db.Column(db.String(200))
     transcription = db.Column(db.Text)
     time = db.Column(db.String(20), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     expiration_date = db.Column(db.DateTime)
 
-    user = db.relationship('User', backref=db.backref('audio_records', lazy=True))
+    user = db.relationship('User', back_populates='audio_records', foreign_keys=[user_id])
     analytics = db.relationship('AudioAnalytics', back_populates='audio_record', uselist=False, cascade='all, delete-orphan')
 
     def __init__(self, *args, **kwargs):
@@ -89,7 +91,7 @@ class AudioRecord(db.Model):
         self.set_expiration_date()
 
     def set_expiration_date(self):
-        self.expiration_date = datetime.utcnow() + timedelta(days=30)  # Example: 30 days
+        self.expiration_date = calculate_expiration_date()
 
     def generate_hashed_id(self):
         if self.id is None:
@@ -117,7 +119,8 @@ class AudioRecord(db.Model):
             'time': self.time,
             'created_at': self.created_at.isoformat(),
             'expiration_date': self.expiration_date.isoformat(),
-            'audio_hash': self.audio_hash
+            'audio_hash': self.audio_hash,
+            'analytics': self.analytics.to_dict() if self.analytics else None
         }
 
     def delete(self):
@@ -127,8 +130,8 @@ class AudioRecord(db.Model):
 class AudioAnalytics(db.Model):
     __tablename__ = 'audio_analytics'
     id = db.Column(db.Integer, primary_key=True)
-    audio_record_id = db.Column(db.Integer, db.ForeignKey('audio_record.id', ondelete='CASCADE'), nullable=False)
-    user_id = db.Column(db.String(32), db.ForeignKey('user.user_id'), nullable=False)
+    audio_record_id = db.Column(db.Integer, db.ForeignKey('audio_record.id', ondelete='CASCADE'), unique=True, nullable=False)
+    user_id = db.Column(db.String(32), db.ForeignKey('user.user_id', ondelete='SET NULL'), nullable=True)
     rating = db.Column(db.Enum(RatingEnum), default=RatingEnum.UNKNOWN)
     language = db.Column(db.String(10))
     duration = db.Column(db.Integer)
@@ -136,7 +139,7 @@ class AudioAnalytics(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     user = db.relationship('User', backref=db.backref('audio_analytics', lazy=True))
-    audio_record = db.relationship('AudioRecord', back_populates='analytics')
+    audio_record = db.relationship('AudioRecord', back_populates='analytics', single_parent=True)
 
     def to_dict(self):
         return {
@@ -151,19 +154,18 @@ class AudioAnalytics(db.Model):
         }
 
     def delete(self):
-        if self.audio_record:
-            db.session.delete(self.audio_record)
         db.session.delete(self)
         db.session.commit()
 
-@event.listens_for(AudioAnalytics, 'before_delete')
-def delete_audio_record(mapper, connection, target):
-    if target.audio_record:
-        connection.execute(AudioRecord.__table__.delete().where(AudioRecord.id == target.audio_record_id))
+@event.listens_for(AudioAnalytics, 'after_delete')
+def handle_audio_analytics_delete(mapper, connection, target):
+    AudioRecord.query.filter_by(id=target.audio_record_id).delete()
 
 def safe_delete_audio_record(audio_record_id):
     audio_record = AudioRecord.query.get(audio_record_id)
     if audio_record:
+        if audio_record.analytics:
+            db.session.delete(audio_record.analytics)
         audio_record.delete()
         return True
     return False
@@ -174,7 +176,7 @@ def safe_delete_audio_analytics(audio_analytics_id):
         audio_analytics.delete()
         return True
     return False
-    
+
 class SysAdmin(db.Model):
     __tablename__ = 'admin'
     admin_id = db.Column(db.Integer, primary_key=True)
@@ -226,7 +228,8 @@ class Profile(db.Model):
             'lastname': self.lastname,
             'country': self.country,
             'state': self.state,
-            'phone_number': self.phone_number
+            'phone_number': self.phone_number,
+            'last_login': self.last_login.isoformat() if self.last_login else None
         }
 
 class TokenBlacklist(db.Model):
@@ -237,7 +240,7 @@ class TokenBlacklist(db.Model):
 
     def __repr__(self):
         return f'<TokenBlacklist {self.jti}>'
-    
+
 class TranslationLog(db.Model):
     __tablename__ = 'translation_logs'
     id = db.Column(db.Integer, primary_key=True)
@@ -246,6 +249,9 @@ class TranslationLog(db.Model):
     source_language = db.Column(db.String(10), nullable=False)
     target_language = db.Column(db.String(10), nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    user_id = db.Column(db.String(32), db.ForeignKey('user.user_id'), nullable=True)
+    session_id = db.Column(db.String(36), nullable=True)
+    count = db.Column(db.Integer, default=1)
 
     def __repr__(self):
         return f'<TranslationLog {self.id}>'
@@ -257,5 +263,63 @@ class TranslationLog(db.Model):
             'translated_text': self.translated_text,
             'source_language': self.source_language,
             'target_language': self.target_language,
-            'timestamp': self.timestamp.isoformat()
+            'timestamp': self.timestamp.isoformat(),
+            'user_id': self.user_id,
+            'session_id': self.session_id,
+            'count': self.count
         }
+
+    @classmethod
+    def log_translation(cls, original_text, translated_text, source_language, target_language, user_id=None, session_id=None):
+        # Check for an existing log within the last hour
+        one_hour_ago = datetime.utcnow() - timedelta(hours=1)
+        existing_log = cls.query.filter(
+            cls.original_text == original_text,
+            cls.source_language == source_language,
+            cls.target_language == target_language,
+            cls.user_id == user_id,
+            cls.session_id == session_id,
+            cls.timestamp > one_hour_ago
+        ).first()
+
+        if existing_log:
+            existing_log.count += 1
+            existing_log.timestamp = datetime.utcnow()
+            db.session.commit()
+            return existing_log
+        else:
+            new_log = cls(
+                original_text=original_text,
+                translated_text=translated_text,
+                source_language=source_language,
+                target_language=target_language,
+                user_id=user_id,
+                session_id=session_id
+            )
+            db.session.add(new_log)
+            db.session.commit()
+            return new_log
+
+    @classmethod
+    def get_translation_statistics(cls, start_date=None, end_date=None, user_id=None):
+        query = db.session.query(
+            cls.source_language,
+            cls.target_language,
+            func.count(cls.id).label('translation_count'),
+            func.sum(cls.count).label('total_translations')
+        )
+
+        if start_date:
+            query = query.filter(cls.timestamp >= start_date)
+        if end_date:
+            query = query.filter(cls.timestamp <= end_date)
+        if user_id:
+            query = query.filter(cls.user_id == user_id)
+
+        return query.group_by(cls.source_language, cls.target_language).all()
+
+# Add this function to your existing code
+def log_translation(original_text, translated_text, source_language, target_language, user_id=None, session_id=None):
+    TranslationLog.log_translation(
+        original_text, translated_text, source_language, target_language, user_id, session_id
+    )
