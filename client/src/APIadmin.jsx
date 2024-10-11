@@ -44,9 +44,15 @@ const useAdminAPI = () => {
       return response.data;
     },
 
-    getAudioRecords: async (page = 1, perPage = 10, sortBy = 'created_at', order = 'desc') => {
+    getAudioRecords: async (page = 1, perPage = 10, sortBy = 'created_at', order = 'desc', searchParams = {}) => {
       const response = await axiosInstance.get('/admin/audio-records', {
-        params: { page, per_page: perPage, sort_by: sortBy, order }
+        params: { 
+          page, 
+          per_page: perPage, 
+          sort_by: sortBy, 
+          order,
+          ...searchParams
+        }
       });
       return response.data;
     },

@@ -4,6 +4,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import InfoIcon from '@mui/icons-material/Info';
 import useAdminAPI from '../../../APIadmin';
 import AudioPlayer from './AudioPlayer';
+import AdvancedSearch from './AdvancedSearch';
 
 const AudioRecords = () => {
   const [audioRecords, setAudioRecords] = useState([]);
@@ -13,13 +14,24 @@ const AudioRecords = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [sortBy, setSortBy] = useState('created_at');
   const [order, setOrder] = useState('desc');
+  const [searchParams, setSearchParams] = useState({
+    language: '',
+    minDuration: '',
+    maxDuration: '',
+    rating: '',
+    source: '',
+    startDate: '',
+    endDate: '',
+    userId: '',
+    transcriptionQuery: ''
+  });
   const adminAPI = useAdminAPI();
 
   const fetchAudioRecords = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await adminAPI.getAudioRecords(page, 10, sortBy, order);
+      const response = await adminAPI.getAudioRecords(page, 10, sortBy, order, searchParams);
       setAudioRecords(response.audio_records);
       setTotalPages(response.pages);
     } catch (error) {
@@ -28,7 +40,7 @@ const AudioRecords = () => {
     } finally {
       setLoading(false);
     }
-  }, [adminAPI, page, sortBy, order]);
+  }, [adminAPI, page, sortBy, order, searchParams]);
 
   useEffect(() => {
     fetchAudioRecords();
@@ -55,12 +67,22 @@ const AudioRecords = () => {
     setSortBy(column);
   };
 
+  const handleSearch = (newParams) => {
+    setSearchParams(newParams);
+    setPage(1);
+    fetchAudioRecords();
+  };
+
   if (loading) return <LinearProgress />;
   if (error) return <Typography color="error">{error}</Typography>;
-
   return (
     <Box sx={{ width: '100%', maxWidth: 1200, margin: 'auto' }}>
       <Typography variant="h4" gutterBottom>Audio Records</Typography>
+
+      <AdvancedSearch         
+        initialSearchParams={searchParams}
+        onSearch={handleSearch} />
+
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
@@ -68,11 +90,11 @@ const AudioRecords = () => {
               <TableCell>Play</TableCell>
               <TableCell>
                 <TableSortLabel
-                  active={sortBy === 'transcription'}
-                  direction={sortBy === 'transcription' ? order : 'asc'}
-                  onClick={() => handleSort('transcription')}
+                  active={sortBy === 'id'}
+                  direction={sortBy === 'id' ? order : 'asc'}
+                  onClick={() => handleSort('id')}
                 >
-                  Transcription
+                  ID
                 </TableSortLabel>
               </TableCell>
               <TableCell>
@@ -120,6 +142,16 @@ const AudioRecords = () => {
                   Rating
                 </TableSortLabel>
               </TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={sortBy === 'source'}
+                  direction={sortBy === 'source' ? order : 'asc'}
+                  onClick={() => handleSort('source')}
+                >
+                  Source
+                </TableSortLabel>
+              </TableCell>
+              <TableCell>Transcription</TableCell>
               <TableCell>Actions</TableCell>
             </TableRow>
           </TableHead>
@@ -130,27 +162,22 @@ const AudioRecords = () => {
                 sx={{ '&:nth-of-type(odd)': { backgroundColor: 'action.hover' } }}
               >
                 <TableCell>
-                  <AudioPlayer hashedId={record.hashed_id} />
+                  <AudioPlayer url={record.playback_url} />
                 </TableCell>
-                <TableCell>
-                  <Tooltip title={record.transcription || 'No transcription available'} arrow>
-                    <Typography
-                      sx={{
-                        maxWidth: 300,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {record.transcription || 'N/A'}
-                    </Typography>
-                  </Tooltip>
-                </TableCell>
+                <TableCell>{record.id}</TableCell>
                 <TableCell>{record.user_id}</TableCell>
                 <TableCell>{record.duration || 'N/A'}</TableCell>
                 <TableCell>{new Date(record.created_at).toLocaleString()}</TableCell>
                 <TableCell>{record.language || 'N/A'}</TableCell>
                 <TableCell>{record.rating || 'N/A'}</TableCell>
+                <TableCell>{record.source || 'N/A'}</TableCell>
+                <TableCell>
+                  <Tooltip title={record.transcription || 'No transcription available'}>
+                    <Typography noWrap sx={{ maxWidth: 200 }}>
+                      {record.transcription || 'N/A'}
+                    </Typography>
+                    </Tooltip>
+                </TableCell>
                 <TableCell>
                   <Tooltip title="View Details">
                     <IconButton onClick={() => console.log('View details for:', record.id)}>

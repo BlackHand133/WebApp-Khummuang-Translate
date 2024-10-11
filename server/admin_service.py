@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from flask import Blueprint, jsonify, request, abort, send_file, current_app, send_from_directory
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from models import db, User, Profile, AudioRecord, SysAdmin, AudioAnalytics
+from models import db, User, Profile, AudioRecord, SysAdmin, AudioAnalytics, RatingEnum, SourceEnum
 from sqlalchemy import asc, desc, func
 import os
 
@@ -180,10 +180,41 @@ def get_audio_records():
     sort_by = request.args.get('sort_by', 'created_at')
     order = request.args.get('order', 'desc')
 
-    try:
-        query = AudioRecord.query.join(AudioAnalytics, isouter=True)
+    # Advanced search parameters
+    language = request.args.get('language')
+    min_duration = request.args.get('min_duration', type=int)
+    max_duration = request.args.get('max_duration', type=int)
+    rating = request.args.get('rating')
+    source = request.args.get('source')
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    user_id = request.args.get('user_id')
+    transcription_query = request.args.get('transcription')
 
-        # Handle sorting for both AudioRecord and AudioAnalytics fields
+    try:
+        query = AudioRecord.query.join(AudioAnalytics)
+
+        # Apply filters
+        if language:
+            query = query.filter(AudioAnalytics.language == language)
+        if min_duration is not None:
+            query = query.filter(AudioAnalytics.duration >= min_duration)
+        if max_duration is not None:
+            query = query.filter(AudioAnalytics.duration <= max_duration)
+        if rating:
+            query = query.filter(AudioAnalytics.rating == RatingEnum(rating))
+        if source:
+            query = query.filter(AudioAnalytics.source == SourceEnum(source))
+        if start_date:
+            query = query.filter(AudioRecord.created_at >= datetime.fromisoformat(start_date))
+        if end_date:
+            query = query.filter(AudioRecord.created_at <= datetime.fromisoformat(end_date))
+        if user_id:
+            query = query.filter(AudioRecord.user_id == user_id)
+        if transcription_query:
+            query = query.filter(AudioRecord.transcription.ilike(f'%{transcription_query}%'))
+
+        # Handle sorting
         if sort_by in ['duration', 'language', 'rating', 'source']:
             order_column = getattr(AudioAnalytics, sort_by)
         elif hasattr(AudioRecord, sort_by):
@@ -202,15 +233,14 @@ def get_audio_records():
         for audio in paginated_audio.items:
             audio_dict = audio.to_dict()
             audio_dict.update({
-                'user_id': audio.user_id if audio.user_id else 'guest',
                 'playback_url': f"/api/admin/audio/{audio.hashed_id}/stream"
             })
             if audio.analytics:
                 audio_dict.update({
                     'duration': audio.analytics.duration,
                     'language': audio.analytics.language,
-                    'rating': audio.analytics.rating.value if audio.analytics.rating else None,
-                    'source': audio.analytics.source.value if audio.analytics.source else None
+                    'rating': audio.analytics.rating.value,
+                    'source': audio.analytics.source.value
                 })
             audio_records.append(audio_dict)
 
