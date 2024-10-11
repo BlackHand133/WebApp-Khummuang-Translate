@@ -56,6 +56,11 @@ const useAdminAPI = () => {
       return response.data;
     },
 
+    deleteAudioRecord: async (hashedId) => {
+      const response = await axiosInstance.delete(`/admin/audio-records/${hashedId}`);
+      return response.data;
+    },
+
     streamAudio: (hashedId) => {
       return axiosInstance.get(`/admin/audio/${hashedId}/stream`, {
         responseType: 'blob'

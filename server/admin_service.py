@@ -181,9 +181,12 @@ def get_audio_records():
     order = request.args.get('order', 'desc')
 
     try:
-        query = AudioRecord.query
+        query = AudioRecord.query.join(AudioAnalytics, isouter=True)
 
-        if hasattr(AudioRecord, sort_by):
+        # Handle sorting for both AudioRecord and AudioAnalytics fields
+        if sort_by in ['duration', 'language', 'rating', 'source']:
+            order_column = getattr(AudioAnalytics, sort_by)
+        elif hasattr(AudioRecord, sort_by):
             order_column = getattr(AudioRecord, sort_by)
         else:
             order_column = AudioRecord.created_at
@@ -199,13 +202,17 @@ def get_audio_records():
         for audio in paginated_audio.items:
             audio_dict = audio.to_dict()
             audio_dict.update({
-                'username': audio.user.username if audio.user else None,
+                'user_id': audio.user_id if audio.user_id else 'guest',
                 'playback_url': f"/api/admin/audio/{audio.hashed_id}/stream"
             })
+            if audio.analytics:
+                audio_dict.update({
+                    'duration': audio.analytics.duration,
+                    'language': audio.analytics.language,
+                    'rating': audio.analytics.rating.value if audio.analytics.rating else None,
+                    'source': audio.analytics.source.value if audio.analytics.source else None
+                })
             audio_records.append(audio_dict)
-
-        print(f"Total records: {paginated_audio.total}")  # Debug print
-        print(f"Audio records: {audio_records}")  # Debug print
 
         return jsonify({
             'audio_records': audio_records,
@@ -214,8 +221,28 @@ def get_audio_records():
             'current_page': page
         }), 200
     except Exception as e:
-        print(f"Error in get_audio_records: {str(e)}")  # Debug print
+        print(f"Error in get_audio_records: {str(e)}")
         return jsonify({'error': 'An error occurred while fetching audio records'}), 500
+    
+@admin_user_bp.route('/audio-records/<string:hashed_id>', methods=['DELETE'])
+@jwt_required()
+def delete_audio_record(hashed_id):
+    is_admin()
+    audio_record = AudioRecord.query.filter_by(hashed_id=hashed_id).first_or_404()
+    
+    try:
+        # Delete the associated file
+        audio_path = os.path.join(current_app.root_path, audio_record.audio_url)
+        if os.path.exists(audio_path):
+            os.remove(audio_path)
+        
+        # Delete the database record
+        db.session.delete(audio_record)
+        db.session.commit()
+        return jsonify({'message': 'Audio record deleted successfully'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
 
 @admin_user_bp.route('/audio-records/<string:hashed_id>', methods=['GET'])
 @jwt_required()

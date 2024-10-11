@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, LinearProgress, Pagination, Tooltip } from '@mui/material';
+import { Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, LinearProgress, Pagination, Tooltip, TableSortLabel } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import InfoIcon from '@mui/icons-material/Info';
 import useAdminAPI from '../../../APIadmin';
+import AudioPlayer from './AudioPlayer';
 
 const AudioRecords = () => {
   const [audioRecords, setAudioRecords] = useState([]);
@@ -10,13 +11,15 @@ const AudioRecords = () => {
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [sortBy, setSortBy] = useState('created_at');
+  const [order, setOrder] = useState('desc');
   const adminAPI = useAdminAPI();
 
   const fetchAudioRecords = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await adminAPI.getAudioRecords(page);
+      const response = await adminAPI.getAudioRecords(page, 10, sortBy, order);
       setAudioRecords(response.audio_records);
       setTotalPages(response.pages);
     } catch (error) {
@@ -25,19 +28,31 @@ const AudioRecords = () => {
     } finally {
       setLoading(false);
     }
-  }, [adminAPI, page]);
+  }, [adminAPI, page, sortBy, order]);
 
   useEffect(() => {
     fetchAudioRecords();
   }, [fetchAudioRecords]);
 
-  const handleDelete = useCallback(async (id) => {
-    console.log('Delete audio record:', id);
-    // TODO: Implement delete functionality
-  }, []);
+  const handleDelete = useCallback(async (hashedId) => {
+    if (window.confirm('Are you sure you want to delete this audio record?')) {
+      try {
+        await adminAPI.deleteAudioRecord(hashedId);
+        fetchAudioRecords();
+      } catch (error) {
+        console.error('Error deleting audio record:', error);
+      }
+    }
+  }, [adminAPI, fetchAudioRecords]);
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
+  };
+
+  const handleSort = (column) => {
+    const isAsc = sortBy === column && order === 'asc';
+    setOrder(isAsc ? 'desc' : 'asc');
+    setSortBy(column);
   };
 
   if (loading) return <LinearProgress />;
@@ -51,14 +66,60 @@ const AudioRecords = () => {
           <TableHead>
             <TableRow>
               <TableCell>Play</TableCell>
-              <TableCell>ID</TableCell>
-              <TableCell>User</TableCell>
-              <TableCell>Duration</TableCell>
-              <TableCell>Created At</TableCell>
-              <TableCell>Language</TableCell>
-              <TableCell>Rating</TableCell>
-              <TableCell>Source</TableCell>
-              <TableCell>Expiration Date</TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={sortBy === 'transcription'}
+                  direction={sortBy === 'transcription' ? order : 'asc'}
+                  onClick={() => handleSort('transcription')}
+                >
+                  Transcription
+                </TableSortLabel>
+              </TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={sortBy === 'user_id'}
+                  direction={sortBy === 'user_id' ? order : 'asc'}
+                  onClick={() => handleSort('user_id')}
+                >
+                  User ID
+                </TableSortLabel>
+              </TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={sortBy === 'duration'}
+                  direction={sortBy === 'duration' ? order : 'asc'}
+                  onClick={() => handleSort('duration')}
+                >
+                  Duration
+                </TableSortLabel>
+              </TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={sortBy === 'created_at'}
+                  direction={sortBy === 'created_at' ? order : 'asc'}
+                  onClick={() => handleSort('created_at')}
+                >
+                  Created At
+                </TableSortLabel>
+              </TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={sortBy === 'language'}
+                  direction={sortBy === 'language' ? order : 'asc'}
+                  onClick={() => handleSort('language')}
+                >
+                  Language
+                </TableSortLabel>
+              </TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={sortBy === 'rating'}
+                  direction={sortBy === 'rating' ? order : 'asc'}
+                  onClick={() => handleSort('rating')}
+                >
+                  Rating
+                </TableSortLabel>
+              </TableCell>
               <TableCell>Actions</TableCell>
             </TableRow>
           </TableHead>
@@ -69,26 +130,34 @@ const AudioRecords = () => {
                 sx={{ '&:nth-of-type(odd)': { backgroundColor: 'action.hover' } }}
               >
                 <TableCell>
-                  <audio controls style={{ width: '200px', height: '40px' }}>
-                    <source src={`/api/admin/audio/${record.hashed_id}/stream`} type="audio/wav" />
-                    Your browser does not support the audio element.
-                  </audio>
+                  <AudioPlayer hashedId={record.hashed_id} />
                 </TableCell>
-                <TableCell>{record.id}</TableCell>
-                <TableCell>{record.username}</TableCell>
-                <TableCell>{record.analytics?.duration || 'N/A'}</TableCell>
+                <TableCell>
+                  <Tooltip title={record.transcription || 'No transcription available'} arrow>
+                    <Typography
+                      sx={{
+                        maxWidth: 300,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {record.transcription || 'N/A'}
+                    </Typography>
+                  </Tooltip>
+                </TableCell>
+                <TableCell>{record.user_id}</TableCell>
+                <TableCell>{record.duration || 'N/A'}</TableCell>
                 <TableCell>{new Date(record.created_at).toLocaleString()}</TableCell>
-                <TableCell>{record.analytics?.language || 'N/A'}</TableCell>
-                <TableCell>{record.analytics?.rating || 'N/A'}</TableCell>
-                <TableCell>{record.analytics?.source || 'N/A'}</TableCell>
-                <TableCell>{new Date(record.expiration_date).toLocaleString()}</TableCell>
+                <TableCell>{record.language || 'N/A'}</TableCell>
+                <TableCell>{record.rating || 'N/A'}</TableCell>
                 <TableCell>
                   <Tooltip title="View Details">
                     <IconButton onClick={() => console.log('View details for:', record.id)}>
                       <InfoIcon />
                     </IconButton>
                   </Tooltip>
-                  <IconButton onClick={() => handleDelete(record.id)}>
+                  <IconButton onClick={() => handleDelete(record.hashed_id)}>
                     <DeleteIcon />
                   </IconButton>
                 </TableCell>
