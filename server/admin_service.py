@@ -1,7 +1,10 @@
 from datetime import datetime, timedelta
 from flask import Blueprint, jsonify, request, abort, send_file, current_app, send_from_directory
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from models import db, User, Profile, AudioRecord, SysAdmin, AudioAnalytics, RatingEnum, SourceEnum
+from models import (
+    db, User, Profile, AudioRecord, SysAdmin, AudioAnalytics, 
+    RatingEnum, SourceEnum, TranslationLog
+)
 from sqlalchemy import asc, desc, func
 import os
 
@@ -307,6 +310,21 @@ def stream_audio(hashed_id):
         return jsonify({'error': 'Audio file not found'}), 404
     
     return send_file(audio_path, mimetype='audio/wav')
+
+@admin_user_bp.route('/audio-records/stats', methods=['GET'])
+@jwt_required()
+def get_audio_records_stats():
+    is_admin()
+    total_audio_records = AudioRecord.count_all()
+    
+    return jsonify({
+        'total_audio_records': total_audio_records
+    }), 200
+
+@admin_user_bp.route('/analytics/sources', methods=['GET'])
+def get_audio_source_counts():
+    source_counts = AudioAnalytics.count_sources()
+    return jsonify(source_counts)
 
 @admin_user_bp.errorhandler(404)
 def file_not_found(error):

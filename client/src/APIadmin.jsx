@@ -73,6 +73,12 @@ const useAdminAPI = () => {
       });
     },
 
+    getAudioStats: async () => {
+      const response = await axiosInstance.get('/admin/audio-records/stats');
+      return response.data;
+    },
+
+
   }), [axiosInstance]);
 };
 

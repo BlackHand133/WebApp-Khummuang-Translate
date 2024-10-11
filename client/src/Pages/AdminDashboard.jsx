@@ -28,10 +28,11 @@ const AdminDashboard = () => {
       setLoading(true);
       try {
         const userStats = await adminAPIRef.current.getUserStats();
+        const audioStats = await adminAPIRef.current.getAudioStats(); // ดึงข้อมูลสถิติเสียง
         setStats({
           users: userStats.total_users,
           activeUsers: userStats.active_users,
-          audioRecords: userStats.audio_records
+          audioRecords: audioStats.total_audio_records // ใช้ค่าที่ได้
         });
       } catch (error) {
         console.error('Error fetching stats:', error);
@@ -39,7 +40,7 @@ const AdminDashboard = () => {
         setLoading(false);
       }
     }
-  }, [admin, stats]);
+  }, [admin, stats]);  
 
   useEffect(() => {
     fetchStats();

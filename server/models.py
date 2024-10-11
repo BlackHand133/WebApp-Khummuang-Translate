@@ -126,6 +126,10 @@ class AudioRecord(db.Model):
     def delete(self):
         db.session.delete(self)
         db.session.commit()
+    
+    @classmethod
+    def count_all(cls):
+        return cls.query.count()
 
 class AudioAnalytics(db.Model):
     __tablename__ = 'audio_analytics'
@@ -156,6 +160,14 @@ class AudioAnalytics(db.Model):
     def delete(self):
         db.session.delete(self)
         db.session.commit()
+
+    @classmethod
+    def count_sources(cls):
+        counts = db.session.query(
+            cls.source,
+            func.count(cls.id).label('count')
+        ).group_by(cls.source).all()
+        return {source: count for source, count in counts}
 
 @event.listens_for(AudioAnalytics, 'after_delete')
 def handle_audio_analytics_delete(mapper, connection, target):
