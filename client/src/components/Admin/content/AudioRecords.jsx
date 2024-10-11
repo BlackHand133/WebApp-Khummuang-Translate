@@ -1,16 +1,16 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, CircularProgress, Alert, Snackbar, Pagination } from '@mui/material';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, LinearProgress, Pagination, Tooltip } from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
+import InfoIcon from '@mui/icons-material/Info';
 import useAdminAPI from '../../../APIadmin';
 
 const AudioRecords = () => {
   const [audioRecords, setAudioRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const adminAPI = useAdminAPI();
-  const audioRef = useRef(new Audio());
 
   const fetchAudioRecords = useCallback(async () => {
     try {
@@ -32,76 +32,79 @@ const AudioRecords = () => {
   }, [fetchAudioRecords]);
 
   const handleDelete = useCallback(async (id) => {
-    // TODO: Implement delete functionality when API is available
     console.log('Delete audio record:', id);
-    setSnackbar({ open: true, message: 'Delete functionality not implemented yet', severity: 'info' });
+    // TODO: Implement delete functionality
   }, []);
-
-  const handleListen = useCallback((hashedId) => {
-    const audioUrl = adminAPI.streamAudio(hashedId);
-    audioRef.current.src = audioUrl;
-    audioRef.current.play().catch(error => {
-      console.error('Error playing audio:', error);
-      setSnackbar({ open: true, message: 'Error playing audio. Please try again.', severity: 'error' });
-    });
-  }, [adminAPI]);
-
-  const handleCloseSnackbar = (event, reason) => {
-    if (reason === 'clickaway') return;
-    setSnackbar({ ...snackbar, open: false });
-  };
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
   };
 
-  if (loading) return <CircularProgress />;
-  if (error) return <Alert severity="error">{error}</Alert>;
+  if (loading) return <LinearProgress />;
+  if (error) return <Typography color="error">{error}</Typography>;
 
   return (
-    <Box>
+    <Box sx={{ width: '100%', maxWidth: 1200, margin: 'auto' }}>
       <Typography variant="h4" gutterBottom>Audio Records</Typography>
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
             <TableRow>
+              <TableCell>Play</TableCell>
               <TableCell>ID</TableCell>
               <TableCell>User</TableCell>
               <TableCell>Duration</TableCell>
               <TableCell>Created At</TableCell>
               <TableCell>Language</TableCell>
+              <TableCell>Rating</TableCell>
+              <TableCell>Source</TableCell>
+              <TableCell>Expiration Date</TableCell>
               <TableCell>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {audioRecords.map((record) => (
-              <TableRow key={record.id}>
+              <TableRow 
+                key={record.id}
+                sx={{ '&:nth-of-type(odd)': { backgroundColor: 'action.hover' } }}
+              >
+                <TableCell>
+                  <audio controls style={{ width: '200px', height: '40px' }}>
+                    <source src={`/api/admin/audio/${record.hashed_id}/stream`} type="audio/wav" />
+                    Your browser does not support the audio element.
+                  </audio>
+                </TableCell>
                 <TableCell>{record.id}</TableCell>
                 <TableCell>{record.username}</TableCell>
-                <TableCell>{record.duration}</TableCell>
+                <TableCell>{record.analytics?.duration || 'N/A'}</TableCell>
                 <TableCell>{new Date(record.created_at).toLocaleString()}</TableCell>
-                <TableCell>{record.language}</TableCell>
+                <TableCell>{record.analytics?.language || 'N/A'}</TableCell>
+                <TableCell>{record.analytics?.rating || 'N/A'}</TableCell>
+                <TableCell>{record.analytics?.source || 'N/A'}</TableCell>
+                <TableCell>{new Date(record.expiration_date).toLocaleString()}</TableCell>
                 <TableCell>
-                  <Button color="primary" onClick={() => handleListen(record.hashed_id)}>Listen</Button>
-                  <Button color="secondary" onClick={() => handleDelete(record.id)}>Delete</Button>
+                  <Tooltip title="View Details">
+                    <IconButton onClick={() => console.log('View details for:', record.id)}>
+                      <InfoIcon />
+                    </IconButton>
+                  </Tooltip>
+                  <IconButton onClick={() => handleDelete(record.id)}>
+                    <DeleteIcon />
+                  </IconButton>
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </TableContainer>
-      <Pagination 
-        count={totalPages} 
-        page={page} 
-        onChange={handleChangePage} 
-        color="primary" 
-        sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}
-      />
-      <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={handleCloseSnackbar}>
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+        <Pagination 
+          count={totalPages} 
+          page={page} 
+          onChange={handleChangePage} 
+          color="primary" 
+        />
+      </Box>
     </Box>
   );
 };

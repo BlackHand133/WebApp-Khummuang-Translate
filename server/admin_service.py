@@ -244,7 +244,6 @@ def stream_audio(hashed_id):
     is_admin()
     audio_record = AudioRecord.query.filter_by(hashed_id=hashed_id).first_or_404()
     
-    # Get the full path of the audio file
     audio_path = os.path.join(current_app.root_path, audio_record.audio_url)
     
     if not os.path.exists(audio_path):

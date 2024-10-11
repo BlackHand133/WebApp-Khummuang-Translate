@@ -57,9 +57,9 @@ const useAdminAPI = () => {
     },
 
     streamAudio: (hashedId) => {
-      const hostname = window.location.hostname;
-      const API_BASE_URL = import.meta.env.VITE_API_URL || `http://${hostname}:8080/api`;
-      return `${API_BASE_URL}/admin/audio/${hashedId}/stream`;
+      return axiosInstance.get(`/admin/audio/${hashedId}/stream`, {
+        responseType: 'blob'
+      });
     },
 
   }), [axiosInstance]);
