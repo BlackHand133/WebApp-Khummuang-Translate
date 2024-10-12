@@ -7,8 +7,7 @@ import tempfile
 from flask_cors import CORS
 from ModelASR.modelWav import AudioTranscriber, AudioTranscriberMic, convert_to_wav
 from ModelASR.Translator import Translator
-from audio_utils import save_audio_record, update_audio_rating, cleanup_expired_records, get_audio_records, create_temp_file
-import librosa
+from audio_utils import save_audio_record, update_audio_rating, cleanup_expired_records, get_audio_records, create_temp_file, get_audio_duration
 
 service_bp = Blueprint('service', __name__)
 CORS(service_bp)
@@ -39,6 +38,12 @@ def transcribe():
     language = request.form.get('language', 'th')
     user_id = request.form.get('user_id', 'guest')
 
+    # แปลงภาษา
+    if language == 'ไทย':
+        language = 'th'
+    elif language == 'คำเมือง':
+        language = 'km'
+
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
 
@@ -47,6 +52,12 @@ def transcribe():
 
     if file and allowed_file(file.filename):
         try:
+            # ตรวจสอบ MIME type
+            if file.content_type not in ['audio/wav', 'audio/x-wav', 'audio/mpeg', 'audio/webm']:
+                return jsonify({'error': 'Invalid file type'}), 400
+
+            current_app.logger.info(f"Processing file: {file.filename}, Language: {language}, User ID: {user_id}")
+
             temp_file_path = create_temp_file(file)
             wav_file_path = convert_to_wav(temp_file_path)
             
@@ -54,7 +65,7 @@ def transcribe():
             transcript = transcriber.transcribe_audio(wav_file_path, language)
 
             # บันทึกข้อมูลเสียง
-            duration = librosa.get_duration(filename=wav_file_path)
+            duration = get_audio_duration(wav_file_path)
             with open(wav_file_path, 'rb') as audio_file:
                 record_id, hashed_id, status = save_audio_record(
                     user_id=user_id,
@@ -64,6 +75,8 @@ def transcribe():
                     language=language,
                     source=SourceEnum.UPLOAD
                 )
+
+            current_app.logger.info(f"Transcription completed. Record ID: {record_id}, Hashed ID: {hashed_id}")
 
             return jsonify({
                 'transcription': transcript,
@@ -80,6 +93,8 @@ def transcribe():
                 os.remove(temp_file_path)
             if os.path.exists(wav_file_path):
                 os.remove(wav_file_path)
+    else:
+        return jsonify({'error': 'File type not allowed'}), 400
 
 @service_bp.route('/transcribe_Mic', methods=['POST'])
 def transcribe_mic():
@@ -106,14 +121,14 @@ def transcribe_mic():
         transcript = transcriber.transcribe_audio_from_microphone(wav_file_path, language)
 
         # บันทึกข้อมูลเสียง
-        duration = librosa.get_duration(filename=wav_file_path)
+        duration = get_audio_duration(wav_file_path)
         record_id, hashed_id, status = save_audio_record(
             user_id=user_id,
             audio_file=wav_file_path,  # ส่ง file path แทน file object
             transcription=transcript,
             duration=int(duration),
             language=language,
-            source=SourceEnum.MICROPHONE
+            source=SourceEnum.MICROPHONE  # ใช้ string แทน enum
         )
         
         print(f"Audio record saved. ID: {record_id}, Hashed ID: {hashed_id}, Status: {status}")
@@ -242,7 +257,15 @@ def update_rating():
         if not identifier or not rating:
             return jsonify({"error": "Missing identifier or rating"}), 400
 
-        success, message = update_audio_rating(identifier, rating)
+        # แปลงค่า rating จาก frontend เป็นค่าที่ใช้ใน backend
+        if rating == 'like':
+            db_rating = 'LIKE'
+        elif rating == 'dislike':
+            db_rating = 'DISLIKE'
+        else:
+            db_rating = 'UNKNOWN'
+
+        success, message = update_audio_rating(identifier, db_rating)
 
         if success:
             return jsonify({"message": message}), 200

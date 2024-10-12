@@ -11,6 +11,7 @@ import TranscriptionResult from '../shared/TranscriptionResult';
 import LoadingIndicator from '../shared/LoadingIndicator';
 import ErrorDisplay from '../shared/ErrorDisplay';
 import GuideModal from './GuideModal'; // เพิ่มการ import GuideModal
+import supportedWordsData from '../../assets/supportedWords.json';
 
 const SpeechMic = forwardRef(({ 
   onTranslation, 
@@ -50,9 +51,7 @@ const SpeechMic = forwardRef(({
 
   const theme = useTheme();
 
-  const supportedWords = [
-    "คำ1", "คำ2", "คำ3", // ... เพิ่มคำที่รองรับทั้งหมดที่นี่
-  ];
+  const supportedWords = supportedWordsData.supportedWords
 
   useEffect(() => {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {

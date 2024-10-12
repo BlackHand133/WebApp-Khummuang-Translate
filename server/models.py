@@ -91,7 +91,11 @@ class AudioRecord(db.Model):
         self.set_expiration_date()
 
     def set_expiration_date(self):
-        self.expiration_date = calculate_expiration_date()
+        if hasattr(self, 'analytics') and self.analytics:
+            self.expiration_date = calculate_expiration_date(self.analytics.source, self.analytics.rating)
+        else:
+            # ถ้ายังไม่มี analytics ให้ใช้ค่าเริ่มต้น
+            self.expiration_date = calculate_expiration_date(SourceEnum.MICROPHONE, RatingEnum.UNKNOWN)
 
     def generate_hashed_id(self):
         if self.id is None:

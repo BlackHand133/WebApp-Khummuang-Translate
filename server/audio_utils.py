@@ -4,6 +4,7 @@ import os
 from werkzeug.utils import secure_filename
 import tempfile
 import shutil
+import librosa
 
 def calculate_expiration_date(source, rating):
     from models import SourceEnum, RatingEnum
@@ -64,14 +65,20 @@ def save_audio_record(user_id, audio_file, transcription, duration, language, so
             audio_hash=audio_hash
         )
         
+        # ตรวจสอบว่า source เป็น SourceEnum หรือไม่ ถ้าไม่ใช่ให้แปลงเป็น enum
+        source_enum = source if isinstance(source, SourceEnum) else SourceEnum(source)
+        
         new_analytics = AudioAnalytics(
             audio_record_id=new_record.id,
             user_id=user_id,
             rating=RatingEnum.UNKNOWN,
             language=language,
             duration=duration,
-            source=SourceEnum(source)
+            source=source_enum
         )
+        
+        # Set expiration date with the correct arguments
+        new_record.expiration_date = calculate_expiration_date(source_enum, RatingEnum.UNKNOWN)
         
         db.session.add(new_record)
         db.session.add(new_analytics)
@@ -95,16 +102,12 @@ def update_audio_rating(identifier, rating):
             print(f"Record not found for hashed_id: {identifier}")
             return False, "Record not found"
         
-        try:
-            audio_analytics = AudioAnalytics.query.filter_by(audio_record_id=audio_record.id).first()
-            if not audio_analytics:
-                print(f"Analytics not found for audio_record_id: {audio_record.id}")
-                return False, "Analytics not found"
-            
-            audio_analytics.rating = RatingEnum[rating.upper()]
-        except KeyError:
-            print(f"Invalid rating value: {rating}")
-            return False, "Invalid rating value"
+        audio_analytics = AudioAnalytics.query.filter_by(audio_record_id=audio_record.id).first()
+        if not audio_analytics:
+            print(f"Analytics not found for audio_record_id: {audio_record.id}")
+            return False, "Analytics not found"
+        
+        audio_analytics.rating = RatingEnum[rating]
         
         audio_record.expiration_date = calculate_expiration_date(audio_analytics.source, audio_analytics.rating)
         db.session.commit()
@@ -159,3 +162,6 @@ def create_temp_file(file):
     temp_file = tempfile.NamedTemporaryFile(delete=False)
     file.save(temp_file.name)
     return temp_file.name
+
+def get_audio_duration(file_path):
+    return librosa.get_duration(path=file_path)

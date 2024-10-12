@@ -366,6 +366,9 @@ const Body = ({ username }) => {
         ),
     []
   );
+  const onTranscriptionComplete = useCallback((fileKey, transcription) => {
+    setTranscribedFiles(prev => ({ ...prev, [fileKey]: transcription }));
+  }, []);
 
   const transcriptionProps = useMemo(
     () => ({
@@ -387,6 +390,9 @@ const Body = ({ username }) => {
       onFileUpload: handleFileUpload,
       rating,
       onRatingChange: handleRatingChange,
+      onTranscriptionComplete,
+      transcribedFilesCache: transcribedFiles,
+      transcribedFiles,
     }),
     [
       file,
@@ -404,6 +410,7 @@ const Body = ({ username }) => {
       handleFileUpload,
       handleRatingChange,
       getFileKey,
+      onTranscriptionComplete,
           ]
   );
 
@@ -787,7 +794,7 @@ const Body = ({ username }) => {
               </Box>
             )}
             {memoizedTranslation && (
-              <Paper
+              <Box
                 elevation={3}
                 sx={{ mt: 2, p: 2, borderRadius: "8px", width: "100%" }}
               >
@@ -800,7 +807,7 @@ const Body = ({ username }) => {
                 >
                   {memoizedTranslation}
                 </Typography>
-              </Paper>
+              </Box >
             )}
           </Box>
         </Paper>

@@ -1,11 +1,10 @@
-import React, { useCallback, useEffect, useRef, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { 
   Box, 
   Typography, 
   Button, 
   useTheme, 
-  Fade, 
-  Grow,
+  Fade,
   Paper,
   IconButton
 } from '@mui/material';
@@ -19,6 +18,7 @@ import AudioPlayer from '../shared/AudioPlayer';
 import TranscriptionResult from '../shared/TranscriptionResult';
 import LoadingIndicator from '../shared/LoadingIndicator';
 import ErrorDisplay from '../shared/ErrorDisplay';
+import supportedWordsData from '../../assets/supportedWords.json';
 
 const Transcription = ({
   file,
@@ -46,21 +46,17 @@ const Transcription = ({
   const { transcribe, translate, recordAudio, updateRating } = useApi();
   const theme = useTheme();
   
-  const transcribedFilesRef = useRef({});
   const [hasSaved, setHasSaved] = useState(false);
   const [audioHashedId, setAudioHashedId] = useState(null);
-  const audioRef = useRef(null);
+  const [openGuide, setOpenGuide] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   const fileKey = useMemo(() => getFileKey(file), [getFileKey, file]);
 
-  const [openGuide, setOpenGuide] = useState(false);
   const handleOpenGuide = () => setOpenGuide(true);
   const handleCloseGuide = () => setOpenGuide(false);
-  const [isDragging, setIsDragging] = useState(false);
 
-  const supportedWords = [
-    "คำ1", "คำ2", "คำ3", // ... add all 100 supported words here
-  ];
+  const supportedWords = supportedWordsData.supportedWords;
 
   const handleRating = useCallback(async (newRating) => {
     if (!audioHashedId) {
@@ -103,7 +99,7 @@ const Transcription = ({
     console.log('handleTranscribe called', { file, fileKey });
     if (!file || !fileKey) return;
     
-    if (transcribedFilesCache[fileKey]) {
+    if (transcribedFilesCache && transcribedFilesCache[fileKey]) {
       console.log('Using cached transcription');
       setTranscription(transcribedFilesCache[fileKey]);
       return;
@@ -116,7 +112,9 @@ const Transcription = ({
     try {
       const result = await transcribe(file, language, userId);
       setTranscription(result.transcription);
-      onTranscriptionComplete(fileKey, result.transcription);
+      if (typeof onTranscriptionComplete === 'function') {
+        onTranscriptionComplete(fileKey, result.transcription);
+      }
       setAudioHashedId(result.hashedId);
       await handleTranslate(result.transcription);
     } catch (err) {
@@ -126,7 +124,7 @@ const Transcription = ({
       setIsLoading(false);
     }
   }, [file, fileKey, language, userId, transcribe, handleTranslate, setTranscription, setIsLoading, setError, onRatingChange, transcribedFilesCache, onTranscriptionComplete]);
-
+  
   const saveFile = useCallback(async () => {
     if (!file || !transcription || hasSaved) return;
 
@@ -169,13 +167,13 @@ const Transcription = ({
 
   useEffect(() => {
     if (file && fileKey) {
-      if (transcribedFilesCache[fileKey]) {
+      if (transcribedFilesCache && transcribedFilesCache[fileKey]) {
         setTranscription(transcribedFilesCache[fileKey]);
       } else {
         handleTranscribe();
       }
     }
-  }, [file, fileKey, handleTranscribe, transcribedFilesCache]);
+  }, [file, fileKey, handleTranscribe, transcribedFilesCache, setTranscription]);
 
   const handleFileUpload = useCallback((uploadedFile) => {
     if (uploadedFile) {
@@ -200,13 +198,6 @@ const Transcription = ({
       setOpenGuide(true);
       localStorage.setItem('hasVisitedBefore', 'true');
     }
-  }, []);
-
-  useEffect(() => {
-    console.log('Component mounted');
-    return () => {
-      console.log('Component will unmount');
-    };
   }, []);
 
   const handleDragEnter = (e) => {

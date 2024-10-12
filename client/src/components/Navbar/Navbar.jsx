@@ -14,6 +14,7 @@ import {
 } from '@mui/material';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import LogoutIcon from '@mui/icons-material/Logout';
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'; // เพิ่ม import สำหรับไอคอนลูกศร
 import { Link, useNavigate } from 'react-router-dom';
 import { useUser } from "../../ContextUser";
 import IconWeb from '../../assets/IconWeb.svg';
@@ -26,7 +27,7 @@ const pages = [
 ];
 
 const Navbar = ({ onLogout }) => {
-  const { isLoggedIn, username } = useUser();
+  const { isLoggedIn, username, logout } = useUser();
   const [anchorEl, setAnchorEl] = useState(null);
   const navigate = useNavigate();
   const theme = useTheme();
@@ -42,7 +43,7 @@ const Navbar = ({ onLogout }) => {
 
   const handleLogout = async () => {
     try {
-      await onLogout();
+      await logout();
       navigate('/');
       handleCloseMenu();
     } catch (error) {
@@ -65,7 +66,7 @@ const Navbar = ({ onLogout }) => {
         sx={{ 
           justifyContent: 'space-between', 
           px: isMobile ? 2 : 3,
-          ml: isMobile ? 1 : 2 // Added left margin for both mobile and desktop
+          ml: isMobile ? 1 : 2
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -76,7 +77,7 @@ const Navbar = ({ onLogout }) => {
             style={{
               height: 'auto',
               width: isMobile ? '100px' : '200px',
-              marginLeft: isMobile ? '25px' : '16px', // Added margin-left to the logo
+              marginLeft: isMobile ? '25px' : '16px',
             }}
           />
           {!isMobile && (
@@ -159,19 +160,22 @@ const Navbar = ({ onLogout }) => {
                     color: 'black',
                     outline: '2px solid gray',
                   },
-                  ...(isMobile && {
-                    padding: '4px 8px',
-                    minWidth: 0,
-                  }),
+                  minWidth: '120px', // กำหนดความกว้างขั้นต่ำ
+                  justifyContent: 'space-between', // จัดวางเนื้อหาภายในปุ่ม
+                  padding: '5px 10px', // เพิ่ม padding เพื่อให้มีพื้นที่สำหรับลูกศร
                 }}
               >
                 <Typography sx={{ 
                   color: 'white', 
-                  padding: isMobile ? '2px' : '5px',
-                  fontSize: isMobile ? '0.8rem' : '1rem',
+                  fontSize: '1rem',
+                  maxWidth: '100px', // จำกัดความกว้างของข้อความ
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
                 }}>
-                  {isMobile ? username.charAt(0).toUpperCase() : username}
+                  {username}
                 </Typography>
+                <ArrowDropDownIcon sx={{ color: 'white' }} />
               </Button>
               <Menu
                 anchorEl={anchorEl}
@@ -207,14 +211,12 @@ const Navbar = ({ onLogout }) => {
                 '&:hover': {
                   backgroundColor: '#f0f0f0',
                 },
-                ...(isMobile && {
-                  padding: '4px 12px',
-                  fontSize: '0.8rem',
-                  minWidth: 0,
-                }),
+                padding: '4px 12px',
+                fontSize: '1rem',
+                minWidth: '120px', // กำหนดความกว้างขั้นต่ำเพื่อให้เท่ากับปุ่มชื่อผู้ใช้
               }}
             >
-              {isMobile ? 'Login' : 'Login / Register'}
+              Login / Register
             </Button>
           )}
         </Box>

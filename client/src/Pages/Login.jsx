@@ -177,7 +177,7 @@ function Login() {
             ไม่มีบัญชีผู้ใช้? <Link href="/register" underline="hover">ลงทะเบียนที่นี่</Link>
           </Typography>
         </Box>
-        <Box sx={{ mt: 3 }}>
+        {/*<Box sx={{ mt: 3 }}>
           <Button 
             variant="outlined" 
             fullWidth 
@@ -190,7 +190,7 @@ function Login() {
             <img src="logo.png" alt="logo" className={styles.logosup} style={{ marginRight: '8px', height: '24px' }} />
             เข้าสู่ระบบด้วย Sup
           </Button>
-        </Box>
+        </Box>*/}
       </Box>
 
       {/* กล่องลืมรหัสผ่าน */}

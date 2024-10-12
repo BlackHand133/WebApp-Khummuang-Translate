@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, useTheme } from '@mui/material';
 import { useApi } from '../../ServiceAPI';
 
 const TextTranslation = ({ 
@@ -15,6 +15,7 @@ const TextTranslation = ({
   const [isTranslating, setIsTranslating] = useState(false);
   const translationTimeoutRef = useRef(null);
   const previousLanguageRef = useRef(language);
+  const theme = useTheme();
 
   const clearTranslation = useCallback(() => {
     setTranslatedText('');
@@ -99,22 +100,48 @@ const TextTranslation = ({
   }, [language, translatedText, textToTranslate, setInputText, onTranslation, fetchTranslation]);
 
   return (
-    <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      <Box sx={{ width: '100%', borderRadius: isMobile ? '4px' : '8px', padding: 2 }}>
+    <Box sx={{ 
+      width: '100%', 
+      display: 'flex', 
+      flexDirection: 'column', 
+      alignItems: 'center'
+    }}>
+      <Box sx={{ 
+        width: '100%', 
+        borderRadius: isMobile ? '4px' : '8px', 
+        padding: 2,
+        backgroundColor: theme.palette.background.paper,
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+      }}>
         {error ? (
-          <Typography variant="body1" color="error" sx={{ fontSize: isMobile ? '0.9rem' : '1rem' }}>
+          <Typography 
+            variant="body1" 
+            color="error" 
+            sx={{ 
+              fontSize: isMobile ? '0.95rem' : '1.1rem',
+              fontWeight: 500,
+              textShadow: '0 1px 2px rgba(0,0,0,0.05)',
+            }}
+          >
             เกิดข้อผิดพลาด: {error}
           </Typography>
         ) : (
           <Typography 
-            variant="body2" 
+            variant="body1" 
             sx={{ 
               fontFamily: '"Chakra Petch", sans-serif', 
-              fontWeight: '500',
-              fontSize: isMobile ? '0.9rem' : '1rem',
+              fontWeight: 400,
+              fontSize: isMobile ? '1rem' : '1.2rem',
+              lineHeight: 1.5,
               minHeight: '1.5em',
-              color: isTranslating ? 'rgba(0, 0, 0, 0.6)' : 'rgba(0, 0, 0, 0.87)',
-              transition: 'color 0.3s ease-in-out'
+              color: isTranslating 
+                ? theme.palette.text.secondary
+                : theme.palette.text.primary,
+              transition: 'color 0.3s ease-in-out, text-shadow 0.3s ease-in-out',
+              textShadow: isTranslating
+                ? 'none'
+                : '0 1px 2px rgba(0,0,0,0.1)',
+              letterSpacing: '0.01em',
             }}
           >
             {translatedText || (isTranslating ? 'กำลังแปล...' : 'คำแปลจะปรากฏที่นี่')}

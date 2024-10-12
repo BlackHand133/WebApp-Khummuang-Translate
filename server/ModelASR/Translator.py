@@ -6,6 +6,7 @@ from collections import defaultdict
 import logging
 from functools import lru_cache
 from collections import Counter
+import sys
 
 class Translator:
     def __init__(self, vocab_path=None, dictionary_path=None, phrase_path=None, is_thai=False):
@@ -34,10 +35,21 @@ class Translator:
     def setup_logger(self):
         logger = logging.getLogger('TranslatorLogger')
         logger.setLevel(logging.INFO)
-        handler = logging.FileHandler('translator.log')
-        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
+        
+        # ตั้งค่า StreamHandler สำหรับแสดงล็อกบนคอนโซล
+        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler.setLevel(logging.INFO)
+        console_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+        console_handler.setFormatter(console_formatter)
+        logger.addHandler(console_handler)
+        
+        # ตั้งค่า FileHandler สำหรับบันทึกล็อกลงไฟล์
+        file_handler = logging.FileHandler('translator.log', encoding='utf-8')
+        file_handler.setLevel(logging.INFO)
+        file_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+        file_handler.setFormatter(file_formatter)
+        logger.addHandler(file_handler)
+        
         return logger
 
     def load_vocabulary(self, file_path):
